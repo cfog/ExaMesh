@@ -45,6 +45,7 @@ int main(int argc, char* const argv[]) {
 
 	UMesh UMorig(inFileBaseName, type, infix);
 	UMesh UMrefined(UMorig, nDivs);
+	UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
 
 	exit(0);
 }

@@ -452,6 +452,8 @@ UMesh::UMesh(const UMesh& UMIn, const int nDivs) :
 
 
 bool UMesh::writeVTKFile(const char fileName[]) {
+	double timeBefore = clock() / double(CLOCKS_PER_SEC);
+
 	FILE* outFile = fopen(fileName, "w");
 	if (!outFile) {
 		fprintf(stderr, "Couldn't open file %s for writing.  Bummer!\n", fileName);
@@ -547,6 +549,35 @@ bool UMesh::writeVTKFile(const char fileName[]) {
 		fprintf(outFile, "12\n");
 
 	fclose(outFile);
+	double timeAfter = clock() / double(CLOCKS_PER_SEC);
+	double elapsed = timeAfter - timeBefore;
+	size_t totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
+	fprintf(stderr, "CPU time for file write = %5.2F seconds\n", elapsed);
+	fprintf(stderr, "                          %5.2F million cells / minute\n",
+					(totalCells / 1000000.) / (elapsed / 60));
+
+	return true;
+}
+
+bool UMesh::writeUGridFile(const char fileName[]) {
+	double timeBefore = clock() / double(CLOCKS_PER_SEC);
+
+	FILE* outFile = fopen(fileName, "w");
+	if (!outFile) {
+		fprintf(stderr, "Couldn't open file %s for writing.  Bummer!\n", fileName);
+		return false;
+	}
+
+	fwrite(m_fileImage, m_fileImageSize, 1, outFile);
+	fclose(outFile);
+
+	double timeAfter = clock() / double(CLOCKS_PER_SEC);
+	double elapsed = timeAfter - timeBefore;
+	size_t totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
+	fprintf(stderr, "CPU time for file write = %5.2F seconds\n", elapsed);
+	fprintf(stderr, "                          %5.2F million cells / minute\n",
+					(totalCells / 1000000.) / (elapsed / 60));
+
 	return true;
 }
 
