@@ -389,6 +389,7 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 			m_nBdryVerts++;
 		}
 	}
+	delete[] isBdryVert;
 
 	// If any of these fail, your file was invalid.
 	assert(m_nVerts == m_header[eVert]);
@@ -398,6 +399,8 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	assert(m_nPyrs == m_header[ePyr]);
 	assert(m_nPrisms == m_header[ePrism]);
 	assert(m_nHexes == m_header[eHex]);
+
+	delete reader;
 }
 
 UMesh::UMesh(const UMesh& UMIn, const int nDivs) :
