@@ -36,11 +36,11 @@ examesh: $(CXXOBJECTS)
 	echo Linking examesh
 	-$(CXX_LINK) -o examesh $(CXXOBJECTS) $(LDFLAGS) 
 	echo " "
-	
+
 test-exa.o: test-exa.cxx
 	echo Compiling $*.cxx
 	$(CXX_COMPILE) -DBOOST_TEST_DYN_LINK -Wall -g -c test-exa.cxx 
-	
+
 test-exa: test-exa.o libexamesh.so
 	$(CXX_LINK) -o test-exa test-exa.o $(LDFLAGS) -lboost_unit_test_framework
 

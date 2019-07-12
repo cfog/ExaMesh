@@ -30,5 +30,7 @@ bool computeMeshSize(const struct MeshSize& MSIn, const emInt nDivs,
 emInt subdividePartMesh(const UMesh * const pVM_input, UMesh * const pVM_output,
 		const int nDivs);
 
+void sortVerts3(const emInt input[3], emInt output[3]);
+void sortVerts4(const emInt input[4], emInt output[4]);
 
 #endif /* SRC_EXAMESH_H_ */

@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+#include <set>
+
 #include <string.h>
 
 #include "examesh.h"
@@ -168,6 +170,73 @@ void checkConnectivitySize(const char cellType, const emInt nVerts) {
 	}
 }
 
+class vertTriple {
+	emInt corners[3];
+public:
+	vertTriple(const emInt vA, const emInt vB, const emInt vC) {
+		emInt temp[] = { vA, vB, vC };
+		sortVerts3(temp, corners);
+	}
+	bool operator<(const vertTriple& that) const {
+		return (corners[0] < that.corners[0]
+				|| (corners[0] == that.corners[0] && corners[1] < that.corners[1])
+				|| (corners[0] == that.corners[0] && corners[1] == that.corners[1]
+						&& corners[2] < that.corners[2]));
+	}
+	const emInt* getCorners() const {
+		return corners;
+	}
+};
+
+class vertQuadruple {
+	emInt corners[4];
+public:
+	vertQuadruple(const emInt vA, const emInt vB, const emInt vC,
+			const emInt vD) {
+		emInt temp[] = { vA, vB, vC, vD };
+		sortVerts4(temp, corners);
+	}
+	bool operator<(const vertQuadruple& that) const {
+		return (corners[0] < that.corners[0]
+				|| (corners[0] == that.corners[0] && corners[1] < that.corners[1])
+				|| (corners[0] == that.corners[0] && corners[1] == that.corners[1]
+						&& corners[2] < that.corners[2])
+				|| (corners[0] == that.corners[0] && corners[1] == that.corners[1]
+						&& corners[2] == that.corners[2] && corners[3] < that.corners[3]));
+	}
+	const emInt* getCorners() const {
+		return corners;
+	}
+};
+
+void updateTriSet(std::set<vertTriple>& triSet, const emInt v0, const emInt v1,
+		const emInt v2) {
+	vertTriple VT(v0, v1, v2);
+	typename std::set<vertTriple>::iterator vertIter, VIend = triSet.end();
+
+	vertIter = triSet.find(VT);
+	if (vertIter == VIend) {
+		triSet.insert(VT);
+	}
+	else {
+		triSet.erase(vertIter);
+	}
+}
+
+void updateQuadSet(std::set<vertQuadruple>& quadSet, const emInt v0,
+		const emInt v1, const emInt v2, const emInt v3) {
+	vertQuadruple VQ(v0, v1, v2, v3);
+	typename std::set<vertQuadruple>::iterator vertIter, VQend = quadSet.end();
+
+	vertIter = quadSet.find(VQ);
+	if (vertIter == VQend) {
+		quadSet.insert(VQ);
+	}
+	else {
+		quadSet.erase(vertIter);
+	}
+}
+
 UMesh::UMesh(const char baseFileName[], const char type[],
 		const char ugridInfix[]) :
 		m_nVerts(0), m_nBdryVerts(0), m_nTris(0), m_nQuads(0), m_nTets(0),
@@ -182,9 +251,65 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 
 	reader->scanFile();
 
-	init(reader->getNumVerts(), reader->getNumBdryVerts(),
-				reader->getNumBdryTris(), reader->getNumBdryQuads(),
-				reader->getNumTets(), reader->getNumPyramids(),
+	// Identify any bdry tris and quads that aren't in the file
+
+	emInt numBdryTris = reader->getNumBdryTris();
+	emInt numBdryQuads = reader->getNumBdryQuads();
+
+	std::set<vertTriple> setTris;
+	std::set<vertQuadruple> setQuads;
+
+	reader->seekStartOfConnectivity();
+	for (emInt ii = 0; ii < reader->getNumCells(); ii++) {
+		char cellType = reader->getCellType(ii);
+		emInt nConn, connect[8];
+		reader->getNextCellConnectivity(nConn, connect);
+		checkConnectivitySize(cellType, nConn);
+		switch (cellType) {
+			case BDRY_TRI:
+				updateTriSet(setTris, connect[0], connect[1], connect[2]);
+				break;
+			case BDRY_QUAD:
+				updateQuadSet(setQuads, connect[0], connect[1], connect[2], connect[3]);
+				break;
+			case TET:
+				updateTriSet(setTris, connect[0], connect[1], connect[2]);
+				updateTriSet(setTris, connect[0], connect[1], connect[3]);
+				updateTriSet(setTris, connect[1], connect[2], connect[3]);
+				updateTriSet(setTris, connect[2], connect[0], connect[3]);
+				break;
+			case PYRAMID:
+				updateTriSet(setTris, connect[0], connect[1], connect[4]);
+				updateTriSet(setTris, connect[1], connect[2], connect[4]);
+				updateTriSet(setTris, connect[2], connect[3], connect[4]);
+				updateTriSet(setTris, connect[3], connect[0], connect[4]);
+				updateQuadSet(setQuads, connect[0], connect[1], connect[2], connect[3]);
+				break;
+			case PRISM:
+				updateTriSet(setTris, connect[0], connect[1], connect[2]);
+				updateTriSet(setTris, connect[3], connect[4], connect[5]);
+				updateQuadSet(setQuads, connect[0], connect[1], connect[4], connect[3]);
+				updateQuadSet(setQuads, connect[1], connect[2], connect[5], connect[4]);
+				updateQuadSet(setQuads, connect[2], connect[0], connect[3], connect[5]);
+				break;
+			case HEX:
+				updateQuadSet(setQuads, connect[0], connect[1], connect[2], connect[3]);
+				updateQuadSet(setQuads, connect[4], connect[5], connect[6], connect[7]);
+				updateQuadSet(setQuads, connect[0], connect[1], connect[5], connect[4]);
+				updateQuadSet(setQuads, connect[1], connect[2], connect[6], connect[5]);
+				updateQuadSet(setQuads, connect[2], connect[3], connect[7], connect[6]);
+				updateQuadSet(setQuads, connect[3], connect[0], connect[4], connect[7]);
+				break;
+			default:
+				assert(0);
+		}
+	}
+
+	numBdryTris += setTris.size();
+	numBdryQuads += setQuads.size();
+
+	init(reader->getNumVerts(), reader->getNumBdryVerts(), numBdryTris,
+				numBdryQuads, reader->getNumTets(), reader->getNumPyramids(),
 				reader->getNumPrisms(), reader->getNumHexes());
 
 	reader->seekStartOfCoords();
@@ -223,6 +348,39 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 				assert(0);
 		}
 	}
+
+	for (auto VT : setTris) {
+		const emInt* const corners = VT.getCorners();
+		addBdryTri(corners);
+	}
+	for (auto VQ : setQuads) {
+		const emInt* const corners = VQ.getCorners();
+		addBdryQuad(corners);
+	}
+
+	// Now tag all bdry verts
+	bool *isBdryVert = new bool[m_nVerts];
+	for (emInt ii = 0; ii < m_nVerts; ii++) {
+		isBdryVert[ii] = false;
+	}
+	for (emInt iTri = 0; iTri < m_nTris; iTri++) {
+		isBdryVert[m_TriConn[iTri][0]] = true;
+		isBdryVert[m_TriConn[iTri][1]] = true;
+		isBdryVert[m_TriConn[iTri][2]] = true;
+	}
+	for (emInt iQuad = 0; iQuad < m_nQuads; iQuad++) {
+		isBdryVert[m_QuadConn[iQuad][0]] = true;
+		isBdryVert[m_QuadConn[iQuad][1]] = true;
+		isBdryVert[m_QuadConn[iQuad][2]] = true;
+		isBdryVert[m_QuadConn[iQuad][3]] = true;
+	}
+	m_nBdryVerts = 0;
+	for (emInt ii = 0; ii < m_nVerts; ii++) {
+		if (isBdryVert[ii]) {
+			m_nBdryVerts++;
+		}
+	}
+
 	// If any of these fail, your file was invalid.
 	assert(m_nVerts == m_header[eVert]);
 	assert(m_nTris == m_header[eTri]);
@@ -240,6 +398,15 @@ UMesh::UMesh(const UMesh& UMIn, const int nDivs) :
 				m_QuadConn(nullptr), m_TetConn(nullptr), m_PyrConn(nullptr),
 				m_PrismConn(nullptr), m_HexConn(nullptr), m_buffer(nullptr),
 				m_fileImage(nullptr) {
+
+	setlocale(LC_ALL, "");
+	size_t totalCells = size_t(UMIn.m_nTets) + UMIn.m_nPyrs + UMIn.m_nPrisms
+											+ UMIn.m_nHexes;
+	fprintf(
+			stderr,
+			"Initial mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",
+			UMIn.m_nVerts, UMIn.m_nTris, UMIn.m_nQuads, UMIn.m_nTets, UMIn.m_nPyrs,
+			UMIn.m_nPrisms, UMIn.m_nHexes, totalCells);
 
 	MeshSize MSIn, MSOut;
 	MSIn.nBdryVerts = UMIn.m_nBdryVerts;
@@ -259,7 +426,7 @@ UMesh::UMesh(const UMesh& UMIn, const int nDivs) :
 	double timeAfter = clock() / double(CLOCKS_PER_SEC);
 	double elapsed = timeAfter - timeBefore;
 	setlocale(LC_ALL, "");
-	size_t totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
+	totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
 	fprintf(
 			stderr,
 			"Final mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",

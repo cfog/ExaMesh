@@ -57,7 +57,7 @@ QuadFaceVerts::QuadFaceVerts(const emInt v0, const emInt v1, const emInt v2,
 	corners[3] = v3;
 }
 
-static void sortVerts3(const emInt input[3], emInt output[3]) {
+void sortVerts3(const emInt input[3], emInt output[3]) {
 	// This is insertion sort, specialized for three inputs.
 	if (input[1] < input[0]) {
 		output[0] = input[1];
@@ -82,7 +82,7 @@ static void sortVerts3(const emInt input[3], emInt output[3]) {
 	}
 }
 
-static void sortVerts4(const emInt input[4], emInt output[4]) {
+void sortVerts4(const emInt input[4], emInt output[4]) {
 	// This is insertion sort, specialized for four inputs.
 	if (input[1] < input[0]) {
 		output[0] = input[1];
