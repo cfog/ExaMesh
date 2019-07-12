@@ -10,7 +10,9 @@ LIBOBJECTS=TetDivider.o PyrDivider.o PrismDivider.o HexDivider.o CellDivider.o \
 BdryTriDivider.o BdryQuadDivider.o
 
 OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
-OPT_DEBUG=-O3
+DEBUG=-g
+OPT=-O3 -DNDEBUG
+OPT_DEBUG=$(OPT)
 CPPFLAGS=-I/home/cfog/Research/Projects/ExaMesh -I/home/cfog/GMGW1/src
 CXX_COMPILE=g++ -Wall -Wextra -fPIC $(OPT_DEBUG) $(CPPFLAGS) $(EXTRAFLAGS)
 CXX_LINK=g++ -fPIC $(EXTRAFLAGS) $(OPT_DEBUG)

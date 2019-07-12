@@ -174,14 +174,18 @@ class vertTriple {
 	emInt corners[3];
 public:
 	vertTriple(const emInt vA, const emInt vB, const emInt vC) {
-		emInt temp[] = { vA, vB, vC };
-		sortVerts3(temp, corners);
+		corners[0] = vA;
+		corners[1] = vB;
+		corners[2] = vC;
 	}
 	bool operator<(const vertTriple& that) const {
-		return (corners[0] < that.corners[0]
-				|| (corners[0] == that.corners[0] && corners[1] < that.corners[1])
-				|| (corners[0] == that.corners[0] && corners[1] == that.corners[1]
-						&& corners[2] < that.corners[2]));
+		emInt thisTemp[3], thatTemp[3];
+		sortVerts3(corners, thisTemp);
+		sortVerts3(that.corners, thatTemp);
+		return (thisTemp[0] < thatTemp[0]
+				|| (thisTemp[0] == thatTemp[0] && thisTemp[1] < thatTemp[1])
+				|| (thisTemp[0] == thatTemp[0] && thisTemp[1] == thatTemp[1]
+						&& thisTemp[2] < thatTemp[2]));
 	}
 	const emInt* getCorners() const {
 		return corners;
@@ -193,16 +197,21 @@ class vertQuadruple {
 public:
 	vertQuadruple(const emInt vA, const emInt vB, const emInt vC,
 			const emInt vD) {
-		emInt temp[] = { vA, vB, vC, vD };
-		sortVerts4(temp, corners);
+		corners[0] = vA;
+		corners[1] = vB;
+		corners[2] = vC;
+		corners[3] = vD;
 	}
 	bool operator<(const vertQuadruple& that) const {
-		return (corners[0] < that.corners[0]
-				|| (corners[0] == that.corners[0] && corners[1] < that.corners[1])
-				|| (corners[0] == that.corners[0] && corners[1] == that.corners[1]
-						&& corners[2] < that.corners[2])
-				|| (corners[0] == that.corners[0] && corners[1] == that.corners[1]
-						&& corners[2] == that.corners[2] && corners[3] < that.corners[3]));
+		emInt thisTemp[4], thatTemp[4];
+		sortVerts4(corners, thisTemp);
+		sortVerts4(that.corners, thatTemp);
+		return (thisTemp[0] < thatTemp[0]
+				|| (thisTemp[0] == thatTemp[0] && thisTemp[1] < thatTemp[1])
+				|| (thisTemp[0] == thatTemp[0] && thisTemp[1] == thatTemp[1]
+						&& thisTemp[2] < thatTemp[2])
+				|| (thisTemp[0] == thatTemp[0] && thisTemp[1] == thatTemp[1]
+						&& thisTemp[2] == thatTemp[2] && thisTemp[3] < thatTemp[3]));
 	}
 	const emInt* getCorners() const {
 		return corners;
@@ -417,7 +426,8 @@ UMesh::UMesh(const UMesh& UMIn, const int nDivs) :
 	MSIn.nPyrs = UMIn.m_header[ePyr];
 	MSIn.nPrisms = UMIn.m_header[ePrism];
 	MSIn.nHexes = UMIn.m_header[eHex];
-	computeMeshSize(MSIn, nDivs, MSOut);
+	bool sizesOK = computeMeshSize(MSIn, nDivs, MSOut);
+	if (!sizesOK) exit(2);
 
 	init(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
 				MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
