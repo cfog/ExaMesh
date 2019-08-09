@@ -12,6 +12,8 @@
 #include "CellDivider.h"
 
 class PrismDivider: public CellDivider {
+	double xyzOffsetBot[3], uVecBot[3], vVecBot[3];
+	double xyzOffsetTop[3], uVecTop[3], vVecTop[3];
 public:
 	PrismDivider(UMesh *pVolMesh, const int segmentsPerEdge)
 :
@@ -98,6 +100,8 @@ public:
 	}
 	virtual void divideInterior(const emInt verts[]);
 	virtual void createNewCells();
+	void setupCoordMapping(const emInt verts[]);
+	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
 };
 
 #endif /* APPS_EXAMESH_PRISMDIVIDER_H_ */

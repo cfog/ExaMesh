@@ -18,7 +18,7 @@ void PyrDivider::setupCoordMapping(const emInt verts[]) {
 		xyzOffset[ii] = coords0[ii];
 		uVec[ii] = coords1[ii] - coords0[ii];
 		vVec[ii] = coords3[ii] - coords0[ii];
-		uvVec[ii] = coords2[0] + coords0[0] - coords1[0] - coords3[0];
+		uvVec[ii] = coords2[ii] + coords0[ii] - coords1[ii] - coords3[ii];
 		xyzApex[ii] = coords4[ii];
 	}
 }
@@ -27,7 +27,6 @@ void PyrDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 		double xyz[3]) {
 	const double& u = uvw[0];
 	const double& v = uvw[1];
-	1
 	const double& w = uvw[2];
 	double coordsBase[3];
 	for (int ii = 0; ii < 3; ii++) {

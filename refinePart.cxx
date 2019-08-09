@@ -103,6 +103,8 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
     // Divide all the edges, including storing info about which new verts
     // are on which edges
 		const emInt* const thisPrism = pVM_input->getPrismConn(iP);
+		PrismD.setupCoordMapping(thisPrism);
+
 		PrismD.divideEdges(vertsOnEdges, thisPrism);
 
     // Divide all the faces, including storing info about which new verts

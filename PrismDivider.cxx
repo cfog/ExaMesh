@@ -7,50 +7,53 @@
 
 #include "PrismDivider.h"
 
+void PrismDivider::setupCoordMapping(const emInt verts[]) {
+	const double *coords0 = m_pMesh->getCoords(verts[0]);
+	const double *coords1 = m_pMesh->getCoords(verts[1]);
+	const double *coords2 = m_pMesh->getCoords(verts[2]);
+	const double *coords3 = m_pMesh->getCoords(verts[3]);
+	const double *coords4 = m_pMesh->getCoords(verts[4]);
+	const double *coords5 = m_pMesh->getCoords(verts[5]);
+	for (int ii = 0; ii < 3; ii++) {
+		xyzOffsetBot[ii] = coords0[ii];
+		uVecBot[ii] = coords1[ii] - coords0[ii];
+		vVecBot[ii] = coords2[ii] - coords0[ii];
+		xyzOffsetTop[ii] = coords3[ii];
+		uVecTop[ii] = coords4[ii] - coords3[ii];
+		vVecTop[ii] = coords5[ii] - coords3[ii];
+	}
+}
+
+void PrismDivider::getPhysCoordsFromParamCoords(const double uvw[3],
+		double xyz[3]) {
+	const double& u = uvw[0];
+	const double& v = uvw[1];
+	const double& w = uvw[2];
+	double coordsBot[3], coordsTop[3];
+	for (int ii = 0; ii < 3; ii++) {
+		coordsBot[ii] = xyzOffsetBot[ii] + u * uVecBot[ii] + v * vVecBot[ii];
+		coordsTop[ii] = xyzOffsetTop[ii] + u * uVecTop[ii] + v * vVecTop[ii];
+		xyz[ii] = coordsBot[ii] * (1 - w) + coordsTop[ii] * w;
+	}
+}
+
+
+
 void PrismDivider::divideInterior(const emInt verts[]) {
   // Number of verts added:
   //    Tets:      (nD-1)(nD-2)(nD-3)/6
-	const double* coords0 = m_pMesh->getCoords(verts[0]);
-	const double* coords1 = m_pMesh->getCoords(verts[1]);
-	const double* coords2 = m_pMesh->getCoords(verts[2]);
-	const double* coords3 = m_pMesh->getCoords(verts[3]);
-	const double* coords4 = m_pMesh->getCoords(verts[4]);
-	const double* coords5 = m_pMesh->getCoords(verts[5]);
-
-	double deltaInXiBot[] = { coords1[0] - coords0[0], coords1[1] - coords0[1],
-														coords1[2] - coords0[2] };
-	double deltaInEtaBot[] = { coords2[0] - coords0[0], coords2[1] - coords0[1],
-															coords2[2] - coords0[2] };
-
-	double deltaInXiTop[] = { coords4[0] - coords3[0], coords4[1] - coords3[1],
-														coords4[2] - coords3[2] };
-	double deltaInEtaTop[] = { coords5[0] - coords3[0], coords5[1] - coords3[1],
-															coords5[2] - coords3[2] };
-
+	double uvw[3];
+	double &u = uvw[0];
+	double& v = uvw[1];
+	double& w = uvw[2];
 	for (int kk = 1; kk < nDivs; kk++) {
-    double zeta = (1 - double(kk) / nDivs);
+		w = (1 - double(kk) / nDivs);
 		for (int jj = 1; jj <= nDivs - 2; jj++) {
-      double eta = double(jj) / nDivs;
+			v = double(jj) / nDivs;
 			for (int ii = 1; ii <= nDivs - 1 - jj; ii++) {
-        double xi = double(ii) / nDivs;
-        double coordsBot[] = {
-            coords0[0] + deltaInXiBot[0] * xi
-																+ deltaInEtaBot[0] * eta,
-																coords0[1] + deltaInXiBot[1] * xi
-																+ deltaInEtaBot[1] * eta,
-																coords0[2] + deltaInXiBot[2] * xi
-																+ deltaInEtaBot[2] * eta };
-        double coordsTop[] = {
-            coords3[0] + deltaInXiTop[0] * xi
-																+ deltaInEtaTop[0] * eta,
-																coords3[1] + deltaInXiTop[1] * xi
-																+ deltaInEtaTop[1] * eta,
-																coords3[2] + deltaInXiTop[2] * xi
-																+ deltaInEtaTop[2] * eta };
-				double coordsNew[] =
-						{ coordsBot[0] * (1 - zeta) + coordsTop[0] * zeta,
-							coordsBot[1] * (1 - zeta) + coordsTop[1] * zeta,
-							coordsBot[2] * (1 - zeta) + coordsTop[2] * zeta };
+				u = double(ii) / nDivs;
+				double coordsNew[3];
+				getPhysCoordsFromParamCoords(uvw, coordsNew);
 				emInt vNew = m_pMesh->addVert(coordsNew);
 				localVerts[ii][jj][kk] = vNew;
       }
