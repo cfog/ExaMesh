@@ -126,7 +126,6 @@ void TetDivider::createNewCells() {
     // There are (level)(level-1)/2 octahedra, each of which will be split
     // into four tetrahedra.
 
-    // TODO: Decide which octahedron template to use based on mesh data
     bool useDiagAF = true, useDiagBD = false, useDiagCE = false;
 		for (int jj = 0; jj <= level - 2; jj++) {
 			for (int ii = 1; ii <= level - jj - 1; ii++) {

@@ -53,7 +53,6 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 	assert(pVM_input->numVerts() == pVM_output->numVerts());
 
 	TetDivider TD(pVM_output, nDivs);
-  // TODO:  Factor edge handling, face handling, and overall tet handling
 	for (emInt iT = 0; iT < pVM_input->numTets(); iT++) {
     // Divide all the edges, including storing info about which new verts
     // are on which edges
@@ -75,7 +74,6 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
   } // Done looping over all tets
 
 	PyrDivider PD(pVM_output, nDivs);
-  // TODO:  Factor edge handling, face handling, and overall tet handling
 	for (emInt iP = 0; iP < pVM_input->numPyrs(); iP++) {
     // Divide all the edges, including storing info about which new verts
     // are on which edges
@@ -98,7 +96,6 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
   } // Done looping over all pyramids
 
 	PrismDivider PrismD(pVM_output, nDivs);
-  // TODO:  Factor edge handling, face handling, and overall tet handling
 	for (emInt iP = 0; iP < pVM_input->numPrisms(); iP++) {
     // Divide all the edges, including storing info about which new verts
     // are on which edges
@@ -121,7 +118,6 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
   } // Done looping over all tets
 
 	HexDivider HD(pVM_output, nDivs);
-  // TODO:  Factor edge handling, face handling, and overall tet handling
 	for (emInt iH = 0; iH < pVM_input->numHexes(); iH++) {
     // Divide all the edges, including storing info about which new verts
     // are on which edges
