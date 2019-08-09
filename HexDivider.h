@@ -123,7 +123,7 @@ public:
   }
 	~HexDivider() {
 	}
-	void divideInterior(const emInt verts[]);
+	void divideInterior();
   void createNewCells();
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);

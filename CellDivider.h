@@ -104,7 +104,7 @@ public:
 			const emInt verts[]);
 	void divideFaces(std::set<TriFaceVerts> &vertsOnTris,
 			std::set<QuadFaceVerts> &vertsOnQuads, const emInt verts[]);
-	virtual void divideInterior(const emInt verts[]) = 0;
+	virtual void divideInterior() = 0;
 	virtual void createNewCells() = 0;
 	virtual void setupCoordMapping(const emInt verts[]) = 0;
 	virtual void getPhysCoordsFromParamCoords(const double uvw[],

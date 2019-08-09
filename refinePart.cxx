@@ -67,7 +67,7 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 
     // Divide the cell
     if (nDivs > 3) {
-			TD.divideInterior(thisTet);
+			TD.divideInterior();
     } // Done with internal division
 
 		// And now the moment of truth:  create a flock of new tets.
@@ -90,7 +90,7 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 
     // Divide the cell
     if (nDivs >= 3) {
-			PD.divideInterior(thisPyr);
+			PD.divideInterior();
     } // Done with internal division
 
 		// And now the moment of truth:  create a flock of new pyramids.
@@ -113,7 +113,7 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 
     // Divide the cell
     if (nDivs >= 3) {
-			PrismD.divideInterior(thisPrism);
+			PrismD.divideInterior();
     } // Done with internal division
 
 		// And now the moment of truth:  create a flock of new prisms.
@@ -136,7 +136,7 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 
     // Divide the cell
     if (nDivs >= 2) {
-			HD.divideInterior(thisHex);
+			HD.divideInterior();
     } // Done with internal division
 
 		// And now the moment of truth:  create a flock of new hexes.

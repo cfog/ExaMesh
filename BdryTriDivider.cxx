@@ -7,7 +7,7 @@
 
 #include "BdryTriDivider.h"
 
-void BdryTriDivider::divideInterior(const emInt[]) {
+void BdryTriDivider::divideInterior() {
 }
 
 void BdryTriDivider::createNewCells() {

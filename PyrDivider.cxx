@@ -37,7 +37,7 @@ void PyrDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 }
 
 
-void PyrDivider::divideInterior(const emInt verts[]) {
+void PyrDivider::divideInterior() {
   // Number of verts added:
 	//    Pyrs:      (nD-1)(nD-2)(2 nD-3)/6
 	double uvw[3];

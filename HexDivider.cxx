@@ -43,7 +43,7 @@ void HexDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 	}
 }
 
-void HexDivider::divideInterior(const emInt verts[]) {
+void HexDivider::divideInterior() {
   // Number of verts added:
   //    Tets:      (nD-1)(nD-2)(nD-3)/6
 	double uvw[3];

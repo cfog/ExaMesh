@@ -32,7 +32,7 @@ void TetDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 }
 
 
-void TetDivider::divideInterior(const emInt verts[]) {
+void TetDivider::divideInterior() {
   // Number of verts added:
   //    Tets:      (nD-1)(nD-2)(nD-3)/6
 	double uvw[3];
