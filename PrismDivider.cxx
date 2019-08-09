@@ -37,8 +37,6 @@ void PrismDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 	}
 }
 
-
-
 void PrismDivider::divideInterior(const emInt verts[]) {
   // Number of verts added:
   //    Tets:      (nD-1)(nD-2)(nD-3)/6

@@ -12,6 +12,9 @@
 #include "CellDivider.h"
 
 class HexDivider: public CellDivider {
+	double xyzOffsetBot[3], uVecBot[3], vVecBot[3], uvVecBot[3];
+	double xyzOffsetTop[3], uVecTop[3], vVecTop[3], uvVecTop[3];
+
 public:
 	HexDivider(UMesh *pVolMesh, const int segmentsPerEdge)
       :
@@ -122,6 +125,8 @@ public:
 	}
 	void divideInterior(const emInt verts[]);
   void createNewCells();
+	void setupCoordMapping(const emInt verts[]);
+	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
 };
 
 #endif /* APPS_EXAMESH_HEXDIVIDER_H_ */

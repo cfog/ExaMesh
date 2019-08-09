@@ -74,8 +74,7 @@ protected:
 	int nDivs;
 
 private:
-	void getEdgeVerts(
-			std::map<Edge, EdgeVerts> &vertsOnEdges, const emInt v0,
+	void getEdgeVerts(std::map<Edge, EdgeVerts> &vertsOnEdges, const emInt v0,
 			const emInt v1, EdgeVerts &EV);
 
 	void getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads, const emInt vert0,
@@ -107,14 +106,9 @@ public:
 			std::set<QuadFaceVerts> &vertsOnQuads, const emInt verts[]);
 	virtual void divideInterior(const emInt verts[]) = 0;
 	virtual void createNewCells() = 0;
-	virtual void setupCoordMapping(const emInt verts[]) {
-	}
+	virtual void setupCoordMapping(const emInt verts[]) = 0;
 	virtual void getPhysCoordsFromParamCoords(const double uvw[],
-			double xyz[]) {
-	}
+			double xyz[]) = 0;
 };
-
-
-
 
 #endif /* SRC_CELLDIVIDER_H_ */

@@ -126,6 +126,8 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
     // Divide all the edges, including storing info about which new verts
     // are on which edges
 		const emInt* const thisHex = pVM_input->getHexConn(iH);
+		HD.setupCoordMapping(thisHex);
+
 		HD.divideEdges(vertsOnEdges, thisHex);
 
     // Divide all the faces, including storing info about which new verts
