@@ -58,6 +58,7 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
     // Divide all the edges, including storing info about which new verts
     // are on which edges
 		const emInt* const thisTet = pVM_input->getTetConn(iT);
+		TD.setupCoordMapping(thisTet);
 		TD.divideEdges(vertsOnEdges, thisTet);
 
     // Divide all the faces, including storing info about which new verts
@@ -69,8 +70,7 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 			TD.divideInterior(thisTet);
     } // Done with internal division
 
-    // And now the moment of truth:  create a flock of new tets.  Deletion
-    // comes at the very end for ordering reasons.
+		// And now the moment of truth:  create a flock of new tets.
     TD.createNewCells();
   } // Done looping over all tets
 
@@ -80,6 +80,7 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
     // Divide all the edges, including storing info about which new verts
     // are on which edges
 		const emInt* const thisPyr = pVM_input->getPyrConn(iP);
+		PD.setupCoordMapping(thisPyr);
 
 		PD.divideEdges(vertsOnEdges, thisPyr);
 
@@ -92,8 +93,7 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 			PD.divideInterior(thisPyr);
     } // Done with internal division
 
-    // And now the moment of truth:  create a flock of new tets.  Deletion
-    // comes at the very end for ordering reasons.
+		// And now the moment of truth:  create a flock of new pyramids.
     PD.createNewCells();
   } // Done looping over all pyramids
 
@@ -114,8 +114,7 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 			PrismD.divideInterior(thisPrism);
     } // Done with internal division
 
-    // And now the moment of truth:  create a flock of new tets.  Deletion
-    // comes at the very end for ordering reasons.
+		// And now the moment of truth:  create a flock of new prisms.
     PrismD.createNewCells();
   } // Done looping over all tets
 
@@ -136,8 +135,7 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 			HD.divideInterior(thisHex);
     } // Done with internal division
 
-    // And now the moment of truth:  create a flock of new tets.  Deletion
-    // comes at the very end for ordering reasons.
+		// And now the moment of truth:  create a flock of new hexes.
     HD.createNewCells();
   } // Done looping over all pyramids
 

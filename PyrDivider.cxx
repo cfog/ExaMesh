@@ -8,44 +8,51 @@
 #include "GeomUtils.h"
 #include "PyrDivider.h"
 
+void PyrDivider::setupCoordMapping(const emInt verts[]) {
+	const double *coords0 = m_pMesh->getCoords(verts[0]);
+	const double *coords1 = m_pMesh->getCoords(verts[1]);
+	const double *coords2 = m_pMesh->getCoords(verts[2]);
+	const double *coords3 = m_pMesh->getCoords(verts[3]);
+	const double *coords4 = m_pMesh->getCoords(verts[4]);
+	for (int ii = 0; ii < 3; ii++) {
+		xyzOffset[ii] = coords0[ii];
+		uVec[ii] = coords1[ii] - coords0[ii];
+		vVec[ii] = coords3[ii] - coords0[ii];
+		uvVec[ii] = coords2[0] + coords0[0] - coords1[0] - coords3[0];
+		xyzApex[ii] = coords4[ii];
+	}
+}
+
+void PyrDivider::getPhysCoordsFromParamCoords(const double uvw[3],
+		double xyz[3]) {
+	const double& u = uvw[0];
+	const double& v = uvw[1];
+	1
+	const double& w = uvw[2];
+	double coordsBase[3];
+	for (int ii = 0; ii < 3; ii++) {
+		coordsBase[ii] = xyzOffset[ii] + u * uVec[ii] + v * vVec[ii]
+											+ u * v * uvVec[ii];
+		xyz[ii] = coordsBase[ii] * (1 - w) + xyzApex[ii] * w;
+	}
+}
+
+
 void PyrDivider::divideInterior(const emInt verts[]) {
   // Number of verts added:
-  //    Tets:      (nD-1)(nD-2)(nD-3)/6
-	const double* coords0 = m_pMesh->getCoords(verts[0]);
-	const double* coords1 = m_pMesh->getCoords(verts[1]);
-	const double* coords2 = m_pMesh->getCoords(verts[2]);
-	const double* coords3 = m_pMesh->getCoords(verts[3]);
-	const double* coords4 = m_pMesh->getCoords(verts[4]);
-
-	double deltaInI[] = { (coords1[0] - coords0[0]), (coords1[1] - coords0[1]),
-												(coords1[2] - coords0[2]) };
-	double deltaInJ[] = { (coords3[0] - coords0[0]), (coords3[1] - coords0[1]),
-												(coords3[2] - coords0[2]) };
-	double crossDelta[] = {
-			(coords2[0] + coords0[0] - coords1[0] - coords3[0]),
-													(coords2[1] + coords0[1] - coords1[1] - coords3[1]),
-													(coords2[2] + coords0[2] - coords1[2] - coords3[2]) };
-
+	//    Pyrs:      (nD-1)(nD-2)(2 nD-3)/6
+	double uvw[3];
+	double &u = uvw[0];
+	double &v = uvw[1];
+	double &w = uvw[2];
 	for (int kk = 2; kk <= nDivs - 1; kk++) {
-    double zeta = 1 - double(kk) / nDivs;
+		w = 1 - double(kk) / nDivs;
     for (int jj = 1; jj <= kk - 1; jj++) {
-      double eta = double(jj) / kk;
+			v = double(jj) / kk;
       for (int ii = 1; ii <= kk - 1; ii++) {
-        double xi = double(ii) / kk;
-				double coordsBase[] = { coords0[0] + deltaInI[0] * xi
-																+
-                                   deltaInJ[0] * eta + crossDelta[0] * xi * eta,
-																coords0[1] + deltaInI[1] * xi
-																+
-                                   deltaInJ[1] * eta + crossDelta[1] * xi * eta,
-																coords0[2] + deltaInI[2] * xi
-																+
-                                   deltaInJ[2] * eta +
-                                   crossDelta[2] * xi * eta};
-
-				double coords[] = { coordsBase[0] * (1 - zeta) + coords4[0] * zeta,
-														coordsBase[1] * (1 - zeta) + coords4[1] * zeta,
-														coordsBase[2] * (1 - zeta) + coords4[2] * zeta };
+				u = double(ii) / kk;
+				double coords[3];
+				getPhysCoordsFromParamCoords(uvw, coords);
 				emInt vNew = m_pMesh->addVert(coords);
 				localVerts[ii][jj][kk] = vNew;
       }

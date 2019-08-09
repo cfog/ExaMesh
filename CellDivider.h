@@ -72,6 +72,19 @@ protected:
 	int numTriFaces, numQuadFaces, numEdges, numVerts;
 	int vertIJK[8][3];
 	int nDivs;
+
+private:
+	void getEdgeVerts(
+			std::map<Edge, EdgeVerts> &vertsOnEdges, const emInt v0,
+			const emInt v1, EdgeVerts &EV);
+
+	void getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads, const emInt vert0,
+			const emInt vert1, const emInt vert2, const emInt vert3,
+			QuadFaceVerts &QFV);
+
+	void getTriVerts(std::set<TriFaceVerts> &vertsOnTris, const emInt vert0,
+			const emInt vert1, const emInt vert2, TriFaceVerts &TFV);
+
 public:
 	CellDivider(UMesh *pVolMesh, const emInt segmentsPerEdge) :
 			m_pMesh(pVolMesh), numTriFaces(0), numQuadFaces(0), numEdges(0),
@@ -94,18 +107,12 @@ public:
 			std::set<QuadFaceVerts> &vertsOnQuads, const emInt verts[]);
 	virtual void divideInterior(const emInt verts[]) = 0;
 	virtual void createNewCells() = 0;
+	virtual void setupCoordMapping(const emInt verts[]) {
+	}
+	virtual void getPhysCoordsFromParamCoords(const double uvw[],
+			double xyz[]) {
+	}
 };
-
-void getQuadVerts(UMesh *pVM, std::set<QuadFaceVerts> &vertsOnQuads,
-		const int nDivs, const emInt vert0, const emInt vert1, const emInt vert2,
-		const emInt vert3, QuadFaceVerts &QFV);
-
-void getTriVerts(UMesh *pVM, std::set<TriFaceVerts> &vertsOnTris,
-		const int nDivs, const emInt vert0, const emInt vert1, const emInt vert2,
-		TriFaceVerts &TFV);
-
-void getEdgeVerts(UMesh *pVM, std::map<Edge, EdgeVerts> &vertsOnEdges,
-		const int nDivs, const emInt v0, const emInt v1, EdgeVerts &EV);
 
 
 

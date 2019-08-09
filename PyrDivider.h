@@ -12,6 +12,7 @@
 #include "CellDivider.h"
 
 class PyrDivider: public CellDivider {
+	double xyzOffset[3], uVec[3], vVec[3], uvVec[3], xyzApex[3];
 public:
 	PyrDivider(UMesh *pVolMesh, const int segmentsPerEdge)
       :
@@ -89,6 +90,8 @@ public:
 	}
 	void divideInterior(const emInt verts[]);
   void createNewCells();
+	void setupCoordMapping(const emInt verts[]);
+	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
 };
 
 #endif /* APPS_EXAMESH_PYRDIVIDER_H_ */

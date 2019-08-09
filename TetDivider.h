@@ -12,6 +12,7 @@
 #include "CellDivider.h"
 
 class TetDivider: public CellDivider {
+	double xyzOffset[3], uVec[3], vVec[3], wVec[3];
 public:
 	TetDivider(UMesh *pVolMesh, const int segmentsPerEdge)
       :
@@ -74,6 +75,8 @@ public:
 	}
 	void divideInterior(const emInt verts[]);
   void createNewCells();
+	void setupCoordMapping(const emInt verts[]);
+	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
 };
 
 #endif /* APPS_EXAMESH_TETDIVIDER_H_ */

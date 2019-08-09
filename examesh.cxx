@@ -46,6 +46,7 @@ int main(int argc, char* const argv[]) {
 	UMesh UMorig(inFileBaseName, type, infix);
 	UMesh UMrefined(UMorig, nDivs);
 	UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
+	UMrefined.writeVTKFile("/tmp/junk.vtk");
 
 	exit(0);
 }

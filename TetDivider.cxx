@@ -8,39 +8,46 @@
 #include "GeomUtils.h"
 #include "TetDivider.h"
 
+void TetDivider::setupCoordMapping(const emInt verts[]) {
+	const double *coords0 = m_pMesh->getCoords(verts[0]);
+	const double *coords1 = m_pMesh->getCoords(verts[1]);
+	const double *coords2 = m_pMesh->getCoords(verts[2]);
+	const double *coords3 = m_pMesh->getCoords(verts[3]);
+	for (int ii = 0; ii < 3; ii++) {
+		xyzOffset[ii] = coords0[ii];
+		uVec[ii] = coords1[ii] - coords0[ii];
+		vVec[ii] = coords2[ii] - coords0[ii];
+		wVec[ii] = coords3[ii] - coords0[ii];
+	}
+}
+
+void TetDivider::getPhysCoordsFromParamCoords(const double uvw[3],
+		double xyz[3]) {
+	const double& u = uvw[0];
+	const double& v = uvw[1];
+	const double& w = uvw[2];
+	for (int ii = 0; ii < 3; ii++) {
+		xyz[ii] = xyzOffset[ii] + u * uVec[ii] + v * vVec[ii] + w * wVec[ii];
+	}
+}
+
+
 void TetDivider::divideInterior(const emInt verts[]) {
   // Number of verts added:
   //    Tets:      (nD-1)(nD-2)(nD-3)/6
-	const double* coords0 = m_pMesh->getCoords(verts[0]);
-	const double* coords1 = m_pMesh->getCoords(verts[1]);
-	const double* coords2 = m_pMesh->getCoords(verts[2]);
-	const double* coords3 = m_pMesh->getCoords(verts[3]);
-
-	double deltaInI[] = { (coords1[0] - coords0[0]) / nDivs, (coords1[1]
-			- coords0[1])
-																														/ nDivs,
-												(coords1[2] - coords0[2]) / nDivs };
-	double deltaInJ[] = { (coords2[0] - coords0[0]) / nDivs, (coords2[1]
-			- coords0[1])
-																														/ nDivs,
-												(coords2[2] - coords0[2]) / nDivs };
-	double deltaInK[] = { (coords3[0] - coords0[0]) / nDivs, (coords3[1]
-			- coords0[1])
-																														/ nDivs,
-												(coords3[2] - coords0[2]) / nDivs };
+	double uvw[3];
+	double& u = uvw[0];
+	double& v = uvw[1];
+	double& w = uvw[2];
 	for (int kk = 0; kk <= nDivs - 4; kk++) {
+		w = double(kk + 1) / nDivs;
 		for (int jj = 0; jj <= nDivs - 4 - kk; jj++) {
+			v = double(jj + 1) / nDivs;
 			for (int ii = 0; ii <= nDivs - 4 - kk - jj; ii++) {
+				u = double(ii + 1) / nDivs;
 				assert(ii + jj + kk <= nDivs - 4);
-				double coords[] = { coords0[0] + deltaInI[0] * (ii + 1)
-														+
-                               deltaInJ[0] * (jj + 1) + deltaInK[0] * (kk + 1),
-														coords0[1] + deltaInI[1] * (ii + 1)
-														+
-                               deltaInJ[1] * (jj + 1) + deltaInK[1] * (kk + 1),
-														coords0[2] + deltaInI[2] * (ii + 1)
-														+
-                               deltaInJ[2] * (jj + 1) + deltaInK[2] * (kk + 1)};
+				double coords[3];
+				getPhysCoordsFromParamCoords(uvw, coords);
 				emInt vNew = m_pMesh->addVert(coords);
 				localVerts[ii + 1][jj + 1][nDivs - (kk + 1)] = vNew;
       }
