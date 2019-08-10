@@ -75,8 +75,8 @@ protected:
 	int nDivs;
 
 private:
-	void getEdgeVerts(std::map<Edge, EdgeVerts> &vertsOnEdges, const emInt v0,
-			const emInt v1, EdgeVerts &EV);
+	void getEdgeVerts(std::map<Edge, EdgeVerts> &vertsOnEdges,
+			const emInt cellVerts[], const int edgeIndices[], EdgeVerts &EV);
 
 	void getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads,
 			const emInt cellVerts[], const int quadIndices[], QuadFaceVerts &QFV);

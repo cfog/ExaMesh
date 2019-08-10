@@ -12,29 +12,57 @@
 
 #include "CellDivider.h"
 
-void CellDivider::getEdgeVerts(
-		std::map<Edge, EdgeVerts> &vertsOnEdges,
-		const emInt v0, const emInt v1, EdgeVerts &EV) {
+void CellDivider::getEdgeVerts(std::map<Edge, EdgeVerts> &vertsOnEdges,
+		const emInt cellVerts[], const int edgeIndices[], EdgeVerts &EV) {
 	typename std::map<Edge, EdgeVerts>::iterator iterEdges;
-	Edge E(v0, v1);
+	int ind0 = edgeIndices[0];
+	int ind1 = edgeIndices[1];
+
+	emInt vert0 = cellVerts[ind0];
+	emInt vert1 = cellVerts[ind1];
+
+	Edge E(vert0, vert1);
 	iterEdges = vertsOnEdges.find(E);
 
 	if (iterEdges == vertsOnEdges.end()) {
 		// Doesn't exist yet, so create it.
 		EV.verts[0] = E.getV0();
 		EV.verts[nDivs] = E.getV1();
-		const double *startLoc = m_pMesh->getCoords(EV.verts[0]);
-		const double *endLoc = m_pMesh->getCoords(EV.verts[nDivs]);
-		// TODO:  Coords shouldn't be equally spaced, but smoothly placed
-		// based on length scale at the ends.
-		double delta[] = { (endLoc[0] - startLoc[0]) / nDivs, (endLoc[1]
-				- startLoc[1])
+
+		bool forward = true;
+		if (EV.verts[0] != vert0) {
+			forward = false;
+		}
+
+		double uvwStart[3], uvwEnd[3];
+		if (forward) {
+			uvwStart[0] = uvwIJK[ind0][0];
+			uvwStart[1] = uvwIJK[ind0][1];
+			uvwStart[2] = uvwIJK[ind0][2];
+
+			uvwEnd[0] = uvwIJK[ind1][0];
+			uvwEnd[1] = uvwIJK[ind1][1];
+			uvwEnd[2] = uvwIJK[ind1][2];
+		}
+		else {
+			uvwStart[0] = uvwIJK[ind1][0];
+			uvwStart[1] = uvwIJK[ind1][1];
+			uvwStart[2] = uvwIJK[ind1][2];
+
+			uvwEnd[0] = uvwIJK[ind0][0];
+			uvwEnd[1] = uvwIJK[ind0][1];
+			uvwEnd[2] = uvwIJK[ind0][2];
+		}
+		double delta[] = { (uvwEnd[0] - uvwStart[0]) / nDivs, (uvwEnd[1]
+				- uvwStart[1])
 																													/ nDivs,
-												(endLoc[2] - startLoc[2]) / nDivs };
+												(uvwEnd[2] - uvwStart[2]) / nDivs };
 		for (int ii = 1; ii < nDivs; ii++) {
-			double newCoords[] = { startLoc[0] + ii * delta[0], startLoc[1]
+			double uvw[] = { uvwStart[0] + ii * delta[0], uvwStart[1]
 					+ ii * delta[1],
-															startLoc[2] + ii * delta[2] };
+												uvwStart[2] + ii * delta[2] };
+			double newCoords[3];
+			getPhysCoordsFromParamCoords(uvw, newCoords);
 			EV.verts[ii] = m_pMesh->addVert(newCoords);
 		}
 		vertsOnEdges.insert(std::make_pair(E, EV));
@@ -275,8 +303,9 @@ void CellDivider::divideEdges(std::map<Edge, EdgeVerts> &vertsOnEdges,
 	for (int iE = 0; iE < numEdges; iE++) {
 
 		EdgeVerts EV;
-		getEdgeVerts(vertsOnEdges, verts[edgeVertIndices[iE][0]],
-									verts[edgeVertIndices[iE][1]], EV);
+		getEdgeVerts(vertsOnEdges, verts, edgeVertIndices[iE], EV);
+//		getEdgeVerts(vertsOnEdges, verts[edgeVertIndices[iE][0]],
+//									verts[edgeVertIndices[iE][1]], EV);
 
 		// Now transcribe these into the master table for this cell.
 		emInt startIndex = 1000, endIndex = 1000;
