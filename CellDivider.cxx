@@ -205,58 +205,6 @@ void CellDivider::getTriVerts(std::set<TriFaceVerts> &vertsOnTris,
 	}
 }
 
-void CellDivider::getQuadVerts(
-		std::set<QuadFaceVerts> &vertsOnQuads,
-		const emInt vert0, const emInt vert1, const emInt vert2,
-		const emInt vert3, QuadFaceVerts &QFV) {
-	typename std::set<QuadFaceVerts>::iterator iterQuads;
-	QuadFaceVerts QFVTemp(vert0, vert1, vert2, vert3);
-
-	iterQuads = vertsOnQuads.find(QFVTemp);
-	if (iterQuads == vertsOnQuads.end()) {
-
-		const double *coords0 = m_pMesh->getCoords(vert0);
-		const double *coords1 = m_pMesh->getCoords(vert1);
-		const double *coords2 = m_pMesh->getCoords(vert2);
-		const double *coords3 = m_pMesh->getCoords(vert3);
-
-		double deltaInI[] = { (coords1[0] - coords0[0]) / nDivs, (coords1[1]
-				- coords0[1])
-																															/ nDivs,
-													(coords1[2] - coords0[2]) / nDivs };
-		double deltaInJ[] = { (coords3[0] - coords0[0]) / nDivs, (coords3[1]
-				- coords0[1])
-																															/ nDivs,
-													(coords3[2] - coords0[2]) / nDivs };
-		double crossDelta[] = {
-				(coords2[0] + coords0[0] - coords1[0] - coords3[0]) / (nDivs * nDivs),
-				(coords2[1] + coords0[1] - coords1[1] - coords3[1]) / (nDivs * nDivs),
-				(coords2[2] + coords0[2] - coords1[2] - coords3[2]) / (nDivs * nDivs) };
-		QFV.corners[0] = vert0;
-		QFV.corners[1] = vert1;
-		QFV.corners[2] = vert2;
-		QFV.corners[3] = vert3;
-
-		for (int jj = 1; jj <= nDivs - 1; jj++) {
-			for (int ii = 1; ii <= nDivs - 1; ii++) {
-				double newCoords[] = { coords0[0] + deltaInI[0] * ii + deltaInJ[0] * jj
-																+ crossDelta[0] * ii * jj,
-																coords0[1] + deltaInI[1] * ii + deltaInJ[1] * jj
-																+ crossDelta[1] * ii * jj,
-																coords0[2] + deltaInI[2] * ii + deltaInJ[2] * jj
-																+ crossDelta[2] * ii * jj };
-				emInt vNew = m_pMesh->addVert(newCoords);
-				QFV.intVerts[ii - 1][jj - 1] = vNew;
-			}
-		} // Done looping over all interior verts for the triangle.
-		vertsOnQuads.insert(QFV);
-	}
-	else {
-	QFV = *iterQuads;
-		vertsOnQuads.erase(iterQuads); // Will never need this again.
-	}
-}
-
 void CellDivider::getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads,
 		const emInt cellVerts[], const int quadIndices[], QuadFaceVerts &QFV) {
 	typename std::set<QuadFaceVerts>::iterator iterQuads;

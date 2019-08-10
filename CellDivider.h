@@ -78,10 +78,6 @@ private:
 	void getEdgeVerts(std::map<Edge, EdgeVerts> &vertsOnEdges, const emInt v0,
 			const emInt v1, EdgeVerts &EV);
 
-	void getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads, const emInt vert0,
-			const emInt vert1, const emInt vert2, const emInt vert3,
-			QuadFaceVerts &QFV);
-
 	void getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads,
 			const emInt cellVerts[], const int quadIndices[], QuadFaceVerts &QFV);
 
