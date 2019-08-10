@@ -71,6 +71,7 @@ protected:
 	int faceVertIndices[6][4];
 	int numTriFaces, numQuadFaces, numEdges, numVerts;
 	int vertIJK[8][3];
+	double uvwIJK[8][3];
 	int nDivs;
 
 private:
@@ -81,8 +82,11 @@ private:
 			const emInt vert1, const emInt vert2, const emInt vert3,
 			QuadFaceVerts &QFV);
 
-	void getTriVerts(std::set<TriFaceVerts> &vertsOnTris, const emInt vert0,
-			const emInt vert1, const emInt vert2, TriFaceVerts &TFV);
+	void getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads,
+			const emInt cellVerts[], const int quadIndices[], QuadFaceVerts &QFV);
+
+	void getTriVerts(std::set<TriFaceVerts> &vertsOnTris, const emInt cellVerts[],
+			const int triIndices[], TriFaceVerts& TFV);
 
 public:
 	CellDivider(UMesh *pVolMesh, const emInt segmentsPerEdge) :

@@ -33,6 +33,22 @@ public:
     vertIJK[3][1] = 0;
     vertIJK[3][2] = 0;
 
+		uvwIJK[0][0] = 0;
+		uvwIJK[0][1] = 0;
+		uvwIJK[0][2] = 0;
+
+		uvwIJK[1][0] = 1;
+		uvwIJK[1][1] = 0;
+		uvwIJK[1][2] = 0;
+
+		uvwIJK[2][0] = 0;
+		uvwIJK[2][1] = 1;
+		uvwIJK[2][2] = 0;
+
+		uvwIJK[3][0] = 0;
+		uvwIJK[3][1] = 0;
+		uvwIJK[3][2] = 1;
+
 		numVerts = 4;
 		numEdges = 6;
 		numTriFaces = 4;

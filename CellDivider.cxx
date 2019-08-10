@@ -152,37 +152,47 @@ bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b) {
 }
 
 void CellDivider::getTriVerts(std::set<TriFaceVerts> &vertsOnTris,
-		const emInt vert0, const emInt vert1, const emInt vert2,
-		TriFaceVerts &TFV) {
+		const emInt cellVerts[], const int triIndices[], TriFaceVerts &TFV) {
 	typename std::set<TriFaceVerts>::iterator iterTris;
+	int ind0 = triIndices[0];
+	int ind1 = triIndices[1];
+	int ind2 = triIndices[2];
+
+	emInt vert0 = cellVerts[ind0];
+	emInt vert1 = cellVerts[ind1];
+	emInt vert2 = cellVerts[ind2];
 	TriFaceVerts TFVTemp(vert0, vert1, vert2);
 
 	iterTris = vertsOnTris.find(TFVTemp);
 	if (iterTris == vertsOnTris.end()) {
-		const double *coords0 = m_pMesh->getCoords(vert0);
-		const double *coords1 = m_pMesh->getCoords(vert1);
-		const double *coords2 = m_pMesh->getCoords(vert2);
+		const double inv_nDivs = 1. / (nDivs);
+		const double uvw0[] = { uvwIJK[ind0][0], uvwIJK[ind0][1], uvwIJK[ind0][2] };
+		const double uvw1[] = { uvwIJK[ind1][0], uvwIJK[ind1][1], uvwIJK[ind1][2] };
+		const double uvw2[] = { uvwIJK[ind2][0], uvwIJK[ind2][1], uvwIJK[ind2][2] };
 
-		double deltaInI[] = { (coords1[0] - coords0[0]) / nDivs, (coords1[1]
-				- coords0[1])
-																															/ nDivs,
-													(coords1[2] - coords0[2]) / nDivs };
-		double deltaInJ[] = { (coords2[0] - coords0[0]) / nDivs, (coords2[1]
-				- coords0[1])
-																															/ nDivs,
-													(coords2[2] - coords0[2]) / nDivs };
+		double deltaUVWInI[] = { (uvw1[0] - uvw0[0]) * inv_nDivs,
+															(uvw1[1] - uvw0[1]) * inv_nDivs, (uvw1[2]
+																	- uvw0[2])
+																																* inv_nDivs };
+		double deltaUVWInJ[] = { (uvw2[0] - uvw0[0]) * inv_nDivs,
+															(uvw2[1] - uvw0[1]) * inv_nDivs, (uvw2[2]
+																	- uvw0[2])
+																																* inv_nDivs };
+
 		TFV.corners[0] = vert0;
 		TFV.corners[1] = vert1;
 		TFV.corners[2] = vert2;
 
 		for (int jj = 0; jj < nDivs - 2; jj++) {
 			for (int ii = 0; ii < nDivs - 2 - jj; ii++) {
-				double newCoords[] = { coords0[0] + deltaInI[0] * (ii + 1)
-																+ deltaInJ[0] * (jj + 1),
-																coords0[1] + deltaInI[1] * (ii + 1)
-																+ deltaInJ[1] * (jj + 1),
-																coords0[2] + deltaInI[2] * (ii + 1)
-																+ deltaInJ[2] * (jj + 1) };
+				double uvw[] = { uvw0[0] + deltaUVWInI[0] * (ii + 1)
+													+ deltaUVWInJ[0] * (jj + 1),
+													uvw0[1] + deltaUVWInI[1] * (ii + 1)
+													+ deltaUVWInJ[1] * (jj + 1),
+													uvw0[2] + deltaUVWInI[2] * (ii + 1)
+													+ deltaUVWInJ[2] * (jj + 1) };
+				double newCoords[3];
+				getPhysCoordsFromParamCoords(uvw, newCoords);
 				emInt vNew = m_pMesh->addVert(newCoords);
 				TFV.intVerts[ii][jj] = vNew;
 			}
@@ -204,6 +214,7 @@ void CellDivider::getQuadVerts(
 
 	iterQuads = vertsOnQuads.find(QFVTemp);
 	if (iterQuads == vertsOnQuads.end()) {
+
 		const double *coords0 = m_pMesh->getCoords(vert0);
 		const double *coords1 = m_pMesh->getCoords(vert1);
 		const double *coords2 = m_pMesh->getCoords(vert2);
@@ -242,6 +253,69 @@ void CellDivider::getQuadVerts(
 	}
 	else {
 	QFV = *iterQuads;
+		vertsOnQuads.erase(iterQuads); // Will never need this again.
+	}
+}
+
+void CellDivider::getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads,
+		const emInt cellVerts[], const int quadIndices[], QuadFaceVerts &QFV) {
+	typename std::set<QuadFaceVerts>::iterator iterQuads;
+	int ind0 = quadIndices[0];
+	int ind1 = quadIndices[1];
+	int ind2 = quadIndices[2];
+	int ind3 = quadIndices[3];
+
+	emInt vert0 = cellVerts[ind0];
+	emInt vert1 = cellVerts[ind1];
+	emInt vert2 = cellVerts[ind2];
+	emInt vert3 = cellVerts[ind3];
+
+	QuadFaceVerts QFVTemp(vert0, vert1, vert2, vert3);
+
+	iterQuads = vertsOnQuads.find(QFVTemp);
+	if (iterQuads == vertsOnQuads.end()) {
+		const double inv_nDivs = 1. / (nDivs);
+		const double uvw0[] = { uvwIJK[ind0][0], uvwIJK[ind0][1], uvwIJK[ind0][2] };
+		const double uvw1[] = { uvwIJK[ind1][0], uvwIJK[ind1][1], uvwIJK[ind1][2] };
+		const double uvw2[] = { uvwIJK[ind2][0], uvwIJK[ind2][1], uvwIJK[ind2][2] };
+		const double uvw3[] = { uvwIJK[ind3][0], uvwIJK[ind3][1], uvwIJK[ind3][2] };
+
+		double deltaInI[] = { (uvw1[0] - uvw0[0]) * inv_nDivs, (uvw1[1] - uvw0[1])
+				* inv_nDivs,
+													(uvw1[2] - uvw0[2]) * inv_nDivs };
+		double deltaInJ[] = { (uvw3[0] - uvw0[0]) * inv_nDivs, (uvw3[1] - uvw0[1])
+				* inv_nDivs,
+													(uvw3[2] - uvw0[2]) * inv_nDivs };
+
+		double crossDelta[] = { (uvw2[0] + uvw0[0] - uvw1[0] - uvw3[0])
+				* (inv_nDivs * inv_nDivs),
+														(uvw2[1] + uvw0[1] - uvw1[1] - uvw3[1]) * (inv_nDivs
+																* inv_nDivs),
+														(uvw2[2] + uvw0[2] - uvw1[2] - uvw3[2]) * (inv_nDivs
+																* inv_nDivs) };
+		QFV.corners[0] = vert0;
+		QFV.corners[1] = vert1;
+		QFV.corners[2] = vert2;
+		QFV.corners[3] = vert3;
+
+		for (int jj = 1; jj <= nDivs - 1; jj++) {
+			for (int ii = 1; ii <= nDivs - 1; ii++) {
+				double newCoords[3];
+				double uvw[] = { uvw0[0] + deltaInI[0] * ii + deltaInJ[0] * jj
+																+ crossDelta[0] * ii * jj,
+																uvw0[1] + deltaInI[1] * ii + deltaInJ[1] * jj
+																+ crossDelta[1] * ii * jj,
+																uvw0[2] + deltaInI[2] * ii + deltaInJ[2] * jj
+																+ crossDelta[2] * ii * jj };
+				getPhysCoordsFromParamCoords(uvw, newCoords);
+				emInt vNew = m_pMesh->addVert(newCoords);
+				QFV.intVerts[ii - 1][jj - 1] = vNew;
+			}
+		} // Done looping over all interior verts for the triangle.
+		vertsOnQuads.insert(QFV);
+	}
+	else {
+		QFV = *iterQuads;
 		vertsOnQuads.erase(iterQuads); // Will never need this again.
 	}
 }
@@ -294,12 +368,13 @@ void CellDivider::divideFaces(std::set<TriFaceVerts> &vertsOnTris,
 	// The quad faces are first.
 	for (int iF = 0; iF < numQuadFaces; iF++) {
 		QuadFaceVerts QFV;
-		const emInt vert0 = verts[faceVertIndices[iF][0]];
-		const emInt vert1 = verts[faceVertIndices[iF][1]];
-		const emInt vert2 = verts[faceVertIndices[iF][2]];
-		const emInt vert3 = verts[faceVertIndices[iF][3]];
-		getQuadVerts(vertsOnQuads, vert0, vert1, vert2, vert3, QFV);
-		// Now extract info from the TFV and stuff it into the cell's point
+//		const emInt vert0 = verts[faceVertIndices[iF][0]];
+//		const emInt vert1 = verts[faceVertIndices[iF][1]];
+//		const emInt vert2 = verts[faceVertIndices[iF][2]];
+//		const emInt vert3 = verts[faceVertIndices[iF][3]];
+//		getQuadVerts(vertsOnQuads, vert0, vert1, vert2, vert3, QFV);
+		getQuadVerts(vertsOnQuads, verts, faceVertIndices[iF], QFV);
+		// Now extract info from the QFV and stuff it into the cell's point
 		// array.
 
 		// Critical first step: identify which vert is which.
@@ -345,7 +420,8 @@ void CellDivider::divideFaces(std::set<TriFaceVerts> &vertsOnTris,
 		const emInt vert0 = verts[faceVertIndices[iF][0]];
 		const emInt vert1 = verts[faceVertIndices[iF][1]];
 		const emInt vert2 = verts[faceVertIndices[iF][2]];
-		getTriVerts(vertsOnTris, vert0, vert1, vert2, TFV);
+		getTriVerts(vertsOnTris, verts, faceVertIndices[iF], TFV);
+//		getTriVerts(vertsOnTris, vert0, vert1, vert2, TFV);
 		// Now extract info from the TFV and stuff it into the Prismamid's point
 		// array.
 

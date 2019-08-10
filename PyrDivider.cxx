@@ -25,9 +25,11 @@ void PyrDivider::setupCoordMapping(const emInt verts[]) {
 
 void PyrDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 		double xyz[3]) {
-	const double& u = uvw[0];
-	const double& v = uvw[1];
-	const double& w = uvw[2];
+	double u = uvw[0];
+	double v = uvw[1];
+	double w = uvw[2];
+	if (u != 0 && u != 1 && w != 0) u /= (1 - w);
+	if (v != 0 && v != 1 && w != 0) v /= (1 - w);
 	double coordsBase[3];
 	for (int ii = 0; ii < 3; ii++) {
 		coordsBase[ii] = xyzOffset[ii] + u * uVec[ii] + v * vVec[ii]
@@ -47,9 +49,9 @@ void PyrDivider::divideInterior() {
 	for (int kk = 2; kk <= nDivs - 1; kk++) {
 		w = 1 - double(kk) / nDivs;
     for (int jj = 1; jj <= kk - 1; jj++) {
-			v = double(jj) / kk;
+			v = double(jj) / nDivs;
       for (int ii = 1; ii <= kk - 1; ii++) {
-				u = double(ii) / kk;
+				u = double(ii) / nDivs;
 				double coords[3];
 				getPhysCoordsFromParamCoords(uvw, coords);
 				emInt vNew = m_pMesh->addVert(coords);
