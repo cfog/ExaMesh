@@ -55,7 +55,11 @@ public:
 	}
 	void divideInterior();
 	void createNewCells();
-	void setupCoordMapping(const emInt /*verts*/[]) {
+	void setupCoordMapping(const emInt verts[]) {
+		for (int ii = 0; ii < 4; ii++) {
+			cellVerts[ii] = verts[ii];
+		}
+
 	}
 	void getPhysCoordsFromParamCoords(const double /*uvw*/[], double /*xyz*/[]) {
 	}

@@ -58,11 +58,11 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
     // are on which edges
 		const emInt* const thisTet = pVM_input->getTetConn(iT);
 		TD.setupCoordMapping(thisTet);
-		TD.divideEdges(vertsOnEdges, thisTet);
+		TD.divideEdges(vertsOnEdges);
 
     // Divide all the faces, including storing info about which new verts
     // are on which faces
-		TD.divideFaces(vertsOnTris, vertsOnQuads, thisTet);
+		TD.divideFaces(vertsOnTris, vertsOnQuads);
 
     // Divide the cell
     if (nDivs > 3) {
@@ -80,11 +80,11 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 		const emInt* const thisPyr = pVM_input->getPyrConn(iP);
 		PD.setupCoordMapping(thisPyr);
 
-		PD.divideEdges(vertsOnEdges, thisPyr);
+		PD.divideEdges(vertsOnEdges);
 
     // Divide all the faces, including storing info about which new verts
     // are on which faces
-		PD.divideFaces(vertsOnTris, vertsOnQuads, thisPyr);
+		PD.divideFaces(vertsOnTris, vertsOnQuads);
 
     // Divide the cell
     if (nDivs >= 3) {
@@ -102,11 +102,11 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 		const emInt* const thisPrism = pVM_input->getPrismConn(iP);
 		PrismD.setupCoordMapping(thisPrism);
 
-		PrismD.divideEdges(vertsOnEdges, thisPrism);
+		PrismD.divideEdges(vertsOnEdges);
 
     // Divide all the faces, including storing info about which new verts
     // are on which faces
-		PrismD.divideFaces(vertsOnTris, vertsOnQuads, thisPrism);
+		PrismD.divideFaces(vertsOnTris, vertsOnQuads);
 
     // Divide the cell
     if (nDivs >= 3) {
@@ -124,11 +124,11 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 		const emInt* const thisHex = pVM_input->getHexConn(iH);
 		HD.setupCoordMapping(thisHex);
 
-		HD.divideEdges(vertsOnEdges, thisHex);
+		HD.divideEdges(vertsOnEdges);
 
     // Divide all the faces, including storing info about which new verts
     // are on which faces
-		HD.divideFaces(vertsOnTris, vertsOnQuads, thisHex);
+		HD.divideFaces(vertsOnTris, vertsOnQuads);
 
     // Divide the cell
     if (nDivs >= 2) {
@@ -142,11 +142,11 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 	BdryTriDivider BTD(pVM_output, nDivs);
 	for (emInt iBT = 0; iBT < pVM_input->numBdryTris(); iBT++) {
 		const emInt* const thisBdryTri = pVM_input->getBdryTriConn(iBT);
-
+		BTD.setupCoordMapping(thisBdryTri);
 		// Shouldn't need to divide anything at all here, but these function
 		// copy the vertices into the CellDivider internal data structure.
-		BTD.divideEdges(vertsOnEdges, thisBdryTri);
-		BTD.divideFaces(vertsOnTris, vertsOnQuads, thisBdryTri);
+		BTD.divideEdges(vertsOnEdges);
+		BTD.divideFaces(vertsOnTris, vertsOnQuads);
 
 		BTD.createNewCells();
 	}
@@ -154,11 +154,12 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 	BdryQuadDivider BQD(pVM_output, nDivs);
 	for (emInt iBT = 0; iBT < pVM_input->numBdryQuads(); iBT++) {
 		const emInt* const thisBdryQuad = pVM_input->getBdryQuadConn(iBT);
+		BQD.setupCoordMapping(thisBdryQuad);
 
 		// Shouldn't need to divide anything at all here, but this function
 		// copies the triangle vertices into the CellDivider internal data structure.
-		BQD.divideEdges(vertsOnEdges, thisBdryQuad);
-		BQD.divideFaces(vertsOnTris, vertsOnQuads, thisBdryQuad);
+		BQD.divideEdges(vertsOnEdges);
+		BQD.divideFaces(vertsOnTris, vertsOnQuads);
 
 		BQD.createNewCells();
 	}

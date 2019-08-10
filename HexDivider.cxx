@@ -8,6 +8,10 @@
 #include "HexDivider.h"
 
 void HexDivider::setupCoordMapping(const emInt verts[]) {
+	for (int ii = 0; ii < 8; ii++) {
+		cellVerts[ii] = verts[ii];
+	}
+
 	const double *coords0 = m_pMesh->getCoords(verts[0]);
 	const double *coords1 = m_pMesh->getCoords(verts[1]);
 	const double *coords2 = m_pMesh->getCoords(verts[2]);

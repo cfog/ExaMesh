@@ -13,10 +13,10 @@
 #include "CellDivider.h"
 
 void CellDivider::getEdgeVerts(std::map<Edge, EdgeVerts> &vertsOnEdges,
-		const emInt cellVerts[], const int edgeIndices[], EdgeVerts &EV) {
+		const int edge, EdgeVerts &EV) {
 	typename std::map<Edge, EdgeVerts>::iterator iterEdges;
-	int ind0 = edgeIndices[0];
-	int ind1 = edgeIndices[1];
+	int ind0 = edgeVertIndices[edge][0];
+	int ind1 = edgeVertIndices[edge][1];
 
 	emInt vert0 = cellVerts[ind0];
 	emInt vert1 = cellVerts[ind1];
@@ -180,11 +180,11 @@ bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b) {
 }
 
 void CellDivider::getTriVerts(std::set<TriFaceVerts> &vertsOnTris,
-		const emInt cellVerts[], const int triIndices[], TriFaceVerts &TFV) {
+		const int face, TriFaceVerts &TFV) {
 	typename std::set<TriFaceVerts>::iterator iterTris;
-	int ind0 = triIndices[0];
-	int ind1 = triIndices[1];
-	int ind2 = triIndices[2];
+	int ind0 = faceVertIndices[face][0];
+	int ind1 = faceVertIndices[face][1];
+	int ind2 = faceVertIndices[face][2];
 
 	emInt vert0 = cellVerts[ind0];
 	emInt vert1 = cellVerts[ind1];
@@ -234,12 +234,12 @@ void CellDivider::getTriVerts(std::set<TriFaceVerts> &vertsOnTris,
 }
 
 void CellDivider::getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads,
-		const emInt cellVerts[], const int quadIndices[], QuadFaceVerts &QFV) {
+		const int face, QuadFaceVerts &QFV) {
 	typename std::set<QuadFaceVerts>::iterator iterQuads;
-	int ind0 = quadIndices[0];
-	int ind1 = quadIndices[1];
-	int ind2 = quadIndices[2];
-	int ind3 = quadIndices[3];
+	int ind0 = faceVertIndices[face][0];
+	int ind1 = faceVertIndices[face][1];
+	int ind2 = faceVertIndices[face][2];
+	int ind3 = faceVertIndices[face][3];
 
 	emInt vert0 = cellVerts[ind0];
 	emInt vert1 = cellVerts[ind1];
@@ -296,20 +296,17 @@ void CellDivider::getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads,
 	}
 }
 
-void CellDivider::divideEdges(std::map<Edge, EdgeVerts> &vertsOnEdges,
-		const emInt verts[]) {
+void CellDivider::divideEdges(std::map<Edge, EdgeVerts> &vertsOnEdges) {
 	// Divide all the edges, including storing info about which new verts
 	// are on which edges
 	for (int iE = 0; iE < numEdges; iE++) {
 
 		EdgeVerts EV;
-		getEdgeVerts(vertsOnEdges, verts, edgeVertIndices[iE], EV);
-//		getEdgeVerts(vertsOnEdges, verts[edgeVertIndices[iE][0]],
-//									verts[edgeVertIndices[iE][1]], EV);
+		getEdgeVerts(vertsOnEdges, iE, EV);
 
 		// Now transcribe these into the master table for this cell.
 		emInt startIndex = 1000, endIndex = 1000;
-		if (EV.verts[0] == verts[edgeVertIndices[iE][0]]) {
+		if (EV.verts[0] == cellVerts[edgeVertIndices[iE][0]]) {
 			// Transcribe this edge forward.
 			startIndex = edgeVertIndices[iE][0];
 			endIndex = edgeVertIndices[iE][1];
@@ -338,19 +335,14 @@ void CellDivider::divideEdges(std::map<Edge, EdgeVerts> &vertsOnEdges,
 }
 
 void CellDivider::divideFaces(std::set<TriFaceVerts> &vertsOnTris,
-		std::set<QuadFaceVerts> &vertsOnQuads, const emInt verts[]) {
+		std::set<QuadFaceVerts> &vertsOnQuads) {
 	// Divide all the faces, including storing info about which new verts
 	// are on which faces
 
 	// The quad faces are first.
 	for (int iF = 0; iF < numQuadFaces; iF++) {
 		QuadFaceVerts QFV;
-//		const emInt vert0 = verts[faceVertIndices[iF][0]];
-//		const emInt vert1 = verts[faceVertIndices[iF][1]];
-//		const emInt vert2 = verts[faceVertIndices[iF][2]];
-//		const emInt vert3 = verts[faceVertIndices[iF][3]];
-//		getQuadVerts(vertsOnQuads, vert0, vert1, vert2, vert3, QFV);
-		getQuadVerts(vertsOnQuads, verts, faceVertIndices[iF], QFV);
+		getQuadVerts(vertsOnQuads, iF, QFV);
 		// Now extract info from the QFV and stuff it into the cell's point
 		// array.
 
@@ -360,7 +352,7 @@ void CellDivider::divideFaces(std::set<TriFaceVerts> &vertsOnTris,
 		for (int iC = 0; iC < 4; iC++) {
 			const emInt corn = QFV.corners[iC];
 			for (int iV = 0; iV < numVerts; iV++) {
-				const emInt cand = verts[iV];
+				const emInt cand = cellVerts[iV];
 				if (corn == cand) {
 					corner[iC] = iV;
 					break;
@@ -394,11 +386,7 @@ void CellDivider::divideFaces(std::set<TriFaceVerts> &vertsOnTris,
 
 	for (int iF = numQuadFaces; iF < numQuadFaces + numTriFaces; iF++) {
 		TriFaceVerts TFV;
-		const emInt vert0 = verts[faceVertIndices[iF][0]];
-		const emInt vert1 = verts[faceVertIndices[iF][1]];
-		const emInt vert2 = verts[faceVertIndices[iF][2]];
-		getTriVerts(vertsOnTris, verts, faceVertIndices[iF], TFV);
-//		getTriVerts(vertsOnTris, vert0, vert1, vert2, TFV);
+		getTriVerts(vertsOnTris, iF, TFV);
 		// Now extract info from the TFV and stuff it into the Prismamid's point
 		// array.
 
@@ -408,7 +396,7 @@ void CellDivider::divideFaces(std::set<TriFaceVerts> &vertsOnTris,
 		for (int iC = 0; iC < 3; iC++) {
 			const emInt corn = TFV.corners[iC];
 			for (int iV = 0; iV < numVerts; iV++) {
-				const emInt cand = verts[iV];
+				const emInt cand = cellVerts[iV];
 				if (corn == cand) {
 					corner[iC] = iV;
 					break;
