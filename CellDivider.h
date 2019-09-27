@@ -8,6 +8,8 @@
 #ifndef SRC_CELLDIVIDER_H_
 #define SRC_CELLDIVIDER_H_
 
+#include <algorithm>
+#include <cmath>
 #include <set>
 
 #include "examesh.h"
@@ -84,7 +86,8 @@ private:
 
 	void getTriVerts(std::set<TriFaceVerts> &vertsOnTris, const int face,
 			TriFaceVerts& TFV);
-
+protected:
+	double getIsoLengthScale(const emInt vert);
 public:
 	CellDivider(UMesh *pVolMesh, const emInt segmentsPerEdge) :
 			m_pMesh(pVolMesh), numTriFaces(0), numQuadFaces(0), numEdges(0),

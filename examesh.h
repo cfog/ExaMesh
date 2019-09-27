@@ -13,9 +13,25 @@
 
 #include <stdint.h>
 #include <limits.h>
+#include <cmath>
 
 typedef uint32_t emInt;
 #define EMINT_MAX UINT_MAX
+
+// Some vector operators
+
+#define DIFF(a,b) {a[0] -b[0], a[1]-b[1],a[2]-b[2]}
+#define SCALE(x, a, y) y[0]=(a)*x[0]; y[1]=(a)*x[1]; y[2]=(a)*x[2]
+#define LEN(x) sqrt(x[0]*x[0]+x[1]*x[1]+x[2]*x[2])
+#define CROSS(a,b,c) c[0] = a[1]*b[2]-a[2]*b[1], c[1] = a[2]*b[0]-a[0]*b[2], c[2] = a[0]*b[1]-a[1]*b[0]
+#define DOT(a,b) (a[0]*b[0] + a[1]*b[1]+ a[2]*b[2])
+#define NORMALIZE(a) {double tmp = 1./sqrt(DOT(a,a)); a[0]*=tmp; a[1]*=tmp; a[2]*=tmp;}
+
+inline double safe_acos(const double arg) {
+	if (arg < -1) return M_PI;
+	else if (arg > 1) return 0;
+	else return acos(arg);
+}
 
 class UMesh;
 

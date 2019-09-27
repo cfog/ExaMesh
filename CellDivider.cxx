@@ -429,7 +429,7 @@ void CellDivider::divideFaces(std::set<TriFaceVerts> &vertsOnTris,
 	}
 }
 
-
-
-
-
+double CellDivider::getIsoLengthScale(const emInt vert) {
+	// Right now, this is a horrible hack for testing.
+	return m_pMesh->getLengthScale(vert);
+}

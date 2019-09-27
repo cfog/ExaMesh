@@ -6,10 +6,14 @@
  */
 
 #include <iostream>
+#include <cmath>
 
+#include <algorithm>
 #include <set>
+#include <vector>
 
 #include <string.h>
+#include <zlib.h>
 
 #include "examesh.h"
 #include "UMesh.h"
@@ -79,6 +83,8 @@ void UMesh::init(const emInt nVerts, const emInt nBdryVerts,
 	m_HexConn = reinterpret_cast<emInt (*)[8]>(m_PrismConn + nPrisms);
 	m_fileImage = m_buffer + slack1Size;
 	m_fileImageSize = bufferBytes - slack1Size - slack2Size;
+
+	m_lenScale = new double[m_nVerts];
 }
 
 UMesh::UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
@@ -157,6 +163,7 @@ emInt UMesh::addHex(const emInt verts[8]) {
 
 UMesh::~UMesh() {
 	free(m_buffer);
+	delete[] m_lenScale;
 }
 
 void checkConnectivitySize(const char cellType, const emInt nVerts) {
@@ -401,6 +408,8 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	assert(m_nHexes == m_header[eHex]);
 
 	delete reader;
+
+	setupLengthScales();
 }
 
 UMesh::UMesh(const UMesh& UMIn, const int nDivs) :
@@ -434,6 +443,11 @@ UMesh::UMesh(const UMesh& UMIn, const int nDivs) :
 
 	init(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
 				MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
+	// Copy length scale data from the other mesh.
+	for (emInt vv = 0; vv < UMIn.m_nVerts; vv++) {
+		m_lenScale[vv] = UMIn.m_lenScale[vv];
+	}
+
 	double timeBefore = clock() / double(CLOCKS_PER_SEC);
 	subdividePartMesh(&UMIn, this, nDivs);
 	double timeAfter = clock() / double(CLOCKS_PER_SEC);
@@ -552,7 +566,7 @@ bool UMesh::writeVTKFile(const char fileName[]) {
 	double timeAfter = clock() / double(CLOCKS_PER_SEC);
 	double elapsed = timeAfter - timeBefore;
 	size_t totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
-	fprintf(stderr, "CPU time for file write = %5.2F seconds\n", elapsed);
+	fprintf(stderr, "CPU time for VTK file write = %5.2F seconds\n", elapsed);
 	fprintf(stderr, "                          %5.2F million cells / minute\n",
 					(totalCells / 1000000.) / (elapsed / 60));
 
@@ -574,11 +588,142 @@ bool UMesh::writeUGridFile(const char fileName[]) {
 	double timeAfter = clock() / double(CLOCKS_PER_SEC);
 	double elapsed = timeAfter - timeBefore;
 	size_t totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
-	fprintf(stderr, "CPU time for file write = %5.2F seconds\n", elapsed);
+	fprintf(stderr, "CPU time for UGRID file write = %5.2F seconds\n", elapsed);
 	fprintf(stderr, "                          %5.2F million cells / minute\n",
 					(totalCells / 1000000.) / (elapsed / 60));
 
 	return true;
+}
+
+//bool UMesh::writeCompressedUGridFile(const char fileName[]) {
+//	double timeBefore = clock() / double(CLOCKS_PER_SEC);
+//
+//	gzFile outFile = gzopen(fileName, "wb");
+//	if (!outFile) {
+//		fprintf(stderr, "Couldn't open file %s for writing.  Bummer!\n", fileName);
+//		return false;
+//	}
+//
+//	int bytesWritten = gzwrite(outFile, reinterpret_cast<void*>(m_fileImage),
+//															m_fileImageSize);
+//	gzclose(outFile);
+//	fprintf(stderr, "Wrote %d bytes into a compressed file as %d bytes\n",
+//					m_fileImageSize, bytesWritten);
+//
+//	double timeAfter = clock() / double(CLOCKS_PER_SEC);
+//	double elapsed = timeAfter - timeBefore;
+//	size_t totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
+//	fprintf(stderr, "CPU time for compressed UGRID file write = %5.2F seconds\n",
+//					elapsed);
+//	fprintf(stderr, "                          %5.2F million cells / minute\n",
+//					(totalCells / 1000000.) / (elapsed / 60));
+//
+//	return true;
+//}
+
+static void triUnitNormal(const double coords0[], const double coords1[],
+		const double coords2[], double normal[]) {
+	double edge01[] = DIFF(coords1, coords0);
+	double edge02[] = DIFF(coords2, coords0);
+	CROSS(edge01, edge02, normal);
+	NORMALIZE(normal);
+}
+
+static double tetVolume(const double coords0[], const double coords1[],
+		const double coords2[], const double coords3[]) {
+	double edge01[] = DIFF(coords1, coords0);
+	double edge02[] = DIFF(coords2, coords0);
+	double edge03[] = DIFF(coords3, coords0);
+	double normal[3];
+	CROSS(edge01, edge02, normal);
+	return DOT(normal,edge03) / 6;
+}
+
+static void quadUnitNormal(const double coords0[], const double coords1[],
+		const double coords2[], const double coords3[], double normal[]) {
+	double vecB[3], vecC[3];
+	for (int ii = 0; ii < 3; ii++) {
+		vecB[ii] = 0.25 * (coords0[ii] + coords3[ii] - coords1[ii] - coords2[ii]);
+		vecC[ii] = 0.25 * (coords0[ii] + coords1[ii] - coords3[ii] - coords2[ii]);
+	}
+	CROSS(vecB, vecC, normal);
+	NORMALIZE(normal);
+}
+
+static double pyrVolume(const double coords0[], const double coords1[],
+		const double coords2[], const double coords3[], double coords4[]) {
+	// Point 4 is the apex.
+	double vecB[3], vecC[3], vecE[3];
+	for (int ii = 0; ii < 3; ii++) {
+		vecB[ii] = 0.25 * (coords0[ii] + coords3[ii] - coords1[ii] - coords2[ii]);
+		vecC[ii] = 0.25 * (coords0[ii] + coords1[ii] - coords3[ii] - coords2[ii]);
+		vecE[ii] = coords4[ii]
+				- 0.25 * (coords0[ii] + coords1[ii] + coords2[ii] + coords3[ii]);
+	}
+	double normal[3];
+	CROSS(vecB, vecC, normal);
+	return DOT(normal, vecE) / 0.75;
+}
+
+void UMesh::setupLengthScales() {
+	std::vector<double> vertVolume(m_nVerts, 0);
+	std::vector<double> vertSolidAngle(m_nVerts, 0);
+
+	// Iterate over tets
+	for (emInt tet = 0; tet < m_nTets; tet++) {
+		const emInt* const tetVerts = m_TetConn[tet];
+		double normABC[3], normADB[3], normBDC[3], normCDA[3];
+		triUnitNormal(m_coords[tetVerts[0]], m_coords[tetVerts[1]],
+									m_coords[tetVerts[2]], normABC);
+		triUnitNormal(m_coords[tetVerts[0]], m_coords[tetVerts[3]],
+									m_coords[tetVerts[1]], normADB);
+		triUnitNormal(m_coords[tetVerts[1]], m_coords[tetVerts[3]],
+									m_coords[tetVerts[2]], normBDC);
+		triUnitNormal(m_coords[tetVerts[2]], m_coords[tetVerts[3]],
+									m_coords[tetVerts[0]], normCDA);
+
+		// Dihedrals are in the order: 01, 02, 03, 12, 13, 23
+		double diheds[6];
+		diheds[0] = safe_acos(-DOT(normABC, normADB));
+		diheds[1] = safe_acos(-DOT(normABC, normCDA));
+		diheds[2] = safe_acos(-DOT(normADB, normCDA));
+		diheds[3] = safe_acos(-DOT(normABC, normBDC));
+		diheds[4] = safe_acos(-DOT(normADB, normBDC));
+		diheds[5] = safe_acos(-DOT(normBDC, normCDA));
+
+		// Solid angles are in the order: 0, 1, 2, 3
+		double solids[4];
+		solids[0] = diheds[0] + diheds[1] + diheds[2] - M_PI;
+		solids[1] = diheds[0] + diheds[3] + diheds[4] - M_PI;
+		solids[2] = diheds[1] + diheds[3] + diheds[5] - M_PI;
+		solids[3] = diheds[2] + diheds[4] + diheds[5] - M_PI;
+
+		double volume = tetVolume(m_coords[tetVerts[0]], m_coords[tetVerts[1]],
+															m_coords[tetVerts[2]], m_coords[tetVerts[3]]);
+		assert(volume > 0);
+		for (int ii = 0; ii < 4; ii++) {
+			vertVolume[tetVerts[ii]] += volume;
+			assert(solids[ii] > 0);
+			vertSolidAngle[tetVerts[ii]] += solids[ii];
+		}
+	} // Done looping over tetrahedra
+
+	// Iterate over pyramids
+	assert(m_nPyrs == 0);
+
+	// Iterate over prisms
+	assert(m_nPrisms == 0);
+
+	// Iterate over hexahedra
+	assert(m_nHexes == 0);
+
+	// Now loop over verts computing the length scale
+	for (emInt vv = 0; vv < m_nVerts; vv++) {
+		assert(vertVolume[vv] > 0 && vertSolidAngle[vv] > 0);
+		double volume = vertVolume[vv] * (4 * M_PI) / vertSolidAngle[vv];
+		double radius = cbrt(volume / (4 * M_PI / 3.));
+		m_lenScale[vv] = radius;
+	}
 }
 
 void UMesh::printMeshSizeStats() {

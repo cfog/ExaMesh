@@ -19,7 +19,7 @@ class UMesh {
 	enum {
 		eVert = 0, eTri, eQuad, eTet, ePyr, ePrism, eHex
 	};
-	emInt m_fileImageSize;
+	size_t m_fileImageSize;
 	emInt *m_header;
 	double (*m_coords)[3];
 	emInt (*m_TriConn)[3];
@@ -31,6 +31,9 @@ class UMesh {
 	char *m_buffer, *m_fileImage;
 	UMesh(const UMesh&);
 	UMesh& operator=(const UMesh&);
+
+	double *m_lenScale;
+	void setupLengthScales();
 public:
 	UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
@@ -129,8 +132,15 @@ public:
 		return m_HexConn[hex];
 	}
 
+	double getLengthScale(const emInt vert) const {
+		assert(vert < m_nVerts && vert < m_header[eVert]);
+		return m_lenScale[vert];
+	}
 	bool writeVTKFile(const char fileName[]);
 	bool writeUGridFile(const char fileName[]);
+	// Writing with compressing reduces file size by a little over a factor of two,
+	// at the expense of making file write slower by two orders of magnitude.
+	// bool writeCompressedUGridFile(const char fileName[]);
 private:
 	void init(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,

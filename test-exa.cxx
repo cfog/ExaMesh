@@ -11,6 +11,8 @@
 #include "examesh.h"
 #include "UMesh.h"
 
+#include "TetDivider.h"
+
 static void checkExpectedSize(const UMesh& UM) {
 	BOOST_CHECK_EQUAL(UM.maxNVerts(), UM.numVerts());
 	BOOST_CHECK_EQUAL(UM.maxNBdryTris(), UM.numBdryTris());
@@ -636,3 +638,157 @@ BOOST_AUTO_TEST_CASE(MixedN5) {
 	bool result = UMOut.writeVTKFile("/tmp/test-exa.vtk");
 	BOOST_CHECK(result);
 }
+
+BOOST_AUTO_TEST_SUITE(Mapping)
+
+	BOOST_AUTO_TEST_CASE(TetMapping) {
+		printf("Testing tet mappings.\n");
+		UMesh VM(4, 4, 4, 0, 1, 0, 0, 0);
+		double vert0[] = { 1, 1, 1 };
+		double vert1[] = { 2, 2, 2 };
+		double vert2[] = { 1.5, 2, 2 };
+		double vert3[] = { 1.5, 1, 3 };
+
+		VM.addVert(vert0);
+		VM.addVert(vert1);
+		VM.addVert(vert2);
+		VM.addVert(vert3);
+
+		emInt verts[] = { 0, 1, 2, 3 };
+		VM.addTet(verts);
+
+		TetDivider TD(&VM, 4);
+
+		// Test for known cubic functions:
+		// x = u^3 + 2 u^2 v + 4 u v^2 - 30 u v w + 5 u^2 + 6 u + 3
+		// y = v^3 + 2 v^2 w + 4 v w^2 - 54 u v w + 5 v^2 + 6 v + 7
+		// z = w^3 + 2 w^2 u + 4 w u^2 - 72 u v w + 5 w^2 + 6 w + 10
+		// so
+		// dx/du = 3 u^2 + 4 u v + 4 v^2 - 30 v w + 10 u + 6
+		// dx/dv = 2 u^2 + 8 u v - 30 u w
+		// dx/dw = -30 u v
+		//
+		// dy/du = -54 v w
+		// dy/dv = 3 v^2 + 4 v w - 54 u w + 4 w^2 + 10 v + 6
+		// dy/dw = 2 v^2 + 8 v w - 54 u v
+		//
+		// dz/du = 2 w^2 + 8 u w -72 v w
+		// dz/dv = -54 u w
+		// dz/dw = 3 w^2 + 4 u w + 4 u^2 + 10 w + 6 - 54 u v
+
+		//
+		// Now just evaluate these at points 0 (0,0,0), 1 (1,0,0), 2 (0,1,0),
+		// and 3 (0,0,1) to get:
+		{
+			double xyz0[] = { 3, 7, 10 };
+			double xyz1[] = { 15, 7, 10 };
+			double xyz2[] = { 3, 19, 10 };
+			double xyz3[] = { 3, 7, 22 };
+
+			double uderiv0[] = { 6, 0, 0 };
+			double vderiv0[] = { 0, 6, 0 };
+			double wderiv0[] = { 0, 0, 6 };
+
+			double uderiv1[] = { 19, 0, 0 };
+			double vderiv1[] = { 2, 6, 0 };
+			double wderiv1[] = { 0, 0, 10 };
+
+			double uderiv2[] = { 10, 0, 0 };
+			double vderiv2[] = { 0, 19, 0 };
+			double wderiv2[] = { 0, 2, 6 };
+
+			double uderiv3[] = { 6, 0, 2 };
+			double vderiv3[] = { 0, 10, 0 };
+			double wderiv3[] = { 0, 0, 19 };
+
+			TD.setPolyCoeffs(xyz0, xyz1, xyz2, xyz3, uderiv0, vderiv0, wderiv0,
+												uderiv1, vderiv1, wderiv1, uderiv2, vderiv2, wderiv2,
+												uderiv3, vderiv3, wderiv3);
+
+			double uvw[] = { 0.2, 0.3, 0.4 };
+			double xyz[3];
+			TD.getPhysCoordsFromParamCoords(uvw, xyz);
+			BOOST_CHECK_CLOSE(xyz[0], 3.784, 1.e-8);
+			BOOST_CHECK_CLOSE(xyz[1], 8.245, 1.e-8);
+			BOOST_CHECK_CLOSE(xyz[2], 11.664, 1.e-8);
+		}
+
+		TD.setupCoordMapping(verts);
+
+		double uvw[] = { 0, 0, 0 };
+		double xyz[3];
+
+		TD.getPhysCoordsFromParamCoords(uvw, xyz);
+		BOOST_CHECK_CLOSE(xyz[0], vert0[0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], vert0[1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], vert0[2], 1.e-8);
+
+		uvw[0] = 1;
+		TD.getPhysCoordsFromParamCoords(uvw, xyz);
+		BOOST_CHECK_CLOSE(xyz[0], vert1[0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], vert1[1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], vert1[2], 1.e-8);
+
+		uvw[0] = 0;
+		uvw[1] = 1;
+		TD.getPhysCoordsFromParamCoords(uvw, xyz);
+		BOOST_CHECK_CLOSE(xyz[0], vert2[0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], vert2[1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], vert2[2], 1.e-8);
+
+		uvw[1] = 0;
+		uvw[2] = 1;
+		TD.getPhysCoordsFromParamCoords(uvw, xyz);
+		BOOST_CHECK_CLOSE(xyz[0], vert3[0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], vert3[1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], vert3[2], 1.e-8);
+
+		// Really a regression test
+		uvw[0] = 0.25;
+		uvw[1] = 1. / 6;
+		uvw[2] = 5. / 12;
+		TD.getPhysCoordsFromParamCoords(uvw, xyz);
+		BOOST_CHECK_CLOSE(xyz[0], 1.284103709571, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], 1.108135846478, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], 1.902326582363, 1.e-8);
+
+		emInt verts2[] = { 3, 1, 2, 0 };
+		TD.setupCoordMapping(verts2);
+
+		uvw[0] = uvw[1] = uvw[2] = 0;
+		TD.getPhysCoordsFromParamCoords(uvw, xyz);
+		BOOST_CHECK_CLOSE(xyz[0], vert3[0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], vert3[1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], vert3[2], 1.e-8);
+
+		uvw[0] = 1;
+		TD.getPhysCoordsFromParamCoords(uvw, xyz);
+		BOOST_CHECK_CLOSE(xyz[0], vert1[0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], vert1[1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], vert1[2], 1.e-8);
+
+		uvw[0] = 0;
+		uvw[1] = 1;
+		TD.getPhysCoordsFromParamCoords(uvw, xyz);
+		BOOST_CHECK_CLOSE(xyz[0], vert2[0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], vert2[1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], vert2[2], 1.e-8);
+
+		uvw[1] = 0;
+		uvw[2] = 1;
+		TD.getPhysCoordsFromParamCoords(uvw, xyz);
+		BOOST_CHECK_CLOSE(xyz[0], vert0[0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], vert0[1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], vert0[2], 1.e-8);
+
+		// Really a regression test
+		uvw[0] = 0.25;
+		uvw[1] = 1. / 6;
+		uvw[2] = 1. / 6;
+		TD.getPhysCoordsFromParamCoords(uvw, xyz);
+		BOOST_CHECK_CLOSE(xyz[0], 1.45180347311979, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], 1.35250275357685, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], 2.11982908459981, 1.e-8);
+	}
+
+	BOOST_AUTO_TEST_SUITE_END()

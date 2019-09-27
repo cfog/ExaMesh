@@ -13,6 +13,23 @@
 
 class TetDivider: public CellDivider {
 	double xyzOffset[3], uVec[3], vVec[3], wVec[3];
+	double A[3]; // coeff for u^3
+	double B[3]; // coeff for u^2 v
+	double C[3]; // coeff for u v^2
+	double E[3]; // coeff for v^3
+	double F[3]; // coeff for v^2 w
+	double G[3]; // coeff for v w^2
+	double H[3]; // coeff for w^3
+	double J[3]; // coeff for w^2 u
+	double K[3]; // coeff for w u^2
+	double L[3]; // coeff for u v w
+	double M[3]; // coeff for u^2
+	double P[3]; // coeff for v^2
+	double R[3]; // coeff for w^2
+	double T[3]; // coeff for constant
+	double U[3]; // coeff for u
+	double V[3]; // coeff for v
+	double W[3]; // coeff for w
 public:
 	TetDivider(UMesh *pVolMesh, const int segmentsPerEdge)
       :
@@ -93,6 +110,12 @@ public:
   void createNewCells();
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
+	void setPolyCoeffs(const double* xyz0, const double* xyz1, const double* xyz2,
+			const double* xyz3, double uderiv0[3], double vderiv0[3],
+			double wderiv0[3], double uderiv1[3], double vderiv1[3],
+			double wderiv1[3], double uderiv2[3], double vderiv2[3],
+			double wderiv2[3], double uderiv3[3], double vderiv3[3],
+			double wderiv3[3]);
 };
 
 #endif /* APPS_EXAMESH_TETDIVIDER_H_ */
