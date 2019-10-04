@@ -48,7 +48,9 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 
 	// Copy vertex data into the new mesh.
 	for (emInt iV = 0; iV < pVM_input->numVerts(); iV++) {
-		pVM_output->addVert(pVM_input->getCoords(iV));
+		double coords[3];
+		pVM_input->getCoords(iV, coords);
+		pVM_output->addVert(coords);
 	}
 	assert(pVM_input->numVerts() == pVM_output->numVerts());
 
@@ -74,7 +76,7 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
   } // Done looping over all tets
 
 	PyrDivider PD(pVM_output, nDivs);
-	for (emInt iP = 0; iP < pVM_input->numPyrs(); iP++) {
+	for (emInt iP = 0; iP < pVM_input->numPyramids(); iP++) {
     // Divide all the edges, including storing info about which new verts
     // are on which edges
 		const emInt* const thisPyr = pVM_input->getPyrConn(iP);

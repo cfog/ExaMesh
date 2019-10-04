@@ -13,6 +13,7 @@
 #include <set>
 
 #include "examesh.h"
+#include "Mapping.h"
 #include "UMesh.h"
 
 class Edge {
@@ -68,6 +69,7 @@ bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b);
 class CellDivider {
 protected:
 	UMesh *m_pMesh;
+	Mapping *m_Map;
 	emInt (*localVerts)[MAX_DIVS + 1][MAX_DIVS + 1];
 	int edgeVertIndices[12][2];
 	int faceVertIndices[6][4];
@@ -77,6 +79,8 @@ protected:
 	emInt cellVerts[8];
 	int nDivs;
 
+	// Used by both tets and pyramids.
+	int checkOrient3D(const emInt verts[4]) const;
 private:
 	void getEdgeVerts(std::map<Edge, EdgeVerts> &vertsOnEdges, const int edge,
 			EdgeVerts &EV);
@@ -86,11 +90,10 @@ private:
 
 	void getTriVerts(std::set<TriFaceVerts> &vertsOnTris, const int face,
 			TriFaceVerts& TFV);
-protected:
-	double getIsoLengthScale(const emInt vert);
 public:
 	CellDivider(UMesh *pVolMesh, const emInt segmentsPerEdge) :
-			m_pMesh(pVolMesh), numTriFaces(0), numQuadFaces(0), numEdges(0),
+			m_pMesh(pVolMesh), m_Map(nullptr),
+					numTriFaces(0), numQuadFaces(0), numEdges(0),
 					numVerts(0), nDivs(segmentsPerEdge) {
 		localVerts = new emInt[MAX_DIVS + 1][MAX_DIVS + 1][MAX_DIVS + 1];
 //		for (int ii = 0; ii <= MAX_DIVS; ii++) {
@@ -103,6 +106,7 @@ public:
 	}
 	virtual ~CellDivider() {
 		delete[] localVerts;
+		if (m_Map) delete m_Map;
 	}
 	void divideEdges(std::map<Edge, EdgeVerts> &vertsOnEdges);
 	void divideFaces(std::set<TriFaceVerts> &vertsOnTris,

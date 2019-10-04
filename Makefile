@@ -4,10 +4,11 @@
 
 .PHONY: library
 
-CXXOBJECTS=examesh.o refinePart.o UMesh.o GeomUtils.o 
+CXXOBJECTS=examesh.o 
 
 LIBOBJECTS=TetDivider.o PyrDivider.o PrismDivider.o HexDivider.o CellDivider.o \
-BdryTriDivider.o BdryQuadDivider.o
+BdryTriDivider.o BdryQuadDivider.o refinePart.o ExaMesh.o UMesh.o CubicMesh.o GeomUtils.o \
+LagrangeMapping.o LengthScaleMapping.o 
 
 OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
 DEBUG=-g
@@ -32,7 +33,7 @@ all default: $(OBJECTS) library test-exa examesh
 	./test-exa
 
 library: $(LIBOBJECTS)
-	-$(CXX_COMPILE) -shared -o libexamesh.so $(EXTRAFLAGS) $(OBJECTS)
+	-$(CXX_COMPILE) -shared -o libexamesh.so $(EXTRAFLAGS) $(LIBOBJECTS)
 
 examesh: $(CXXOBJECTS)
 	echo Linking examesh
@@ -50,15 +51,3 @@ clean:
 	rm -f *.o examesh
 
 # DO NOT DELETE
-
-BdryQuadDivider.o: BdryQuadDivider.h CellDivider.h examesh.h UMesh.h
-BdryTriDivider.o: BdryTriDivider.h CellDivider.h examesh.h UMesh.h
-CellDivider.o: examesh.h CellDivider.h UMesh.h
-HexDivider.o: HexDivider.h examesh.h CellDivider.h UMesh.h
-PrismDivider.o: PrismDivider.h examesh.h CellDivider.h UMesh.h
-PyrDivider.o: GeomUtils.h PyrDivider.h examesh.h CellDivider.h UMesh.h
-refinePart.o: HexDivider.h examesh.h CellDivider.h UMesh.h PrismDivider.h
-refinePart.o: PyrDivider.h TetDivider.h BdryTriDivider.h BdryQuadDivider.h
-test-exa.o: examesh.h UMesh.h
-TetDivider.o: GeomUtils.h TetDivider.h examesh.h CellDivider.h UMesh.h
-UMesh.o: examesh.h UMesh.h

@@ -10,7 +10,17 @@
 #include <map>
 #include <set>
 
+#include "GeomUtils.h"
 #include "CellDivider.h"
+
+int CellDivider::checkOrient3D(const emInt verts[4]) const {
+	double coords0[3], coords1[3], coords2[3], coords3[3];
+	m_pMesh->getCoords(verts[0], coords0);
+	m_pMesh->getCoords(verts[1], coords1);
+	m_pMesh->getCoords(verts[2], coords2);
+	m_pMesh->getCoords(verts[3], coords3);
+	return ::checkOrient3D(coords0, coords1, coords2, coords3);
+}
 
 void CellDivider::getEdgeVerts(std::map<Edge, EdgeVerts> &vertsOnEdges,
 		const int edge, EdgeVerts &EV) {
@@ -429,7 +439,3 @@ void CellDivider::divideFaces(std::set<TriFaceVerts> &vertsOnTris,
 	}
 }
 
-double CellDivider::getIsoLengthScale(const emInt vert) {
-	// Right now, this is a horrible hack for testing.
-	return m_pMesh->getLengthScale(vert);
-}

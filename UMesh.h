@@ -13,7 +13,7 @@
 
 #include "examesh.h"
 
-class UMesh {
+class UMesh: public ExaMesh {
 	emInt m_nVerts, m_nBdryVerts, m_nTris, m_nQuads, m_nTets, m_nPyrs, m_nPrisms,
 			m_nHexes;
 	enum {
@@ -32,17 +32,13 @@ class UMesh {
 	UMesh(const UMesh&);
 	UMesh& operator=(const UMesh&);
 
-	double *m_lenScale;
-	void setupLengthScales();
 public:
 	UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
 	UMesh(const char baseFileName[], const char type[], const char ugridInfix[]);
-	UMesh(const UMesh& UMin, const int nDivs);
+	UMesh(const UMesh& UM_in, const int nDivs);
 	~UMesh();
-	void readMesh(); // Will take a ugrid filename as an arg
-	bool writeMesh(); // Will take a filename as an arg
 	emInt maxNVerts() const {
 		return m_nVerts;
 	}
@@ -76,7 +72,7 @@ public:
 	emInt numTets() const {
 		return m_header[eTet];
 	}
-	emInt numPyrs() const {
+	emInt numPyramids() const {
 		return m_header[ePyr];
 	}
 	emInt numPrisms() const {
@@ -86,7 +82,7 @@ public:
 		return m_header[eHex];
 	}
 	emInt numCells() const {
-		return numTets() + numPyrs() + numPrisms() + numHexes();
+		return numTets() + numPyramids() + numPrisms() + numHexes();
 	}
 
 	emInt addVert(const double newCoords[3]);
@@ -97,9 +93,27 @@ public:
 	emInt addPrism(const emInt verts[6]);
 	emInt addHex(const emInt verts[8]);
 
-	const double* getCoords(const emInt vert) const {
+	virtual void getCoords(const emInt vert, double coords[3]) const {
 		assert(vert < m_nVerts && vert < m_header[eVert]);
-		return m_coords[vert];
+		const double* const tmp = m_coords[vert];
+		coords[0] = tmp[0];
+		coords[1] = tmp[1];
+		coords[2] = tmp[2];
+	}
+
+	double getX(const emInt vert) const {
+		assert(vert < m_nVerts && vert < m_header[eVert]);
+		return m_coords[vert][0];
+	}
+
+	double getY(const emInt vert) const {
+		assert(vert < m_nVerts && vert < m_header[eVert]);
+		return m_coords[vert][1];
+	}
+
+	double getZ(const emInt vert) const {
+		assert(vert < m_nVerts && vert < m_header[eVert]);
+		return m_coords[vert][2];
 	}
 
 	const emInt* getBdryTriConn(const emInt bdryTri) const {
@@ -132,10 +146,6 @@ public:
 		return m_HexConn[hex];
 	}
 
-	double getLengthScale(const emInt vert) const {
-		assert(vert < m_nVerts && vert < m_header[eVert]);
-		return m_lenScale[vert];
-	}
 	bool writeVTKFile(const char fileName[]);
 	bool writeUGridFile(const char fileName[]);
 	// Writing with compressing reduces file size by a little over a factor of two,
@@ -145,8 +155,6 @@ private:
 	void init(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
-public:
-	void printMeshSizeStats();
 };
 
 

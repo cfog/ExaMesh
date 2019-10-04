@@ -12,14 +12,17 @@ void HexDivider::setupCoordMapping(const emInt verts[]) {
 		cellVerts[ii] = verts[ii];
 	}
 
-	const double *coords0 = m_pMesh->getCoords(verts[0]);
-	const double *coords1 = m_pMesh->getCoords(verts[1]);
-	const double *coords2 = m_pMesh->getCoords(verts[2]);
-	const double *coords3 = m_pMesh->getCoords(verts[3]);
-	const double *coords4 = m_pMesh->getCoords(verts[4]);
-	const double *coords5 = m_pMesh->getCoords(verts[5]);
-	const double *coords6 = m_pMesh->getCoords(verts[6]);
-	const double *coords7 = m_pMesh->getCoords(verts[7]);
+	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3], coords5[3],
+			coords6[3], coords7[3];
+
+	m_pMesh->getCoords(verts[0], coords0);
+	m_pMesh->getCoords(verts[1], coords1);
+	m_pMesh->getCoords(verts[2], coords2);
+	m_pMesh->getCoords(verts[3], coords3);
+	m_pMesh->getCoords(verts[4], coords4);
+	m_pMesh->getCoords(verts[5], coords5);
+	m_pMesh->getCoords(verts[6], coords6);
+	m_pMesh->getCoords(verts[7], coords7);
 	for (int ii = 0; ii < 3; ii++) {
 		xyzOffsetBot[ii] = coords0[ii];
 		uVecBot[ii] = coords1[ii] - coords0[ii];

@@ -10,28 +10,12 @@
 
 #include "examesh.h"
 #include "CellDivider.h"
+#include "Mapping.h"
 
 class TetDivider: public CellDivider {
-	double xyzOffset[3], uVec[3], vVec[3], wVec[3];
-	double A[3]; // coeff for u^3
-	double B[3]; // coeff for u^2 v
-	double C[3]; // coeff for u v^2
-	double E[3]; // coeff for v^3
-	double F[3]; // coeff for v^2 w
-	double G[3]; // coeff for v w^2
-	double H[3]; // coeff for w^3
-	double J[3]; // coeff for w^2 u
-	double K[3]; // coeff for w u^2
-	double L[3]; // coeff for u v w
-	double M[3]; // coeff for u^2
-	double P[3]; // coeff for v^2
-	double R[3]; // coeff for w^2
-	double T[3]; // coeff for constant
-	double U[3]; // coeff for u
-	double V[3]; // coeff for v
-	double W[3]; // coeff for w
 public:
-	TetDivider(UMesh *pVolMesh, const int segmentsPerEdge)
+	TetDivider(UMesh *pVolMesh, const int segmentsPerEdge,
+			const Mapping::MappingType type = Mapping::LengthScale)
       :
 			CellDivider(pVolMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
@@ -103,6 +87,13 @@ public:
 		faceVertIndices[3][0] = 2;
 		faceVertIndices[3][1] = 3;
 		faceVertIndices[3][2] = 0;
+
+		if (type == Mapping::LengthScale) {
+			m_Map = new TetLengthScaleMapping(m_pMesh);
+		}
+		else if (type == Mapping::Lagrange) {
+			m_Map = new LagrangeCubicTetMapping(m_pMesh);
+		}
   }
 	~TetDivider() {
 	}
@@ -116,6 +107,7 @@ public:
 			double wderiv1[3], double uderiv2[3], double vderiv2[3],
 			double wderiv2[3], double uderiv3[3], double vderiv3[3],
 			double wderiv3[3]);
+	void stuffTetsIntoOctahedron(emInt vertsNew[][4]);
 };
 
 #endif /* APPS_EXAMESH_TETDIVIDER_H_ */

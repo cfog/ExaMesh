@@ -33,7 +33,46 @@ inline double safe_acos(const double arg) {
 	else return acos(arg);
 }
 
-class UMesh;
+class ExaMesh {
+protected:
+	double *m_lenScale;
+	void setupLengthScales();
+
+public:
+	ExaMesh() :
+			m_lenScale(nullptr) {
+	}
+	virtual ~ExaMesh() {
+		if (m_lenScale) delete[] m_lenScale;
+	}
+	virtual double getX(const emInt vert) const = 0;
+	virtual double getY(const emInt vert) const = 0;
+	virtual double getZ(const emInt vert) const =0;
+	virtual void getCoords(const emInt vert, double coords[3]) const = 0;
+
+	virtual emInt numVerts() const = 0;
+	virtual emInt numBdryTris() const = 0;
+	virtual emInt numBdryQuads() const = 0;
+	virtual emInt numTets() const = 0;
+	virtual emInt numPyramids() const = 0;
+	virtual emInt numPrisms() const = 0;
+	virtual emInt numHexes() const = 0;
+
+	const virtual emInt* getBdryTriConn(const emInt bdryTri) const=0;
+	const virtual emInt* getBdryQuadConn(const emInt bdryQuad) const=0;
+	const virtual emInt* getTetConn(const emInt tet) const=0;
+	const virtual emInt* getPyrConn(const emInt pyr) const=0;
+	const virtual emInt* getPrismConn(const emInt prism) const=0;
+	const virtual emInt* getHexConn(const emInt hex) const=0;
+	void printMeshSizeStats();
+	double getLengthScale(const emInt vert) const {
+		// TODO  re-add this after it's possible to get the number
+		// of verts for a CubicMesh
+		// assert(vert < m_nVerts);
+		return m_lenScale[vert];
+	}
+
+};
 
 struct MeshSize {
 	emInt nBdryVerts, nVerts, nBdryTris, nBdryQuads, nTets, nPyrs, nPrisms,
@@ -42,6 +81,9 @@ struct MeshSize {
 
 bool computeMeshSize(const struct MeshSize& MSIn, const emInt nDivs,
 		struct MeshSize& MSOut);
+
+// Defined elsewhere.
+class UMesh;
 
 emInt subdividePartMesh(const UMesh * const pVM_input, UMesh * const pVM_output,
 		const int nDivs);

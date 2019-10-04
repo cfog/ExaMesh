@@ -12,12 +12,14 @@ void PrismDivider::setupCoordMapping(const emInt verts[]) {
 		cellVerts[ii] = verts[ii];
 	}
 
-	const double *coords0 = m_pMesh->getCoords(verts[0]);
-	const double *coords1 = m_pMesh->getCoords(verts[1]);
-	const double *coords2 = m_pMesh->getCoords(verts[2]);
-	const double *coords3 = m_pMesh->getCoords(verts[3]);
-	const double *coords4 = m_pMesh->getCoords(verts[4]);
-	const double *coords5 = m_pMesh->getCoords(verts[5]);
+	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3], coords5[3];
+
+	m_pMesh->getCoords(verts[0], coords0);
+	m_pMesh->getCoords(verts[1], coords1);
+	m_pMesh->getCoords(verts[2], coords2);
+	m_pMesh->getCoords(verts[3], coords3);
+	m_pMesh->getCoords(verts[4], coords4);
+	m_pMesh->getCoords(verts[5], coords5);
 	for (int ii = 0; ii < 3; ii++) {
 		xyzOffsetBot[ii] = coords0[ii];
 		uVecBot[ii] = coords1[ii] - coords0[ii];
