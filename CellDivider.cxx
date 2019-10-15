@@ -7,9 +7,6 @@
 
 #include "examesh.h"
 
-#include <map>
-#include <set>
-
 #include "GeomUtils.h"
 #include "CellDivider.h"
 
@@ -22,9 +19,8 @@ int CellDivider::checkOrient3D(const emInt verts[4]) const {
 	return ::checkOrient3D(coords0, coords1, coords2, coords3);
 }
 
-void CellDivider::getEdgeVerts(std::map<Edge, EdgeVerts> &vertsOnEdges,
+void CellDivider::getEdgeVerts(exaMap<Edge, EdgeVerts> &vertsOnEdges,
 		const int edge, EdgeVerts &EV) {
-	typename std::map<Edge, EdgeVerts>::iterator iterEdges;
 	int ind0 = edgeVertIndices[edge][0];
 	int ind1 = edgeVertIndices[edge][1];
 
@@ -32,7 +28,7 @@ void CellDivider::getEdgeVerts(std::map<Edge, EdgeVerts> &vertsOnEdges,
 	emInt vert1 = cellVerts[ind1];
 
 	Edge E(vert0, vert1);
-	iterEdges = vertsOnEdges.find(E);
+	auto iterEdges = vertsOnEdges.find(E);
 
 	if (iterEdges == vertsOnEdges.end()) {
 		// Doesn't exist yet, so create it.
@@ -86,6 +82,11 @@ TriFaceVerts::TriFaceVerts(const emInt v0, const emInt v1, const emInt v2) {
 	corners[0] = v0;
 	corners[1] = v1;
 	corners[2] = v2;
+	setupSorted();
+}
+
+void TriFaceVerts::setupSorted() {
+	sortVerts3(corners, sorted);
 }
 
 QuadFaceVerts::QuadFaceVerts(const emInt v0, const emInt v1, const emInt v2,
@@ -94,6 +95,11 @@ QuadFaceVerts::QuadFaceVerts(const emInt v0, const emInt v1, const emInt v2,
 	corners[1] = v1;
 	corners[2] = v2;
 	corners[3] = v3;
+	setupSorted();
+}
+
+void QuadFaceVerts::setupSorted() {
+	sortVerts4(corners, sorted);
 }
 
 void sortVerts3(const emInt input[3], emInt output[3]) {
@@ -167,31 +173,34 @@ void sortVerts4(const emInt input[4], emInt output[4]) {
 	}
 }
 
+bool operator==(const TriFaceVerts& a, const TriFaceVerts& b) {
+	return (a.sorted[0] == b.sorted[0] && a.sorted[1] == b.sorted[1]
+					&& a.sorted[2] == b.sorted[2]);
+}
+
+bool operator==(const QuadFaceVerts& a, const QuadFaceVerts& b) {
+	return (a.sorted[0] == b.sorted[0] && a.sorted[1] == b.sorted[1]
+					&& a.sorted[2] == b.sorted[2] && a.sorted[3] == b.sorted[3]);
+}
+
 bool operator<(const TriFaceVerts& a, const TriFaceVerts& b) {
-	emInt aSorted[3], bSorted[3];
-	sortVerts3(a.corners, aSorted);
-	sortVerts3(b.corners, bSorted);
-	return (aSorted[0] < bSorted[0]
-			|| (aSorted[0] == bSorted[0] && aSorted[1] < bSorted[1])
-			|| (aSorted[0] == bSorted[0] && aSorted[1] == bSorted[1]
-					&& aSorted[2] < bSorted[2]));
+	return (a.sorted[0] < b.sorted[0]
+			|| (a.sorted[0] == b.sorted[0] && a.sorted[1] < b.sorted[1])
+			|| (a.sorted[0] == b.sorted[0] && a.sorted[1] == b.sorted[1]
+					&& a.sorted[2] < b.sorted[2]));
 }
 
 bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b) {
-	emInt aSorted[4], bSorted[4];
-	sortVerts4(a.corners, aSorted);
-	sortVerts4(b.corners, bSorted);
-	return (aSorted[0] < bSorted[0]
-			|| (aSorted[0] == bSorted[0] && aSorted[1] < bSorted[1])
-			|| (aSorted[0] == bSorted[0] && aSorted[1] == bSorted[1]
-					&& aSorted[2] < bSorted[2])
-			|| (aSorted[0] == bSorted[0] && aSorted[1] == bSorted[1]
-					&& aSorted[2] == bSorted[2] && aSorted[3] < bSorted[3]));
+	return (a.sorted[0] < b.sorted[0]
+			|| (a.sorted[0] == b.sorted[0] && a.sorted[1] < b.sorted[1])
+			|| (a.sorted[0] == b.sorted[0] && a.sorted[1] == b.sorted[1]
+					&& a.sorted[2] < b.sorted[2])
+			|| (a.sorted[0] == b.sorted[0] && a.sorted[1] == b.sorted[1]
+					&& a.sorted[2] == b.sorted[2] && a.sorted[3] < b.sorted[3]));
 }
 
-void CellDivider::getTriVerts(std::set<TriFaceVerts> &vertsOnTris,
+void CellDivider::getTriVerts(exaSet<TriFaceVerts> &vertsOnTris,
 		const int face, TriFaceVerts &TFV) {
-	typename std::set<TriFaceVerts>::iterator iterTris;
 	int ind0 = faceVertIndices[face][0];
 	int ind1 = faceVertIndices[face][1];
 	int ind2 = faceVertIndices[face][2];
@@ -201,7 +210,7 @@ void CellDivider::getTriVerts(std::set<TriFaceVerts> &vertsOnTris,
 	emInt vert2 = cellVerts[ind2];
 	TriFaceVerts TFVTemp(vert0, vert1, vert2);
 
-	iterTris = vertsOnTris.find(TFVTemp);
+	auto iterTris = vertsOnTris.find(TFVTemp);
 	if (iterTris == vertsOnTris.end()) {
 		const double inv_nDivs = 1. / (nDivs);
 		const double uvw0[] = { uvwIJK[ind0][0], uvwIJK[ind0][1], uvwIJK[ind0][2] };
@@ -220,6 +229,7 @@ void CellDivider::getTriVerts(std::set<TriFaceVerts> &vertsOnTris,
 		TFV.corners[0] = vert0;
 		TFV.corners[1] = vert1;
 		TFV.corners[2] = vert2;
+		TFV.setupSorted();
 
 		for (int jj = 0; jj < nDivs - 2; jj++) {
 			for (int ii = 0; ii < nDivs - 2 - jj; ii++) {
@@ -243,9 +253,8 @@ void CellDivider::getTriVerts(std::set<TriFaceVerts> &vertsOnTris,
 	}
 }
 
-void CellDivider::getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads,
+void CellDivider::getQuadVerts(exaSet<QuadFaceVerts> &vertsOnQuads,
 		const int face, QuadFaceVerts &QFV) {
-	typename std::set<QuadFaceVerts>::iterator iterQuads;
 	int ind0 = faceVertIndices[face][0];
 	int ind1 = faceVertIndices[face][1];
 	int ind2 = faceVertIndices[face][2];
@@ -258,7 +267,7 @@ void CellDivider::getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads,
 
 	QuadFaceVerts QFVTemp(vert0, vert1, vert2, vert3);
 
-	iterQuads = vertsOnQuads.find(QFVTemp);
+	auto iterQuads = vertsOnQuads.find(QFVTemp);
 	if (iterQuads == vertsOnQuads.end()) {
 		const double inv_nDivs = 1. / (nDivs);
 		const double uvw0[] = { uvwIJK[ind0][0], uvwIJK[ind0][1], uvwIJK[ind0][2] };
@@ -283,6 +292,8 @@ void CellDivider::getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads,
 		QFV.corners[1] = vert1;
 		QFV.corners[2] = vert2;
 		QFV.corners[3] = vert3;
+		QFV.setupSorted();
+
 
 		for (int jj = 1; jj <= nDivs - 1; jj++) {
 			for (int ii = 1; ii <= nDivs - 1; ii++) {
@@ -306,7 +317,7 @@ void CellDivider::getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads,
 	}
 }
 
-void CellDivider::divideEdges(std::map<Edge, EdgeVerts> &vertsOnEdges) {
+void CellDivider::divideEdges(exaMap<Edge, EdgeVerts> &vertsOnEdges) {
 	// Divide all the edges, including storing info about which new verts
 	// are on which edges
 	for (int iE = 0; iE < numEdges; iE++) {
@@ -344,8 +355,8 @@ void CellDivider::divideEdges(std::map<Edge, EdgeVerts> &vertsOnEdges) {
 	}
 }
 
-void CellDivider::divideFaces(std::set<TriFaceVerts> &vertsOnTris,
-		std::set<QuadFaceVerts> &vertsOnQuads) {
+void CellDivider::divideFaces(exaSet<TriFaceVerts> &vertsOnTris,
+exaSet<QuadFaceVerts> &vertsOnQuads) {
 	// Divide all the faces, including storing info about which new verts
 	// are on which faces
 

@@ -14,9 +14,12 @@
 #include <stdint.h>
 #include <limits.h>
 #include <cmath>
+#include <assert.h>
 
 typedef uint32_t emInt;
 #define EMINT_MAX UINT_MAX
+
+#include "Mapping.h"
 
 // Some vector operators
 
@@ -51,6 +54,7 @@ public:
 	virtual void getCoords(const emInt vert, double coords[3]) const = 0;
 
 	virtual emInt numVerts() const = 0;
+	virtual emInt numBdryVerts() const = 0;
 	virtual emInt numBdryTris() const = 0;
 	virtual emInt numBdryQuads() const = 0;
 	virtual emInt numTets() const = 0;
@@ -64,12 +68,19 @@ public:
 	const virtual emInt* getPyrConn(const emInt pyr) const=0;
 	const virtual emInt* getPrismConn(const emInt prism) const=0;
 	const virtual emInt* getHexConn(const emInt hex) const=0;
+
+	virtual Mapping::MappingType getDefaultMappingType() const = 0;
+
 	void printMeshSizeStats();
 	double getLengthScale(const emInt vert) const {
-		// TODO  re-add this after it's possible to get the number
-		// of verts for a CubicMesh
-		// assert(vert < m_nVerts);
-		return m_lenScale[vert];
+		assert(vert < numVerts());
+		// TODO Would be better to always associate a length scale with the mesh.
+		if (m_lenScale) {
+			return m_lenScale[vert];
+		}
+		else {
+			return 1;
+		}
 	}
 
 };
@@ -85,7 +96,8 @@ bool computeMeshSize(const struct MeshSize& MSIn, const emInt nDivs,
 // Defined elsewhere.
 class UMesh;
 
-emInt subdividePartMesh(const UMesh * const pVM_input, UMesh * const pVM_output,
+emInt subdividePartMesh(const ExaMesh * const pVM_input,
+		UMesh * const pVM_output,
 		const int nDivs);
 
 void sortVerts3(const emInt input[3], emInt output[3]);

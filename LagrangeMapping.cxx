@@ -7,6 +7,7 @@
 
 #include <assert.h>
 
+#include "examesh.h"
 #include "Mapping.h"
 
 LagrangeMapping::LagrangeMapping(const ExaMesh* const EM,
@@ -54,10 +55,10 @@ double LagrangeCubicTetMapping::computeBasisFunction(const int whichFunc,
 	// These basis functions are in the same order as the nodes, which in
 	// turn are ordered according the CGNS numbering system, with base 0
 	// instead of 1.
-	double b0 = uvw[0];
-	double b1 = uvw[1];
-	double b2 = uvw[2];
-	double b3 = 1 - b0 - b1 - b2;
+	double b1 = uvw[0];
+	double b2 = uvw[1];
+	double b3 = uvw[2];
+	double b0 = 1 - b3 - b1 - b2;
 	switch (whichFunc) {
 		// For the nodes
 		case 0:

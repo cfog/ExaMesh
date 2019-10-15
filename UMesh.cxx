@@ -463,6 +463,58 @@ UMesh::UMesh(const UMesh& UMIn, const int nDivs) :
 					(totalCells / 1000000.) / (elapsed / 60));
 }
 
+UMesh::UMesh(const CubicMesh& CMIn, const int nDivs) :
+		m_nVerts(0), m_nBdryVerts(0), m_nTris(0), m_nQuads(0), m_nTets(0),
+				m_nPyrs(0), m_nPrisms(0), m_nHexes(0), m_fileImageSize(0),
+				m_header(nullptr), m_coords(nullptr), m_TriConn(nullptr),
+				m_QuadConn(nullptr), m_TetConn(nullptr), m_PyrConn(nullptr),
+				m_PrismConn(nullptr), m_HexConn(nullptr), m_buffer(nullptr),
+				m_fileImage(nullptr) {
+
+	setlocale(LC_ALL, "");
+	size_t totalCells = size_t(CMIn.numTets()) + CMIn.numPyramids()
+											+ CMIn.numPrisms() + CMIn.numHexes();
+	fprintf(
+			stderr,
+			"Initial mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",
+			CMIn.numVerts(), CMIn.numBdryTris(), CMIn.numBdryQuads(), CMIn.numTets(),
+			CMIn.numPyramids(), CMIn.numPrisms(), CMIn.numHexes(), totalCells);
+
+	MeshSize MSIn, MSOut;
+	MSIn.nBdryVerts = CMIn.numBdryVerts();
+	MSIn.nVerts = CMIn.numVerts();
+	MSIn.nBdryTris = CMIn.numBdryTris();
+	MSIn.nBdryQuads = CMIn.numBdryQuads();
+	MSIn.nTets = CMIn.numTets();
+	MSIn.nPyrs = CMIn.numPyramids();
+	MSIn.nPrisms = CMIn.numPrisms();
+	MSIn.nHexes = CMIn.numHexes();
+	bool sizesOK = computeMeshSize(MSIn, nDivs, MSOut);
+	if (!sizesOK) exit(2);
+
+	init(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
+				MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
+	// Copy length scale data from the other mesh.
+	for (emInt vv = 0; vv < CMIn.numVerts(); vv++) {
+		m_lenScale[vv] = CMIn.getLengthScale(vv);
+	}
+
+	double timeBefore = clock() / double(CLOCKS_PER_SEC);
+	subdividePartMesh(&CMIn, this, nDivs);
+	double timeAfter = clock() / double(CLOCKS_PER_SEC);
+	double elapsed = timeAfter - timeBefore;
+	setlocale(LC_ALL, "");
+	totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
+	fprintf(
+			stderr,
+			"Final mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",
+			m_nVerts, m_nTris, m_nQuads, m_nTets, m_nPyrs, m_nPrisms, m_nHexes,
+			totalCells);
+	fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", elapsed);
+	fprintf(stderr, "                          %5.2F million cells / minute\n",
+					(totalCells / 1000000.) / (elapsed / 60));
+}
+
 
 bool UMesh::writeVTKFile(const char fileName[]) {
 	double timeBefore = clock() / double(CLOCKS_PER_SEC);

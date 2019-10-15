@@ -9,9 +9,9 @@
 #define SRC_UMESH_H_
 
 #include <assert.h>
-#include <map>
 
 #include "examesh.h"
+#include "CubicMesh.h"
 
 class UMesh: public ExaMesh {
 	emInt m_nVerts, m_nBdryVerts, m_nTris, m_nQuads, m_nTets, m_nPyrs, m_nPrisms,
@@ -38,6 +38,7 @@ public:
 			const emInt nPrisms, const emInt nHexes);
 	UMesh(const char baseFileName[], const char type[], const char ugridInfix[]);
 	UMesh(const UMesh& UM_in, const int nDivs);
+	UMesh(const CubicMesh& CM, const int nDivs);
 	~UMesh();
 	emInt maxNVerts() const {
 		return m_nVerts;
@@ -62,6 +63,9 @@ public:
 	}
 	emInt numVerts() const {
 		return m_header[eVert];
+	}
+	emInt numBdryVerts() const {
+		return m_nBdryVerts;
 	}
 	emInt numBdryTris() const {
 		return m_header[eTri];
@@ -144,6 +148,10 @@ public:
 	const emInt* getHexConn(const emInt hex) const {
 		assert(hex < m_nHexes && hex < m_header[eHex]);
 		return m_HexConn[hex];
+	}
+
+	Mapping::MappingType getDefaultMappingType() const {
+		return Mapping::LengthScale;
 	}
 
 	bool writeVTKFile(const char fileName[]);

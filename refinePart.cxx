@@ -10,8 +10,6 @@
 #include <unistd.h>
 #include <time.h>
 
-#include <set>
-
 #include "HexDivider.h"
 #include "PrismDivider.h"
 #include "PyrDivider.h"
@@ -20,7 +18,7 @@
 #include "BdryQuadDivider.h"
 #include "examesh.h"
 
-emInt subdividePartMesh(const UMesh * const pVM_input,
+emInt subdividePartMesh(const ExaMesh * const pVM_input,
 		UMesh * const pVM_output, const int nDivs) {
   assert(nDivs >= 2);
   // Assumption:  the mesh is already ordered in a way that seems sensible
@@ -42,9 +40,9 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
   // TODO: Potentially, identify in advance how many times each edge is used,
   // so that when all of them have appeared, the edge can be removed from the
   // map.
-	std::map<Edge, EdgeVerts> vertsOnEdges;
-	std::set<TriFaceVerts> vertsOnTris;
-	std::set<QuadFaceVerts> vertsOnQuads;
+	exaMap<Edge, EdgeVerts> vertsOnEdges;
+	exaSet<TriFaceVerts> vertsOnTris;
+	exaSet<QuadFaceVerts> vertsOnQuads;
 
 	// Copy vertex data into the new mesh.
 	for (emInt iV = 0; iV < pVM_input->numVerts(); iV++) {
@@ -54,7 +52,8 @@ emInt subdividePartMesh(const UMesh * const pVM_input,
 	}
 	assert(pVM_input->numVerts() == pVM_output->numVerts());
 
-	TetDivider TD(pVM_output, nDivs);
+	// Need to explicitly specify the type of mapping here.
+	TetDivider TD(pVM_output, nDivs, pVM_input->getDefaultMappingType());
 	for (emInt iT = 0; iT < pVM_input->numTets(); iT++) {
     // Divide all the edges, including storing info about which new verts
     // are on which edges

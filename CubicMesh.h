@@ -42,6 +42,9 @@ public:
 	virtual emInt numVerts() const {
 		return m_nVerts;
 	}
+	virtual emInt numBdryVerts() const {
+		return m_nBdryVerts;
+	}
 	virtual emInt numBdryTris() const {
 		return m_nTri10;
 	}
@@ -111,6 +114,10 @@ public:
 	const emInt* getHexConn(const emInt hex) const {
 		assert(hex < m_nHex56);
 		return m_Hex56Conn[hex];
+	}
+
+	Mapping::MappingType getDefaultMappingType() const {
+		return Mapping::Lagrange;
 	}
 };
 

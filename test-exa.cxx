@@ -711,9 +711,9 @@ BOOST_AUTO_TEST_SUITE(MappingTests)
 			double uvw[] = { 0.2, 0.3, 0.4 };
 			double xyz[3];
 			TLSM.computeTransformedCoords(uvw, xyz);
-			BOOST_CHECK_CLOSE(xyz[0], 3.784, 1.e-8);
-			BOOST_CHECK_CLOSE(xyz[1], 8.245, 1.e-8);
-			BOOST_CHECK_CLOSE(xyz[2], 11.664, 1.e-8);
+			BOOST_CHECK_CLOSE(xyz[0], 4.552, 1.e-8);
+			BOOST_CHECK_CLOSE(xyz[1], 9.589, 1.e-8);
+			BOOST_CHECK_CLOSE(xyz[2], 13.44, 1.e-8);
 		}
 
 		TLSM.setupCoordMapping(verts);
@@ -751,15 +751,15 @@ BOOST_AUTO_TEST_SUITE(MappingTests)
 		uvw[1] = 1. / 6;
 		uvw[2] = 5. / 12;
 		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], 1.284103709571, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], 1.108135846478, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], 1.902326582363, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[0], 1.476794722573, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], 1.373834680205, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], 2.158765461278, 1.e-8);
 
 		emInt verts2[] = { 3, 1, 2, 0 };
 		TLSM.setupCoordMapping(verts2);
 
 		uvw[0] = uvw[1] = uvw[2] = 0;
-
+		TLSM.computeTransformedCoords(uvw, xyz);
 		BOOST_CHECK_CLOSE(xyz[0], vert3[0], 1.e-8);
 		BOOST_CHECK_CLOSE(xyz[1], vert3[1], 1.e-8);
 		BOOST_CHECK_CLOSE(xyz[2], vert3[2], 1.e-8);
@@ -789,9 +789,9 @@ BOOST_AUTO_TEST_SUITE(MappingTests)
 		uvw[1] = 1. / 6;
 		uvw[2] = 1. / 6;
 		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], 1.45180347311979, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], 1.35250275357685, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], 2.11982908459981, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[0], 1.4840038217734239, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], 1.3976408636485027, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], 2.1612681674806158, 1.e-8);
 	}
 
 	BOOST_AUTO_TEST_SUITE_END()
@@ -819,18 +819,21 @@ BOOST_AUTO_TEST_SUITE(LagrangeCubicMapping)
 
 		// So the nodal values are just these functions evaluated at nodes, where for the
 		// canonical tet, we have:
-		double uvw[][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0, 0, 0 }, {
-				2 / 3., 1 / 3., 0 },
-												{ 1 / 3., 2 / 3., 0 }, { 0, 2 / 3., 1 / 3. },
-												{ 0, 1 / 3., 2 / 3. }, { 1 / 3., 0, 2 / 3. },
-												{ 2 / 3., 0, 1 / 3. }, { 2 / 3., 0, 0 },
-												{ 1 / 3., 0, 0 }, { 0, 2 / 3., 0 },
-												{ 0, 1 / 3., 0 }, {
-														0, 0, 2 / 3. },
-												{ 0, 0, 1 / 3. }, { 1 / 3., 1 / 3., 1 / 3. }, { 1 / 3.,
-																																				1 / 3.,
-																																				0 },
-												{ 0, 1 / 3., 1 / 3. }, { 1 / 3., 0, 1 / 3. } };
+		double uvw[][3] =
+				{ { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 },
+					{ 0, 0, 1 }, // Corner nodes
+					{ 1 / 3., 0, 0 },
+					{ 2 / 3., 0, 0 },  // Nodes between 0 and 1
+					{ 2 / 3., 1 / 3., 0 },
+					{ 1 / 3., 2 / 3., 0 }, // Nodes between 1 and 2
+					{ 0, 2 / 3., 0 }, { 0, 1 / 3., 0 }, // Nodes between 2 and 0
+					{ 0, 0, 1 / 3. }, { 0, 0, 2 / 3. }, // Nodes between 0 and 3
+												{ 2 / 3., 0, 1 / 3. }, { 1 / 3., 0, 2 / 3. }, // Nodes between 1 and 3
+												{ 0, 2 / 3., 1 / 3. }, { 0, 1 / 3., 2 / 3. }, // Nodes between 2 and 3
+												{ 1 / 3., 1 / 3., 0 }, // Node on 012
+												{ 1 / 3., 0, 1 / 3. }, // Node on 013
+												{ 1 / 3., 1 / 3., 1 / 3. }, // Node on 123
+												{ 0, 1 / 3., 1 / 3. } }; // Node on 203
 		double xyz[20][3] = { 0 };
 
 		// Now the nodal values, by simple functional evaluation.
@@ -842,6 +845,7 @@ BOOST_AUTO_TEST_SUITE(LagrangeCubicMapping)
 		for (int iFunc = 0; iFunc < 20; iFunc++) {
 			for (int iNode = 0; iNode < 20; iNode++) {
 				double value = LCTM.computeBasisFunction(iFunc, uvw[iNode]);
+//				printf("%d %d\n", iFunc, iNode);
 				BOOST_CHECK_CLOSE(1 + value, 1 + (iFunc == iNode ? 1 : 0), 1.e-8);
 			}
 		}

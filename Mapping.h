@@ -8,7 +8,7 @@
 #ifndef SRC_MAPPING_H_
 #define SRC_MAPPING_H_
 
-#include "UMesh.h"
+class ExaMesh;
 
 // Lagrange element mappings
 

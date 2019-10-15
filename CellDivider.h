@@ -10,7 +10,23 @@
 
 #include <algorithm>
 #include <cmath>
+
+#ifdef USE_ORDERED
+
 #include <set>
+#include <map>
+#define exaSet std::set
+#define exaMap std::map
+
+#else
+
+#include <unordered_set>
+#include <unordered_map>
+
+#define exaSet std::unordered_set
+#define exaMap std::unordered_map
+
+#endif
 
 #include "examesh.h"
 #include "Mapping.h"
@@ -33,7 +49,9 @@ public:
 	bool operator<(const Edge &E) const {
 		return (v0 < E.v0 || (v0 == E.v0 && v1 < E.v1));
 	}
-
+	bool operator==(const Edge &E) const {
+		return v0 == E.v0 && v1 == E.v1;
+	}
 	emInt getV0() const {
 		return v0;
 	}
@@ -48,22 +66,65 @@ struct EdgeVerts {
 };
 
 struct TriFaceVerts {
-	emInt corners[3];
+	emInt corners[3], sorted[3];
 	emInt intVerts[MAX_DIVS - 2][MAX_DIVS - 2];
 	TriFaceVerts() {
 	}
 	TriFaceVerts(const emInt v0, const emInt v1, const emInt v2);
+	void setupSorted();
 };
 
 struct QuadFaceVerts {
-	emInt corners[4];
+	emInt corners[4], sorted[4];
 	emInt intVerts[MAX_DIVS - 1][MAX_DIVS - 1];
 	QuadFaceVerts() {
 	}
 	QuadFaceVerts(const emInt v0, const emInt v1, const emInt v2, const emInt v3);
+	void setupSorted();
 };
 
+namespace std {
+	template<> struct hash<TriFaceVerts> {
+		typedef TriFaceVerts argument_type;
+		typedef std::size_t result_type;
+		result_type operator()(const argument_type& TFV) const noexcept
+		{
+			const result_type h0 = TFV.sorted[0];
+			const result_type h1 = TFV.sorted[1];
+			const result_type h2 = TFV.sorted[2];
+			return (h0 ^ (h1 << 1)) ^ (h2 << 2);
+		}
+	};
+
+	template<> struct hash<QuadFaceVerts> {
+		typedef QuadFaceVerts argument_type;
+		typedef std::size_t result_type;
+		result_type operator()(const argument_type& QFV) const noexcept
+		{
+			const result_type h0 = QFV.sorted[0];
+			const result_type h1 = QFV.sorted[1];
+			const result_type h2 = QFV.sorted[2];
+			const result_type h3 = QFV.sorted[3];
+			return h0 ^ (h1 << 1) ^ (h2 << 2) ^ (h3 << 3);
+		}
+	};
+
+	template<> struct hash<Edge> {
+		typedef Edge argument_type;
+		typedef std::size_t result_type;
+		result_type operator()(const argument_type& E) const noexcept
+		{
+			const result_type h0 = E.getV0();
+			const result_type h1 = E.getV1();
+			return (h0 ^ (h1 << 1));
+		}
+	};
+}
+
+
+bool operator==(const TriFaceVerts& a, const TriFaceVerts& b);
 bool operator<(const TriFaceVerts& a, const TriFaceVerts& b);
+bool operator==(const QuadFaceVerts& a, const QuadFaceVerts& b);
 bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b);
 
 class CellDivider {
@@ -82,13 +143,14 @@ protected:
 	// Used by both tets and pyramids.
 	int checkOrient3D(const emInt verts[4]) const;
 private:
-	void getEdgeVerts(std::map<Edge, EdgeVerts> &vertsOnEdges, const int edge,
+	void getEdgeVerts(exaMap<Edge, EdgeVerts> &vertsOnEdges, const int edge,
 			EdgeVerts &EV);
 
-	void getQuadVerts(std::set<QuadFaceVerts> &vertsOnQuads, const int face,
+	void getQuadVerts(exaSet<QuadFaceVerts> &vertsOnQuads, const int face,
 			QuadFaceVerts &QFV);
 
-	void getTriVerts(std::set<TriFaceVerts> &vertsOnTris, const int face,
+	void getTriVerts(exaSet<TriFaceVerts> &vertsOnTris,
+			const int face,
 			TriFaceVerts& TFV);
 public:
 	CellDivider(UMesh *pVolMesh, const emInt segmentsPerEdge) :
@@ -108,9 +170,9 @@ public:
 		delete[] localVerts;
 		if (m_Map) delete m_Map;
 	}
-	void divideEdges(std::map<Edge, EdgeVerts> &vertsOnEdges);
-	void divideFaces(std::set<TriFaceVerts> &vertsOnTris,
-			std::set<QuadFaceVerts> &vertsOnQuads);
+	void divideEdges(exaMap<Edge, EdgeVerts> &vertsOnEdges);
+	void divideFaces(exaSet<TriFaceVerts> &vertsOnTris,
+	exaSet<QuadFaceVerts> &vertsOnQuads);
 	virtual void divideInterior() = 0;
 	virtual void createNewCells() = 0;
 	virtual void setupCoordMapping(const emInt verts[]) = 0;
