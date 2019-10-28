@@ -8,8 +8,8 @@
 #ifndef APPS_EXAMESH_HEXDIVIDER_H_
 #define APPS_EXAMESH_HEXDIVIDER_H_
 
-#include "examesh.h"
 #include "CellDivider.h"
+#include "ExaMesh.h"
 
 class HexDivider: public CellDivider {
 	double xyzOffsetBot[3], uVecBot[3], vVecBot[3], uvVecBot[3];

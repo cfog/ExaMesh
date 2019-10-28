@@ -8,8 +8,8 @@
 #ifndef APPS_EXAMESH_PRISMDIVIDER_H_
 #define APPS_EXAMESH_PRISMDIVIDER_H_
 
-#include "examesh.h"
 #include "CellDivider.h"
+#include "ExaMesh.h"
 
 class PrismDivider: public CellDivider {
 	double xyzOffsetBot[3], uVecBot[3], vVecBot[3];

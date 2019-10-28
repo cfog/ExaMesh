@@ -8,7 +8,7 @@
 #define BOOST_TEST_MODULE test-exa
 #include <boost/test/unit_test.hpp>
 
-#include "examesh.h"
+#include "ExaMesh.h"
 #include "UMesh.h"
 #include "CubicMesh.h"
 

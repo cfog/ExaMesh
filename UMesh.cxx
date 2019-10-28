@@ -5,17 +5,19 @@
  *      Author: cfog
  */
 
+#include <ExaMesh.h>
 #include <iostream>
 #include <cmath>
 
 #include <algorithm>
+#include <memory>
 #include <set>
 #include <vector>
 
+#include <cgnslib.h>
 #include <string.h>
-#include <zlib.h>
 
-#include "examesh.h"
+#include "exa-defs.h"
 #include "UMesh.h"
 
 #include "GMGW_unstr.hxx"
@@ -58,9 +60,9 @@ void UMesh::init(const emInt nVerts, const emInt nBdryVerts,
 											+ 8 * size_t(nHexes))
 										* intSize;
 	// How many bytes to add to fill up the last eight-byte chunk?
-	size_t slack2Size = ((connSize / 8 + 1) * 8) - connSize;
+	size_t slack2Size = (((connSize / 8 + 1) * 8) - connSize) % 8;
 	size_t bufferBytes = headerSize + coordSize + connSize + slack1Size
-											+ slack2Size;
+												+ slack2Size;
 	assert((headerSize + slack1Size) % 8 == 0);
 	assert((connSize + slack2Size) % 8 == 0);
 	assert(bufferBytes % 8 == 0);
@@ -85,6 +87,7 @@ void UMesh::init(const emInt nVerts, const emInt nBdryVerts,
 	m_fileImageSize = bufferBytes - slack1Size - slack2Size;
 
 	m_lenScale = new double[m_nVerts];
+	m_coarseGlobalIndices = new emInt[m_nVerts];
 }
 
 UMesh::UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
@@ -105,17 +108,19 @@ UMesh::UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 				nHexes);
 }
 
-emInt UMesh::addVert(const double newCoords[3]) {
+emInt UMesh::addVert(const double newCoords[3], const emInt coarseGlobalIndex) {
 	assert(memoryCheck(m_coords[m_header[eVert]], 24));
 	m_coords[m_header[eVert]][0] = newCoords[0];
 	m_coords[m_header[eVert]][1] = newCoords[1];
 	m_coords[m_header[eVert]][2] = newCoords[2];
+	m_coarseGlobalIndices[m_header[eVert]] = coarseGlobalIndex;
 	return (m_header[eVert]++);
 }
 
 emInt UMesh::addBdryTri(const emInt verts[3]) {
 	assert(memoryCheck(m_TriConn[m_header[eTri]], 3 * sizeof(emInt)));
 	for (int ii = 0; ii < 3; ii++) {
+		assert(verts[ii] < m_header[eVert]);
 		m_TriConn[m_header[eTri]][ii] = verts[ii];
 	}
 	return (m_header[eTri]++);
@@ -124,6 +129,7 @@ emInt UMesh::addBdryTri(const emInt verts[3]) {
 emInt UMesh::addBdryQuad(const emInt verts[4]) {
 	assert(memoryCheck(m_QuadConn[m_header[eQuad]], 4 * sizeof(emInt)));
 	for (int ii = 0; ii < 4; ii++) {
+		assert(verts[ii] < m_header[eVert]);
 		m_QuadConn[m_header[eQuad]][ii] = verts[ii];
 	}
 	return (m_header[eQuad]++);
@@ -132,6 +138,7 @@ emInt UMesh::addBdryQuad(const emInt verts[4]) {
 emInt UMesh::addTet(const emInt verts[4]) {
 	assert(memoryCheck(m_TetConn[m_header[eTet]], 4 * sizeof(emInt)));
 	for (int ii = 0; ii < 4; ii++) {
+		assert(verts[ii] < m_header[eVert]);
 		m_TetConn[m_header[eTet]][ii] = verts[ii];
 	}
 	return (m_header[eTet]++);
@@ -140,6 +147,7 @@ emInt UMesh::addTet(const emInt verts[4]) {
 emInt UMesh::addPyramid(const emInt verts[5]) {
 	assert(memoryCheck(m_PyrConn[m_header[ePyr]], 5 * sizeof(emInt)));
 	for (int ii = 0; ii < 5; ii++) {
+		assert(verts[ii] < m_header[eVert]);
 		m_PyrConn[m_header[ePyr]][ii] = verts[ii];
 	}
 	return (m_header[ePyr]++);
@@ -148,6 +156,7 @@ emInt UMesh::addPyramid(const emInt verts[5]) {
 emInt UMesh::addPrism(const emInt verts[6]) {
 	assert(memoryCheck(m_PrismConn[m_header[ePrism]], 6 * sizeof(emInt)));
 	for (int ii = 0; ii < 6; ii++) {
+		assert(verts[ii] < m_header[eVert]);
 		m_PrismConn[m_header[ePrism]][ii] = verts[ii];
 	}
 	return (m_header[ePrism]++);
@@ -156,6 +165,7 @@ emInt UMesh::addPrism(const emInt verts[6]) {
 emInt UMesh::addHex(const emInt verts[8]) {
 	assert(memoryCheck(m_HexConn[m_header[eHex]], 8 * sizeof(emInt)));
 	for (int ii = 0; ii < 8; ii++) {
+		assert(verts[ii] < m_header[eVert]);
 		m_HexConn[m_header[eHex]][ii] = verts[ii];
 	}
 	return (m_header[eHex]++);
@@ -163,6 +173,7 @@ emInt UMesh::addHex(const emInt verts[8]) {
 
 UMesh::~UMesh() {
 	free(m_buffer);
+	delete[] m_coarseGlobalIndices;
 }
 
 void checkConnectivitySize(const char cellType, const emInt nVerts) {
@@ -261,8 +272,7 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 				m_PrismConn(nullptr), m_HexConn(nullptr), m_buffer(nullptr),
 				m_fileImage(nullptr) {
 	// Use the same IO routines as the mesh analyzer code from GMGW.
-	FileWrapper* reader = FileWrapper::factory(baseFileName, type,
-																										ugridInfix);
+	FileWrapper* reader = FileWrapper::factory(baseFileName, type, ugridInfix);
 
 	reader->scanFile();
 
@@ -428,18 +438,7 @@ UMesh::UMesh(const UMesh& UMIn, const int nDivs) :
 			UMIn.m_nVerts, UMIn.m_nTris, UMIn.m_nQuads, UMIn.m_nTets, UMIn.m_nPyrs,
 			UMIn.m_nPrisms, UMIn.m_nHexes, totalCells);
 
-	MeshSize MSIn, MSOut;
-	MSIn.nBdryVerts = UMIn.m_nBdryVerts;
-	MSIn.nVerts = UMIn.m_header[eVert];
-	MSIn.nBdryTris = UMIn.m_header[eTri];
-	MSIn.nBdryQuads = UMIn.m_header[eQuad];
-	MSIn.nTets = UMIn.m_header[eTet];
-	MSIn.nPyrs = UMIn.m_header[ePyr];
-	MSIn.nPrisms = UMIn.m_header[ePrism];
-	MSIn.nHexes = UMIn.m_header[eHex];
-	bool sizesOK = computeMeshSize(MSIn, nDivs, MSOut);
-	if (!sizesOK) exit(2);
-
+	MeshSize MSOut = UMIn.computeFineMeshSize(nDivs);
 	init(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
 				MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
 	// Copy length scale data from the other mesh.
@@ -477,25 +476,26 @@ UMesh::UMesh(const CubicMesh& CMIn, const int nDivs) :
 	fprintf(
 			stderr,
 			"Initial mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",
-			CMIn.numVerts(), CMIn.numBdryTris(), CMIn.numBdryQuads(), CMIn.numTets(),
-			CMIn.numPyramids(), CMIn.numPrisms(), CMIn.numHexes(), totalCells);
+			CMIn.numVertsToCopy(), CMIn.numBdryTris(), CMIn.numBdryQuads(),
+			CMIn.numTets(), CMIn.numPyramids(), CMIn.numPrisms(), CMIn.numHexes(),
+			totalCells);
 
 	MeshSize MSIn, MSOut;
 	MSIn.nBdryVerts = CMIn.numBdryVerts();
-	MSIn.nVerts = CMIn.numVerts();
+	MSIn.nVerts = CMIn.numVertsToCopy();
 	MSIn.nBdryTris = CMIn.numBdryTris();
 	MSIn.nBdryQuads = CMIn.numBdryQuads();
 	MSIn.nTets = CMIn.numTets();
 	MSIn.nPyrs = CMIn.numPyramids();
 	MSIn.nPrisms = CMIn.numPrisms();
 	MSIn.nHexes = CMIn.numHexes();
-	bool sizesOK = computeMeshSize(MSIn, nDivs, MSOut);
+	bool sizesOK = ::computeMeshSize(MSIn, nDivs, MSOut);
 	if (!sizesOK) exit(2);
 
 	init(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
 				MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
 	// Copy length scale data from the other mesh.
-	for (emInt vv = 0; vv < CMIn.numVerts(); vv++) {
+	for (emInt vv = 0; vv < CMIn.numVertsToCopy(); vv++) {
 		m_lenScale[vv] = CMIn.getLengthScale(vv);
 	}
 
@@ -514,7 +514,6 @@ UMesh::UMesh(const CubicMesh& CMIn, const int nDivs) :
 	fprintf(stderr, "                          %5.2F million cells / minute\n",
 					(totalCells / 1000000.) / (elapsed / 60));
 }
-
 
 bool UMesh::writeVTKFile(const char fileName[]) {
 	double timeBefore = clock() / double(CLOCKS_PER_SEC);
@@ -560,15 +559,13 @@ bool UMesh::writeVTKFile(const char fileName[]) {
 	// Write all the bdry quads
 	for (emInt i = 0; i < nQuads; i++) {
 		const emInt *verts = getBdryQuadConn(i);
-		fprintf(outFile, "4 %d %d %d %d\n", verts[0], verts[1], verts[2],
-						verts[3]);
+		fprintf(outFile, "4 %d %d %d %d\n", verts[0], verts[1], verts[2], verts[3]);
 	}
 
 	// Write all the tets
 	for (emInt i = 0; i < nTets; i++) {
 		const emInt *verts = getTetConn(i);
-		fprintf(outFile, "4 %d %d %d %d\n", verts[0], verts[1], verts[2],
-						verts[3]);
+		fprintf(outFile, "4 %d %d %d %d\n", verts[0], verts[1], verts[2], verts[3]);
 	}
 
 	// Write all the pyramids
@@ -642,6 +639,282 @@ bool UMesh::writeUGridFile(const char fileName[]) {
 					(totalCells / 1000000.) / (elapsed / 60));
 
 	return true;
+}
+
+template<typename T>
+void addUniquely(exaSet<T>& mySet, T& val) {
+	auto iter = mySet.find(val);
+	if (iter != mySet.end()) {
+		mySet.erase(iter);
+	}
+	else {
+		mySet.insert(val);
+	}
+}
+
+static void remapIndices(const emInt nPts, const std::vector<emInt>& newIndices,
+		const emInt* conn, emInt* newConn) {
+	for (emInt jj = 0; jj < nPts; jj++) {
+		newConn[jj] = newIndices[conn[jj]];
+	}
+}
+
+std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
+		std::vector<CellPartData>& vecCPD) const {
+	// Count the number of tris, quads, tets, pyrs, prisms and hexes.
+	const emInt first = P.getFirst();
+	const emInt last = P.getLast();
+
+	exaSet<TriFaceVerts> partBdryTris;
+	exaSet<QuadFaceVerts> partBdryQuads;
+
+	emInt nTris(0), nQuads(0), nTets(0), nPyrs(0), nPrisms(0), nHexes(0);
+	const emInt *conn;
+
+	std::vector<bool> isBdryVert(numVerts(), false);
+	std::vector<bool> isVertUsed(numVerts(), false);
+
+	for (emInt ii = first; ii < last; ii++) {
+		emInt type = vecCPD[ii].getCellType();
+		emInt ind = vecCPD[ii].getIndex();
+		switch (type) {
+			default:
+				// Panic! Should never get here.
+				assert(0);
+				break;
+			case TETRA_4: {
+				nTets++;
+				conn = getTetConn(ind);
+				TriFaceVerts TFV012(conn[0], conn[1], conn[2]);
+				TriFaceVerts TFV013(conn[0], conn[1], conn[3]);
+				TriFaceVerts TFV123(conn[1], conn[2], conn[3]);
+				TriFaceVerts TFV203(conn[2], conn[0], conn[3]);
+				addUniquely(partBdryTris, TFV012);
+				addUniquely(partBdryTris, TFV013);
+				addUniquely(partBdryTris, TFV123);
+				addUniquely(partBdryTris, TFV203);
+				isVertUsed[conn[0]] = true;
+				isVertUsed[conn[1]] = true;
+				isVertUsed[conn[2]] = true;
+				isVertUsed[conn[3]] = true;
+				break;
+			}
+			case PYRA_5: {
+				nPyrs++;
+				conn = getPyrConn(ind);
+				QuadFaceVerts QFV0123(conn[0], conn[1], conn[2], conn[3]);
+				TriFaceVerts TFV014(conn[0], conn[1], conn[4]);
+				TriFaceVerts TFV124(conn[1], conn[2], conn[4]);
+				TriFaceVerts TFV234(conn[2], conn[3], conn[4]);
+				TriFaceVerts TFV304(conn[3], conn[0], conn[4]);
+				addUniquely(partBdryQuads, QFV0123);
+				addUniquely(partBdryTris, TFV014);
+				addUniquely(partBdryTris, TFV124);
+				addUniquely(partBdryTris, TFV234);
+				addUniquely(partBdryTris, TFV304);
+				isVertUsed[conn[0]] = true;
+				isVertUsed[conn[1]] = true;
+				isVertUsed[conn[2]] = true;
+				isVertUsed[conn[3]] = true;
+				isVertUsed[conn[4]] = true;
+				break;
+			}
+			case PENTA_6: {
+				nPrisms++;
+				conn = getPrismConn(ind);
+				QuadFaceVerts QFV0143(conn[0], conn[1], conn[4], conn[3]);
+				QuadFaceVerts QFV1254(conn[1], conn[2], conn[5], conn[4]);
+				QuadFaceVerts QFV2035(conn[2], conn[0], conn[3], conn[5]);
+				TriFaceVerts TFV012(conn[0], conn[1], conn[2]);
+				TriFaceVerts TFV345(conn[3], conn[4], conn[5]);
+				addUniquely(partBdryQuads, QFV0143);
+				addUniquely(partBdryQuads, QFV1254);
+				addUniquely(partBdryQuads, QFV2035);
+				addUniquely(partBdryTris, TFV012);
+				addUniquely(partBdryTris, TFV345);
+				isVertUsed[conn[0]] = true;
+				isVertUsed[conn[1]] = true;
+				isVertUsed[conn[2]] = true;
+				isVertUsed[conn[3]] = true;
+				isVertUsed[conn[4]] = true;
+				isVertUsed[conn[5]] = true;
+				break;
+			}
+			case HEXA_8: {
+				nHexes++;
+				conn = getHexConn(ind);
+				QuadFaceVerts QFV0154(conn[0], conn[1], conn[5], conn[4]);
+				QuadFaceVerts QFV1265(conn[1], conn[2], conn[6], conn[5]);
+				QuadFaceVerts QFV2376(conn[2], conn[3], conn[7], conn[6]);
+				QuadFaceVerts QFV3047(conn[3], conn[0], conn[6], conn[7]);
+				QuadFaceVerts QFV0123(conn[0], conn[1], conn[2], conn[3]);
+				QuadFaceVerts QFV4567(conn[4], conn[5], conn[6], conn[7]);
+				addUniquely(partBdryQuads, QFV0154);
+				addUniquely(partBdryQuads, QFV1265);
+				addUniquely(partBdryQuads, QFV2376);
+				addUniquely(partBdryQuads, QFV3047);
+				addUniquely(partBdryQuads, QFV0123);
+				addUniquely(partBdryQuads, QFV4567);
+				isVertUsed[conn[0]] = true;
+				isVertUsed[conn[1]] = true;
+				isVertUsed[conn[2]] = true;
+				isVertUsed[conn[3]] = true;
+				isVertUsed[conn[4]] = true;
+				isVertUsed[conn[5]] = true;
+				isVertUsed[conn[6]] = true;
+				isVertUsed[conn[7]] = true;
+				break;
+			}
+		} // end switch
+	} // end loop to gather information
+
+	// Now check to see which bdry entities are in this part.  That'll be the
+	// ones whose verts are all marked as used.  Unfortunately, this requires
+	// searching through -all- the bdry entities for each part.
+	std::vector<emInt> realBdryTris;
+	std::vector<emInt> realBdryQuads;
+	for (emInt ii = 0; ii < numBdryTris(); ii++) {
+		conn = getBdryTriConn(ii);
+		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]) {
+			TriFaceVerts TFV(conn[0], conn[1], conn[2]);
+			auto iter = partBdryTris.find(TFV);
+			// If this bdry tri is an unmatched tri from this part, match it, and
+			// add the bdry tri to the list of things to copy to the part coarse
+			// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
+			// bdry face from slipping through.
+			if (iter != partBdryTris.end()) {
+				partBdryTris.erase(iter);
+				isBdryVert[conn[0]] = true;
+				isBdryVert[conn[1]] = true;
+				isBdryVert[conn[2]] = true;
+				realBdryTris.push_back(ii);
+				nTris++;
+			}
+		}
+	}
+	for (emInt ii = 0; ii < numBdryQuads(); ii++) {
+		conn = getBdryQuadConn(ii);
+		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]
+				&& isVertUsed[conn[3]]) {
+			QuadFaceVerts QFV(conn[0], conn[1], conn[2], conn[3]);
+			auto iter = partBdryQuads.find(QFV);
+			// If this bdry tri is an unmatched tri from this part, match it, and
+			// add the bdry tri to the list of things to copy to the part coarse
+			// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
+			// bdry face from slipping through.
+			if (iter != partBdryQuads.end()) {
+				partBdryQuads.erase(iter);
+				isBdryVert[conn[0]] = true;
+				isBdryVert[conn[1]] = true;
+				isBdryVert[conn[2]] = true;
+				isBdryVert[conn[3]] = true;
+				realBdryQuads.push_back(ii);
+				nQuads++;
+			}
+		}
+	}
+
+	emInt nPartBdryTris = partBdryTris.size();
+	emInt nPartBdryQuads = partBdryQuads.size();
+
+	for (auto tri : partBdryTris) {
+		isBdryVert[tri.corners[0]] = true;
+		isBdryVert[tri.corners[1]] = true;
+		isBdryVert[tri.corners[2]] = true;
+	}
+	for (auto quad : partBdryQuads) {
+		isBdryVert[quad.corners[0]] = true;
+		isBdryVert[quad.corners[1]] = true;
+		isBdryVert[quad.corners[2]] = true;
+		isBdryVert[quad.corners[3]] = true;
+	}
+	emInt nBdryVerts = 0, nVerts = 0;
+	for (emInt ii = 0; ii < numVerts(); ii++) {
+		if (isBdryVert[ii]) nBdryVerts++;
+		if (isVertUsed[ii]) nVerts++;
+	}
+
+	// Now set up the data structures for the new coarse UMesh
+	auto UUM = std::make_unique<UMesh>(nVerts, nBdryVerts, nTris + nPartBdryTris,
+																			nQuads + nPartBdryQuads, nTets, nPyrs,
+																			nPrisms, nHexes);
+
+	// Store the vertices, while keeping a mapping from the full list of verts
+	// to the restricted list so the connectivity can be copied properly.
+	std::vector<emInt> newIndices(numVerts(), EMINT_MAX);
+	for (emInt ii = 0; ii < numVerts(); ii++) {
+		if (isVertUsed[ii]) {
+			double coords[3];
+			getCoords(ii, coords);
+			newIndices[ii] = UUM->addVert(coords, ii);
+		}
+	}
+
+	// Now copy connectivity.
+	emInt newConn[8];
+	for (emInt ii = first; ii < last; ii++) {
+		emInt type = vecCPD[ii].getCellType();
+		emInt ind = vecCPD[ii].getIndex();
+		switch (type) {
+			default:
+				// Panic! Should never get here.
+				assert(0);
+				break;
+			case TETRA_4: {
+				conn = getTetConn(ind);
+				remapIndices(4, newIndices, conn, newConn);
+				UUM->addTet(newConn);
+				break;
+			}
+			case PYRA_5: {
+				conn = getPyrConn(ind);
+				remapIndices(5, newIndices, conn, newConn);
+				UUM->addPyramid(newConn);
+				break;
+			}
+			case PENTA_6: {
+				conn = getPrismConn(ind);
+				remapIndices(6, newIndices, conn, newConn);
+				UUM->addPrism(newConn);
+				break;
+			}
+			case HEXA_8: {
+				conn = getHexConn(ind);
+				remapIndices(8, newIndices, conn, newConn);
+				UUM->addHex(newConn);
+				break;
+			}
+		} // end switch
+	} // end loop to copy most connectivity
+
+	for (emInt ii = 0; ii < realBdryTris.size(); ii++) {
+		conn = getBdryTriConn(realBdryTris[ii]);
+		remapIndices(3, newIndices, conn, newConn);
+		UUM->addBdryTri(newConn);
+	}
+	for (emInt ii = 0; ii < realBdryQuads.size(); ii++) {
+		conn = getBdryQuadConn(realBdryQuads[ii]);
+		remapIndices(4, newIndices, conn, newConn);
+		UUM->addBdryQuad(newConn);
+	}
+
+	// Now, finally, the part bdry connectivity.
+	// TODO: Currently, there's nothing in the data structure that marks which
+	// are part bdry faces.
+	for (auto tri : partBdryTris) {
+		emInt conn[] = { newIndices[tri.corners[0]], newIndices[tri.corners[1]],
+											newIndices[tri.corners[2]] };
+		UUM->addBdryTri(conn);
+	}
+
+	for (auto quad : partBdryQuads) {
+		emInt conn[] = { newIndices[quad.corners[0]], newIndices[quad.corners[1]],
+											newIndices[quad.corners[2]], newIndices[quad.corners[3]] };
+		UUM->addBdryQuad(conn);
+	}
+
+	UUM->setupLengthScales();
+	return UUM;
 }
 
 //bool UMesh::writeCompressedUGridFile(const char fileName[]) {

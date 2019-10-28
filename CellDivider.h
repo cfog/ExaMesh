@@ -11,121 +11,10 @@
 #include <algorithm>
 #include <cmath>
 
-#ifdef USE_ORDERED
 
-#include <set>
-#include <map>
-#define exaSet std::set
-#define exaMap std::map
-
-#else
-
-#include <unordered_set>
-#include <unordered_map>
-
-#define exaSet std::unordered_set
-#define exaMap std::unordered_map
-
-#endif
-
-#include "examesh.h"
+#include "ExaMesh.h"
 #include "Mapping.h"
 #include "UMesh.h"
-
-class Edge {
-private:
-	emInt v0, v1;
-public:
-	Edge(emInt vA, emInt vB) {
-		if (vA < vB) {
-			v0 = vA;
-			v1 = vB;
-		}
-		else {
-			v0 = vB;
-			v1 = vA;
-		}
-	}
-	bool operator<(const Edge &E) const {
-		return (v0 < E.v0 || (v0 == E.v0 && v1 < E.v1));
-	}
-	bool operator==(const Edge &E) const {
-		return v0 == E.v0 && v1 == E.v1;
-	}
-	emInt getV0() const {
-		return v0;
-	}
-
-	emInt getV1() const {
-		return v1;
-	}
-};
-
-struct EdgeVerts {
-	emInt verts[MAX_DIVS + 1];
-};
-
-struct TriFaceVerts {
-	emInt corners[3], sorted[3];
-	emInt intVerts[MAX_DIVS - 2][MAX_DIVS - 2];
-	TriFaceVerts() {
-	}
-	TriFaceVerts(const emInt v0, const emInt v1, const emInt v2);
-	void setupSorted();
-};
-
-struct QuadFaceVerts {
-	emInt corners[4], sorted[4];
-	emInt intVerts[MAX_DIVS - 1][MAX_DIVS - 1];
-	QuadFaceVerts() {
-	}
-	QuadFaceVerts(const emInt v0, const emInt v1, const emInt v2, const emInt v3);
-	void setupSorted();
-};
-
-namespace std {
-	template<> struct hash<TriFaceVerts> {
-		typedef TriFaceVerts argument_type;
-		typedef std::size_t result_type;
-		result_type operator()(const argument_type& TFV) const noexcept
-		{
-			const result_type h0 = TFV.sorted[0];
-			const result_type h1 = TFV.sorted[1];
-			const result_type h2 = TFV.sorted[2];
-			return (h0 ^ (h1 << 1)) ^ (h2 << 2);
-		}
-	};
-
-	template<> struct hash<QuadFaceVerts> {
-		typedef QuadFaceVerts argument_type;
-		typedef std::size_t result_type;
-		result_type operator()(const argument_type& QFV) const noexcept
-		{
-			const result_type h0 = QFV.sorted[0];
-			const result_type h1 = QFV.sorted[1];
-			const result_type h2 = QFV.sorted[2];
-			const result_type h3 = QFV.sorted[3];
-			return h0 ^ (h1 << 1) ^ (h2 << 2) ^ (h3 << 3);
-		}
-	};
-
-	template<> struct hash<Edge> {
-		typedef Edge argument_type;
-		typedef std::size_t result_type;
-		result_type operator()(const argument_type& E) const noexcept
-		{
-			const result_type h0 = E.getV0();
-			const result_type h1 = E.getV1();
-			return (h0 ^ (h1 << 1));
-		}
-	};
-}
-
-
-bool operator==(const TriFaceVerts& a, const TriFaceVerts& b);
-bool operator<(const TriFaceVerts& a, const TriFaceVerts& b);
-bool operator==(const QuadFaceVerts& a, const QuadFaceVerts& b);
-bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b);
 
 class CellDivider {
 protected:
@@ -144,7 +33,7 @@ protected:
 	int checkOrient3D(const emInt verts[4]) const;
 private:
 	void getEdgeVerts(exaMap<Edge, EdgeVerts> &vertsOnEdges, const int edge,
-			EdgeVerts &EV);
+			const double dihedral, EdgeVerts &EV);
 
 	void getQuadVerts(exaSet<QuadFaceVerts> &vertsOnQuads, const int face,
 			QuadFaceVerts &QFV);

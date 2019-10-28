@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <locale.h>
+#include <ExaMesh.h>
 #include <unistd.h>
 #include <time.h>
 
@@ -16,7 +17,6 @@
 #include "TetDivider.h"
 #include "BdryTriDivider.h"
 #include "BdryQuadDivider.h"
-#include "examesh.h"
 
 emInt subdividePartMesh(const ExaMesh * const pVM_input,
 		UMesh * const pVM_output, const int nDivs) {
@@ -45,15 +45,16 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 	exaSet<QuadFaceVerts> vertsOnQuads;
 
 	// Copy vertex data into the new mesh.
-	for (emInt iV = 0; iV < pVM_input->numVerts(); iV++) {
+	for (emInt iV = 0; iV < pVM_input->numVertsToCopy(); iV++) {
 		double coords[3];
 		pVM_input->getCoords(iV, coords);
 		pVM_output->addVert(coords);
 	}
-	assert(pVM_input->numVerts() == pVM_output->numVerts());
+	assert(pVM_input->numVertsToCopy() == pVM_output->numVerts());
 
 	// Need to explicitly specify the type of mapping here.
-	TetDivider TD(pVM_output, nDivs, pVM_input->getDefaultMappingType());
+	TetDivider TD(pVM_output, pVM_input, nDivs,
+								pVM_input->getDefaultMappingType());
 	for (emInt iT = 0; iT < pVM_input->numTets(); iT++) {
     // Divide all the edges, including storing info about which new verts
     // are on which edges
@@ -72,7 +73,11 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 
 		// And now the moment of truth:  create a flock of new tets.
     TD.createNewCells();
+		if ((iT + 1) % 100000 == 0) fprintf(
+				stderr, "Refined %'12d tets.  Tree sizes: %'12lu %'12lu %'12lu\r",
+				iT + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
   } // Done looping over all tets
+	fprintf(stderr, "\nDone with tets\n");
 
 	PyrDivider PD(pVM_output, nDivs);
 	for (emInt iP = 0; iP < pVM_input->numPyramids(); iP++) {
@@ -94,7 +99,11 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 
 		// And now the moment of truth:  create a flock of new pyramids.
     PD.createNewCells();
+		if ((iP + 1) % 100000 == 0) fprintf(
+				stderr, "Refined %'12d pyrs.  Tree sizes: %'12lu %'12lu %'12lu\r",
+				iP + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
   } // Done looping over all pyramids
+	fprintf(stderr, "\nDone with pyramids\n");
 
 	PrismDivider PrismD(pVM_output, nDivs);
 	for (emInt iP = 0; iP < pVM_input->numPrisms(); iP++) {
@@ -116,7 +125,11 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 
 		// And now the moment of truth:  create a flock of new prisms.
     PrismD.createNewCells();
-  } // Done looping over all tets
+		if ((iP + 1) % 100000 == 0) fprintf(
+				stderr, "Refined %'12d prisms.  Tree sizes: %'12lu %'12lu %'12lu\r",
+				iP + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
+	} // Done looping over all prisms
+	fprintf(stderr, "\nDone with prisms\n");
 
 	HexDivider HD(pVM_output, nDivs);
 	for (emInt iH = 0; iH < pVM_input->numHexes(); iH++) {
@@ -138,7 +151,11 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 
 		// And now the moment of truth:  create a flock of new hexes.
     HD.createNewCells();
-  } // Done looping over all pyramids
+		if ((iH + 1) % 100000 == 0) fprintf(
+				stderr, "Refined %'12d hexes.  Tree sizes: %'12lu %'12lu %'12lu\r",
+				iH + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
+	} // Done looping over all hexes
+	fprintf(stderr, "\nDone with hexes\n");
 
 	BdryTriDivider BTD(pVM_output, nDivs);
 	for (emInt iBT = 0; iBT < pVM_input->numBdryTris(); iBT++) {
@@ -150,11 +167,15 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 		BTD.divideFaces(vertsOnTris, vertsOnQuads);
 
 		BTD.createNewCells();
+		if ((iBT + 1) % 100000 == 0) fprintf(
+				stderr, "Refined %'12d bdry tris.  Tree sizes: %'12lu %'12lu %'12lu\r",
+				iBT + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
 	}
+	fprintf(stderr, "\nDone with bdry tris\n");
 
 	BdryQuadDivider BQD(pVM_output, nDivs);
-	for (emInt iBT = 0; iBT < pVM_input->numBdryQuads(); iBT++) {
-		const emInt* const thisBdryQuad = pVM_input->getBdryQuadConn(iBT);
+	for (emInt iBQ = 0; iBQ < pVM_input->numBdryQuads(); iBQ++) {
+		const emInt* const thisBdryQuad = pVM_input->getBdryQuadConn(iBQ);
 		BQD.setupCoordMapping(thisBdryQuad);
 
 		// Shouldn't need to divide anything at all here, but this function
@@ -163,13 +184,18 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 		BQD.divideFaces(vertsOnTris, vertsOnQuads);
 
 		BQD.createNewCells();
+		if ((iBQ + 1) % 100000 == 0) fprintf(
+				stderr, "Refined %'12d bdry quads.  Tree sizes: %'12lu %'12lu %'12lu\r",
+				iBQ + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
 	}
+	fprintf(stderr, "\nDone with bdry quads\n");
 
 //	assert(vertsOnTris.empty());
 //	assert(vertsOnQuads.empty());
 //
-	fprintf(stderr, "Final size of edge list: %'lu\n",
-							vertsOnEdges.size());
+	fprintf(stderr, "Final size of edge list: %'lu\n", vertsOnEdges.size());
+	fprintf(stderr, "Final size of tri list: %'lu\n", vertsOnTris.size());
+	fprintf(stderr, "Final size of quad list: %'lu\n", vertsOnQuads.size());
 
 	return pVM_output->numCells();
 }

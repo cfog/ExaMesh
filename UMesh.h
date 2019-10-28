@@ -10,8 +10,8 @@
 
 #include <assert.h>
 
-#include "examesh.h"
 #include "CubicMesh.h"
+#include "ExaMesh.h"
 
 class UMesh: public ExaMesh {
 	emInt m_nVerts, m_nBdryVerts, m_nTris, m_nQuads, m_nTets, m_nPyrs, m_nPrisms,
@@ -29,6 +29,7 @@ class UMesh: public ExaMesh {
 	emInt (*m_PrismConn)[6];
 	emInt (*m_HexConn)[8];
 	char *m_buffer, *m_fileImage;
+	emInt *m_coarseGlobalIndices;
 	UMesh(const UMesh&);
 	UMesh& operator=(const UMesh&);
 
@@ -89,7 +90,8 @@ public:
 		return numTets() + numPyramids() + numPrisms() + numHexes();
 	}
 
-	emInt addVert(const double newCoords[3]);
+	emInt addVert(const double newCoords[3], const emInt coarseGlobalIndex =
+			EMINT_MAX);
 	emInt addBdryTri(const emInt verts[3]);
 	emInt addBdryQuad(const emInt verts[4]);
 	emInt addTet(const emInt verts[4]);
@@ -154,10 +156,18 @@ public:
 		return Mapping::LengthScale;
 	}
 
+	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
+			std::vector<CellPartData>& vecCPD) const;
+
+	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
+			std::vector<CellPartData>& vecCPD) const;
+
 	bool writeVTKFile(const char fileName[]);
 	bool writeUGridFile(const char fileName[]);
-	// Writing with compressing reduces file size by a little over a factor of two,
+
+	// Writing with compression reduces file size by a little over a factor of two,
 	// at the expense of making file write slower by two orders of magnitude.
+	// So don't do it.
 	// bool writeCompressedUGridFile(const char fileName[]);
 private:
 	void init(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,

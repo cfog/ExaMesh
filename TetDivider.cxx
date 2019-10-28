@@ -8,6 +8,8 @@
 #include "GeomUtils.h"
 #include "TetDivider.h"
 
+static emInt badOctaTets = 0;
+
 void TetDivider::setupCoordMapping(const emInt verts[]) {
 	for (int ii = 0; ii < 4; ii++) {
 		cellVerts[ii] = verts[ii];
@@ -50,7 +52,7 @@ void TetDivider::stuffTetsIntoOctahedron(emInt vertsNew[][4]) {
 #ifndef NDEBUG
 		// TODO Re-enable this after you have a better criterion for
 		// octa splitting.
-//		assert(checkOrient3D(vertsNew[ii]) == 1);
+		assert(checkOrient3D(vertsNew[ii]) != -1);
 #endif
 	}
 }

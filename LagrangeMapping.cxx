@@ -6,8 +6,8 @@
  */
 
 #include <assert.h>
+#include <ExaMesh.h>
 
-#include "examesh.h"
 #include "Mapping.h"
 
 LagrangeMapping::LagrangeMapping(const ExaMesh* const EM,

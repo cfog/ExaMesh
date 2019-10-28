@@ -10,22 +10,26 @@
 
 #include <assert.h>
 
-#include "examesh.h"
+#include "ExaMesh.h"
 
 // This data structure is organized to read and write easily to/from CGNS files.
 class CubicMesh: public ExaMesh {
-	emInt m_nVerts, m_nBdryVerts, m_nTri10, m_nQuad16, m_nTet20, m_nPyr29,
-			m_nPrism38, m_nHex56;
+	emInt m_nVerts, m_nBdryVerts, m_nTri10, m_nQuad16, m_nTet20, m_nPyr30,
+			m_nPrism40, m_nHex64, m_nVertNodes;
 	double *m_xcoords, *m_ycoords, *m_zcoords;
 	emInt (*m_Tri10Conn)[10];
 	emInt (*m_Quad16Conn)[16];
 	emInt (*m_Tet20Conn)[20];
-	emInt (*m_Pyr29Conn)[29];
-	emInt (*m_Prism38Conn)[38];
-	emInt (*m_Hex56Conn)[56];
+	emInt (*m_Pyr30Conn)[30];
+	emInt (*m_Prism40Conn)[40];
+	emInt (*m_Hex64Conn)[64];
 
 	CubicMesh(const CubicMesh&);
 	CubicMesh& operator=(const CubicMesh&);
+	void readCGNSfile(const char CGNSfilename[]);
+	void reorderCubicMesh();
+	void renumberNodes(emInt thisSize, emInt* aliasConn, emInt* newNodeInd);
+	void decrementVertIndices(emInt connSize, emInt* const connect);
 
 	// Length scales
 public:
@@ -36,8 +40,7 @@ public:
 	virtual ~CubicMesh();
 
 	// Will eventually want to create a fine CubicMesh from a coarse CubicMesh
-	// (for the mapping) and a fine UMesh (for the new cell definitions).
-	// Not urgent.
+	// (for the mapping). Not urgent.
 
 	virtual emInt numVerts() const {
 		return m_nVerts;
@@ -55,13 +58,16 @@ public:
 		return m_nTet20;
 	}
 	virtual emInt numPyramids() const {
-		return m_nPyr29;
+		return m_nPyr30;
 	}
 	virtual emInt numPrisms() const {
-		return m_nPrism38;
+		return m_nPrism40;
 	}
 	virtual emInt numHexes() const {
-		return m_nHex56;
+		return m_nHex64;
+	}
+	virtual emInt numVertsToCopy() const {
+		return m_nVertNodes;
 	}
 
 	double getX(const emInt vert) const {
@@ -102,23 +108,29 @@ public:
 	}
 
 	const emInt* getPyrConn(const emInt pyr) const {
-		assert(pyr < m_nPyr29);
-		return m_Pyr29Conn[pyr];
+		assert(pyr < m_nPyr30);
+		return m_Pyr30Conn[pyr];
 	}
 
 	const emInt* getPrismConn(const emInt prism) const {
-		assert(prism < m_nPrism38);
-		return m_Prism38Conn[prism];
+		assert(prism < m_nPrism40);
+		return m_Prism40Conn[prism];
 	}
 
 	const emInt* getHexConn(const emInt hex) const {
-		assert(hex < m_nHex56);
-		return m_Hex56Conn[hex];
+		assert(hex < m_nHex64);
+		return m_Hex64Conn[hex];
 	}
 
 	Mapping::MappingType getDefaultMappingType() const {
 		return Mapping::Lagrange;
 	}
+
+	std::unique_ptr<CubicMesh> extractCoarseMesh(Part& P,
+			std::vector<CellPartData>& vecCPD) const;
+
+	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
+			std::vector<CellPartData>& vecCPD) const;
 };
 
 

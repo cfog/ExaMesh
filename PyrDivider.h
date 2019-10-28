@@ -8,8 +8,8 @@
 #ifndef APPS_EXAMESH_PYRDIVIDER_H_
 #define APPS_EXAMESH_PYRDIVIDER_H_
 
-#include "examesh.h"
 #include "CellDivider.h"
+#include "ExaMesh.h"
 
 class PyrDivider: public CellDivider {
 	double xyzOffset[3], uVec[3], vVec[3], uvVec[3], xyzApex[3];

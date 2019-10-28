@@ -8,13 +8,14 @@
 #ifndef APPS_EXAMESH_TETDIVIDER_H_
 #define APPS_EXAMESH_TETDIVIDER_H_
 
-#include "examesh.h"
 #include "CellDivider.h"
+#include "ExaMesh.h"
 #include "Mapping.h"
 
 class TetDivider: public CellDivider {
 public:
-	TetDivider(UMesh *pVolMesh, const int segmentsPerEdge,
+	TetDivider(UMesh *pVolMesh, const ExaMesh* const pInitMesh,
+			const int segmentsPerEdge,
 			const Mapping::MappingType type = Mapping::LengthScale)
       :
 			CellDivider(pVolMesh, segmentsPerEdge) {
@@ -89,10 +90,10 @@ public:
 		faceVertIndices[3][2] = 0;
 
 		if (type == Mapping::LengthScale) {
-			m_Map = new TetLengthScaleMapping(m_pMesh);
+			m_Map = new TetLengthScaleMapping(pInitMesh);
 		}
 		else if (type == Mapping::Lagrange) {
-			m_Map = new LagrangeCubicTetMapping(m_pMesh);
+			m_Map = new LagrangeCubicTetMapping(pInitMesh);
 		}
   }
 	~TetDivider() {

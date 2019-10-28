@@ -5,22 +5,23 @@
  *      Author: cfog
  */
 
+#include <ExaMesh.h>
 #include <unistd.h>
 #include <cstdio>
 
-#include "examesh.h"
 #include "CubicMesh.h"
 #include "UMesh.h"
 
 int main(int argc, char* const argv[]) {
 	char opt = EOF;
-	int nDivs = 1;
+	emInt nDivs = 1;
+	emInt maxCellsPerPart = 1000000;
 	char type[10];
 	char infix[10];
 	char inFileBaseName[1024];
 	char cgnsFileName[1024];
 	char outFileName[1024];
-	bool isInputCGNS = false;
+	bool isInputCGNS = false, isParallel = false;
 
 	sprintf(type, "vtk");
 	sprintf(infix, "b8");
@@ -28,7 +29,7 @@ int main(int argc, char* const argv[]) {
 	sprintf(inFileBaseName, "/need/a/file/name");
 	sprintf(cgnsFileName, "/need/a/file/name");
 
-	while ((opt = getopt(argc, argv, "c:i:n:o:t:u:")) != EOF) {
+	while ((opt = getopt(argc, argv, "c:i:m:n:o:pt:u:")) != EOF) {
 		switch (opt) {
 			case 'c':
 				sscanf(optarg, "%1023s", cgnsFileName);
@@ -40,8 +41,14 @@ int main(int argc, char* const argv[]) {
 			case 'n':
 				sscanf(optarg, "%d", &nDivs);
 				break;
+			case 'm':
+				sscanf(optarg, "%d", &maxCellsPerPart);
+				break;
 			case 'o':
 				sscanf(optarg, "%1023s", outFileName);
+				break;
+			case 'p':
+				isParallel = true;
 				break;
 			case 't':
 				sscanf(optarg, "%9s", type);
@@ -54,15 +61,25 @@ int main(int argc, char* const argv[]) {
 
 	if (isInputCGNS) {
 		CubicMesh CMorig(cgnsFileName);
-		UMesh UMrefined(CMorig, nDivs);
-		UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
-		UMrefined.writeVTKFile("/tmp/junk.vtk");
+		if (isParallel) {
+			CMorig.refineForParallel(nDivs, maxCellsPerPart);
+		}
+		else {
+			UMesh UMrefined(CMorig, nDivs);
+			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
+//		UMrefined.writeVTKFile("/tmp/junk.vtk");
+		}
 	}
 	else {
 		UMesh UMorig(inFileBaseName, type, infix);
-		UMesh UMrefined(UMorig, nDivs);
-		UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
-		UMrefined.writeVTKFile("/tmp/junk.vtk");
+		if (isParallel) {
+			UMorig.refineForParallel(nDivs, maxCellsPerPart);
+		}
+		if (!isParallel) {
+			UMesh UMrefined(UMorig, nDivs);
+			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
+//		UMrefined.writeVTKFile("/tmp/junk.vtk");
+		}
 	}
 
 	exit(0);

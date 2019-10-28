@@ -6,14 +6,17 @@
  */
 
 #include <assert.h>
+#include <memory>
 #include <vector>
 #include <iostream>
 
 using std::cout;
 using std::endl;
 
-#include "examesh.h"
+#include "ExaMesh.h"
 #include "GeomUtils.h"
+#include "Part.h"
+#include "UMesh.h"
 
 static void triUnitNormal(const double coords0[], const double coords1[],
 		const double coords2[], double normal[]) {
@@ -125,6 +128,23 @@ void ExaMesh::setupLengthScales() {
 	}
 }
 
+MeshSize ExaMesh::computeFineMeshSize(const int nDivs) const {
+	MeshSize MSIn, MSOut;
+	MSIn.nBdryVerts = numBdryVerts();
+	MSIn.nVerts = numVerts();
+	MSIn.nBdryTris = numBdryTris();
+	MSIn.nBdryQuads = numBdryQuads();
+	MSIn.nTets = numTets();
+	MSIn.nPyrs = numPyramids();
+	MSIn.nPrisms = numPrisms();
+	MSIn.nHexes = numHexes();
+	bool sizesOK = ::computeMeshSize(MSIn, nDivs, MSOut);
+	if (!sizesOK) exit(2);
+
+	return MSOut;
+}
+
+
 void ExaMesh::printMeshSizeStats() {
 	cout << "Mesh has:" << endl;
 	cout.width(16);
@@ -146,5 +166,52 @@ void ExaMesh::printMeshSizeStats() {
 				<< " total cells " << endl;
 }
 
+void ExaMesh::refineForParallel(const emInt numDivs,
+		const emInt maxCellsPerPart) const {
+	// Find size of output mesh
+	size_t numCells = numTets() + numPyramids() + numHexes() + numPrisms();
+	size_t outputCells = numCells * (numDivs * numDivs * numDivs);
 
+	// Calc number of parts.  This funky formula makes it so that, if you need
+	// N*maxCells, you'll get N parts.  With N*maxCells + 1, you'll get N+1.
+	emInt nParts = (outputCells - 1) / maxCellsPerPart + 1;
 
+	// Partition the mesh.
+	std::vector<Part> parts;
+	std::vector<CellPartData> vecCPD;
+	partitionCells(this, nParts, parts, vecCPD);
+
+	// Create new sub-meshes and refine them.
+	for (emInt ii = 0; ii < nParts; ii++) {
+//		char filename[100];
+//		sprintf(filename, "/tmp/submesh%03d.vtk", ii);
+//		writeVTKFile(filename);
+		printf(
+				"Part %3d: cells %5d-%5d.  (%6.3f,%6.3f,%6.3f) (%6.3f,%6.3f,%6.3f)\n",
+				ii, parts[ii].getFirst(), parts[ii].getLast(), parts[ii].getXmin(),
+				parts[ii].getYmin(), parts[ii].getZmin(), parts[ii].getXmax(),
+				parts[ii].getYmax(), parts[ii].getZmax());
+		std::unique_ptr<UMesh> pUM = createFineUMesh(numDivs, parts[ii], vecCPD);
+		char filename[100];
+		sprintf(filename, "/tmp/fine-submesh%03d.vtk", ii);
+		pUM->writeVTKFile(filename);
+	}
+}
+
+std::unique_ptr<UMesh> UMesh::createFineUMesh(const emInt numDivs, Part& P,
+		std::vector<CellPartData>& vecCPD) const {
+	// Create a coarse
+	auto coarse = extractCoarseMesh(P, vecCPD);
+
+	auto UUM = std::make_unique<UMesh>(*coarse, numDivs);
+	return UUM;
+}
+
+std::unique_ptr<UMesh> CubicMesh::createFineUMesh(const emInt numDivs, Part& P,
+		std::vector<CellPartData>& vecCPD) const {
+	// Create a coarse
+	auto coarse = extractCoarseMesh(P, vecCPD);
+
+	auto UUM = std::make_unique<UMesh>(*coarse, numDivs);
+	return UUM;
+}

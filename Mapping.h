@@ -8,6 +8,8 @@
 #ifndef SRC_MAPPING_H_
 #define SRC_MAPPING_H_
 
+#include "exa-defs.h"
+
 class ExaMesh;
 
 // Lagrange element mappings

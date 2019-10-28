@@ -5,102 +5,9 @@
  *      Author: cfog
  */
 
-#include "examesh.h"
-
+#include <ExaMesh.h>
 #include "GeomUtils.h"
 #include "CellDivider.h"
-
-int CellDivider::checkOrient3D(const emInt verts[4]) const {
-	double coords0[3], coords1[3], coords2[3], coords3[3];
-	m_pMesh->getCoords(verts[0], coords0);
-	m_pMesh->getCoords(verts[1], coords1);
-	m_pMesh->getCoords(verts[2], coords2);
-	m_pMesh->getCoords(verts[3], coords3);
-	return ::checkOrient3D(coords0, coords1, coords2, coords3);
-}
-
-void CellDivider::getEdgeVerts(exaMap<Edge, EdgeVerts> &vertsOnEdges,
-		const int edge, EdgeVerts &EV) {
-	int ind0 = edgeVertIndices[edge][0];
-	int ind1 = edgeVertIndices[edge][1];
-
-	emInt vert0 = cellVerts[ind0];
-	emInt vert1 = cellVerts[ind1];
-
-	Edge E(vert0, vert1);
-	auto iterEdges = vertsOnEdges.find(E);
-
-	if (iterEdges == vertsOnEdges.end()) {
-		// Doesn't exist yet, so create it.
-		EV.verts[0] = E.getV0();
-		EV.verts[nDivs] = E.getV1();
-
-		bool forward = true;
-		if (EV.verts[0] != vert0) {
-			forward = false;
-		}
-
-		double uvwStart[3], uvwEnd[3];
-		if (forward) {
-			uvwStart[0] = uvwIJK[ind0][0];
-			uvwStart[1] = uvwIJK[ind0][1];
-			uvwStart[2] = uvwIJK[ind0][2];
-
-			uvwEnd[0] = uvwIJK[ind1][0];
-			uvwEnd[1] = uvwIJK[ind1][1];
-			uvwEnd[2] = uvwIJK[ind1][2];
-		}
-		else {
-			uvwStart[0] = uvwIJK[ind1][0];
-			uvwStart[1] = uvwIJK[ind1][1];
-			uvwStart[2] = uvwIJK[ind1][2];
-
-			uvwEnd[0] = uvwIJK[ind0][0];
-			uvwEnd[1] = uvwIJK[ind0][1];
-			uvwEnd[2] = uvwIJK[ind0][2];
-		}
-		double delta[] = { (uvwEnd[0] - uvwStart[0]) / nDivs, (uvwEnd[1]
-				- uvwStart[1])
-																													/ nDivs,
-												(uvwEnd[2] - uvwStart[2]) / nDivs };
-		for (int ii = 1; ii < nDivs; ii++) {
-			double uvw[] = { uvwStart[0] + ii * delta[0], uvwStart[1]
-					+ ii * delta[1],
-												uvwStart[2] + ii * delta[2] };
-			double newCoords[3];
-			getPhysCoordsFromParamCoords(uvw, newCoords);
-			EV.verts[ii] = m_pMesh->addVert(newCoords);
-		}
-		vertsOnEdges.insert(std::make_pair(E, EV));
-	}
-	else {
-		EV = iterEdges->second;
-	}
-}
-
-TriFaceVerts::TriFaceVerts(const emInt v0, const emInt v1, const emInt v2) {
-	corners[0] = v0;
-	corners[1] = v1;
-	corners[2] = v2;
-	setupSorted();
-}
-
-void TriFaceVerts::setupSorted() {
-	sortVerts3(corners, sorted);
-}
-
-QuadFaceVerts::QuadFaceVerts(const emInt v0, const emInt v1, const emInt v2,
-		const emInt v3) {
-	corners[0] = v0;
-	corners[1] = v1;
-	corners[2] = v2;
-	corners[3] = v3;
-	setupSorted();
-}
-
-void QuadFaceVerts::setupSorted() {
-	sortVerts4(corners, sorted);
-}
 
 void sortVerts3(const emInt input[3], emInt output[3]) {
 	// This is insertion sort, specialized for three inputs.
@@ -125,6 +32,42 @@ void sortVerts3(const emInt input[3], emInt output[3]) {
 	else {
 		output[2] = input[2];
 	}
+}
+
+TriFaceVerts::TriFaceVerts(const emInt v0, const emInt v1, const emInt v2) {
+	corners[0] = v0;
+	corners[1] = v1;
+	corners[2] = v2;
+	setupSorted();
+}
+
+void TriFaceVerts::setupSorted() {
+	sortVerts3(corners, sorted);
+}
+
+bool operator==(const TriFaceVerts& a, const TriFaceVerts& b) {
+	return (a.sorted[0] == b.sorted[0] && a.sorted[1] == b.sorted[1]
+					&& a.sorted[2] == b.sorted[2]);
+}
+
+bool operator<(const TriFaceVerts& a, const TriFaceVerts& b) {
+	return (a.sorted[0] < b.sorted[0]
+			|| (a.sorted[0] == b.sorted[0] && a.sorted[1] < b.sorted[1])
+			|| (a.sorted[0] == b.sorted[0] && a.sorted[1] == b.sorted[1]
+					&& a.sorted[2] < b.sorted[2]));
+}
+
+QuadFaceVerts::QuadFaceVerts(const emInt v0, const emInt v1, const emInt v2,
+		const emInt v3) {
+	corners[0] = v0;
+	corners[1] = v1;
+	corners[2] = v2;
+	corners[3] = v3;
+	setupSorted();
+}
+
+void QuadFaceVerts::setupSorted() {
+	sortVerts4(corners, sorted);
 }
 
 void sortVerts4(const emInt input[4], emInt output[4]) {
@@ -173,21 +116,9 @@ void sortVerts4(const emInt input[4], emInt output[4]) {
 	}
 }
 
-bool operator==(const TriFaceVerts& a, const TriFaceVerts& b) {
-	return (a.sorted[0] == b.sorted[0] && a.sorted[1] == b.sorted[1]
-					&& a.sorted[2] == b.sorted[2]);
-}
-
 bool operator==(const QuadFaceVerts& a, const QuadFaceVerts& b) {
 	return (a.sorted[0] == b.sorted[0] && a.sorted[1] == b.sorted[1]
 					&& a.sorted[2] == b.sorted[2] && a.sorted[3] == b.sorted[3]);
-}
-
-bool operator<(const TriFaceVerts& a, const TriFaceVerts& b) {
-	return (a.sorted[0] < b.sorted[0]
-			|| (a.sorted[0] == b.sorted[0] && a.sorted[1] < b.sorted[1])
-			|| (a.sorted[0] == b.sorted[0] && a.sorted[1] == b.sorted[1]
-					&& a.sorted[2] < b.sorted[2]));
 }
 
 bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b) {
@@ -198,6 +129,79 @@ bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b) {
 			|| (a.sorted[0] == b.sorted[0] && a.sorted[1] == b.sorted[1]
 					&& a.sorted[2] == b.sorted[2] && a.sorted[3] < b.sorted[3]));
 }
+
+int CellDivider::checkOrient3D(const emInt verts[4]) const {
+	double coords0[3], coords1[3], coords2[3], coords3[3];
+	m_pMesh->getCoords(verts[0], coords0);
+	m_pMesh->getCoords(verts[1], coords1);
+	m_pMesh->getCoords(verts[2], coords2);
+	m_pMesh->getCoords(verts[3], coords3);
+	return ::checkOrient3D(coords0, coords1, coords2, coords3);
+}
+
+void CellDivider::getEdgeVerts(exaMap<Edge, EdgeVerts> &vertsOnEdges,
+		const int edge, const double dihedral, EdgeVerts &EV) {
+	int ind0 = edgeVertIndices[edge][0];
+	int ind1 = edgeVertIndices[edge][1];
+
+	emInt vert0 = cellVerts[ind0];
+	emInt vert1 = cellVerts[ind1];
+
+	Edge E(vert0, vert1);
+	auto iterEdges = vertsOnEdges.find(E);
+
+	if (iterEdges == vertsOnEdges.end()) {
+		// Doesn't exist yet, so create it.
+		EV.verts[0] = E.getV0();
+		EV.verts[nDivs] = E.getV1();
+		EV.m_totalDihed = dihedral;
+
+		bool forward = true;
+		if (EV.verts[0] != vert0) {
+			forward = false;
+		}
+
+		double uvwStart[3], uvwEnd[3];
+		if (forward) {
+			uvwStart[0] = uvwIJK[ind0][0];
+			uvwStart[1] = uvwIJK[ind0][1];
+			uvwStart[2] = uvwIJK[ind0][2];
+
+			uvwEnd[0] = uvwIJK[ind1][0];
+			uvwEnd[1] = uvwIJK[ind1][1];
+			uvwEnd[2] = uvwIJK[ind1][2];
+		}
+		else {
+			uvwStart[0] = uvwIJK[ind1][0];
+			uvwStart[1] = uvwIJK[ind1][1];
+			uvwStart[2] = uvwIJK[ind1][2];
+
+			uvwEnd[0] = uvwIJK[ind0][0];
+			uvwEnd[1] = uvwIJK[ind0][1];
+			uvwEnd[2] = uvwIJK[ind0][2];
+		}
+		double delta[] = { (uvwEnd[0] - uvwStart[0]) / nDivs, (uvwEnd[1]
+				- uvwStart[1])
+																													/ nDivs,
+												(uvwEnd[2] - uvwStart[2]) / nDivs };
+		for (int ii = 1; ii < nDivs; ii++) {
+			double uvw[] = { uvwStart[0] + ii * delta[0], uvwStart[1] + ii * delta[1],
+												uvwStart[2] + ii * delta[2] };
+			double newCoords[3];
+			getPhysCoordsFromParamCoords(uvw, newCoords);
+			EV.verts[ii] = m_pMesh->addVert(newCoords);
+		}
+		vertsOnEdges.insert(std::make_pair(E, EV));
+	}
+	else {
+		iterEdges->second.m_totalDihed += dihedral;
+		EV = iterEdges->second;
+		if (EV.m_totalDihed > (2 - 1.e-8) * M_PI) {
+			vertsOnEdges.erase(iterEdges);
+		}
+	}
+}
+
 
 void CellDivider::getTriVerts(exaSet<TriFaceVerts> &vertsOnTris,
 		const int face, TriFaceVerts &TFV) {
@@ -323,7 +327,8 @@ void CellDivider::divideEdges(exaMap<Edge, EdgeVerts> &vertsOnEdges) {
 	for (int iE = 0; iE < numEdges; iE++) {
 
 		EdgeVerts EV;
-		getEdgeVerts(vertsOnEdges, iE, EV);
+		double dihedral = 0;
+		getEdgeVerts(vertsOnEdges, iE, dihedral, EV);
 
 		// Now transcribe these into the master table for this cell.
 		emInt startIndex = 1000, endIndex = 1000;

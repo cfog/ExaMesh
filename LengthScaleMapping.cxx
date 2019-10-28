@@ -5,9 +5,9 @@
  *      Author: cfog
  */
 
+#include <ExaMesh.h>
 #include <algorithm>
 
-#include "examesh.h"
 #include "Mapping.h"
 
 double LengthScaleMapping::getIsoLengthScale(const emInt vert) {
