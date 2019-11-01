@@ -16,8 +16,8 @@ DEBUG=-g
 OPT=-O3 -DNDEBUG
 OPT_DEBUG=$(DEBUG)
 CPPFLAGS=-I/home/cfog/Research/Projects/ExaMesh/src -I/home/cfog/GMGW1/src
-CXX_COMPILE=g++ -Wall -Wextra -fPIC $(OPT_DEBUG) $(CPPFLAGS) $(EXTRAFLAGS)
-CXX_LINK=g++ -fPIC $(EXTRAFLAGS) $(OPT_DEBUG)
+CXX_COMPILE=g++ -Wall -Wextra -fPIC $(OPT_DEBUG) $(CPPFLAGS) $(EXTRAFLAGS) -fopenmp
+CXX_LINK=g++ -fPIC $(EXTRAFLAGS) $(OPT_DEBUG) -fopenmp
 THISDIR=/home/cfog/Research/Projects/ExaMesh/src
 MESHIOLIB=-L/home/cfog/GMGW1/src -Wl,-rpath=/home/cfog/GMGW1/src -lMeshIO
 EXAMESHLIB=-L$(THISDIR) -lexamesh -Wl,-rpath=$(THISDIR)

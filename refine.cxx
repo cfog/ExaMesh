@@ -65,7 +65,9 @@ int main(int argc, char* const argv[]) {
 			CMorig.refineForParallel(nDivs, maxCellsPerPart);
 		}
 		else {
-			UMesh UMrefined(CMorig, nDivs);
+			double time;
+			size_t cells;
+			UMesh UMrefined(CMorig, nDivs, time, cells);
 			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
 			UMrefined.writeVTKFile("/tmp/junk.vtk");
 		}
@@ -76,7 +78,9 @@ int main(int argc, char* const argv[]) {
 			UMorig.refineForParallel(nDivs, maxCellsPerPart);
 		}
 		if (!isParallel) {
-			UMesh UMrefined(UMorig, nDivs);
+			double time;
+			size_t cells;
+			UMesh UMrefined(UMorig, nDivs, time, cells);
 			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
 			UMrefined.writeVTKFile("/tmp/junk.vtk");
 		}

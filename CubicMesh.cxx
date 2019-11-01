@@ -820,11 +820,11 @@ emInt CubicMesh::addHex(const emInt verts[]) {
 }
 
 std::unique_ptr<UMesh> CubicMesh::createFineUMesh(const emInt numDivs, Part& P,
-		std::vector<CellPartData>& vecCPD) const {
+		std::vector<CellPartData>& vecCPD, double& time, size_t& cells) const {
 	// Create a coarse
 	auto coarse = extractCoarseMesh(P, vecCPD);
 
-	auto UUM = std::make_unique<UMesh>(*coarse, numDivs);
+	auto UUM = std::make_unique<UMesh>(*coarse, numDivs, time, cells);
 	return UUM;
 }
 

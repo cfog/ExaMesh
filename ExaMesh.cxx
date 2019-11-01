@@ -62,7 +62,6 @@ static double pyrVolume(const double coords0[], const double coords1[],
 	return DOT(normal, vecE) / 0.75;
 }
 
-
 // TODO  Transplant into a new ExaMesh.cxx
 void ExaMesh::setupLengthScales() {
 	if (!m_lenScale) {
@@ -243,7 +242,6 @@ MeshSize ExaMesh::computeFineMeshSize(const int nDivs) const {
 	return MSOut;
 }
 
-
 void ExaMesh::printMeshSizeStats() {
 	cout << "Mesh has:" << endl;
 	cout.width(16);
@@ -282,6 +280,9 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 	partitionCells(this, nParts, parts, vecCPD);
 
 	// Create new sub-meshes and refine them.
+	double totalTime = 0;
+	size_t totalCells = 0;
+#pragma omp parallel for
 	for (emInt ii = 0; ii < nParts; ii++) {
 //		char filename[100];
 //		sprintf(filename, "/tmp/submesh%03d.vtk", ii);
@@ -291,10 +292,23 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 				ii, parts[ii].getFirst(), parts[ii].getLast(), parts[ii].getXmin(),
 				parts[ii].getYmin(), parts[ii].getZmin(), parts[ii].getXmax(),
 				parts[ii].getYmax(), parts[ii].getZmax());
-		std::unique_ptr<UMesh> pUM = createFineUMesh(numDivs, parts[ii], vecCPD);
+		double time;
+		size_t cells;
+		std::unique_ptr<UMesh> pUM = createFineUMesh(numDivs, parts[ii], vecCPD,
+																									time, cells);
+#pragma omp critical
+		{
+			totalTime += time;
+			totalCells += cells;
+		}
 //		char filename[100];
 //		sprintf(filename, "/tmp/fine-submesh%03d.vtk", ii);
 //		pUM->writeVTKFile(filename);
 	}
+	fprintf(stderr, "\nDone parallel refinement with %d parts.\n", nParts);
+	fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", totalTime);
+	fprintf(stderr, "                          %5.2F million cells / minute\n",
+					(totalCells / 1000000.) / (totalTime / 60));
+
 }
 

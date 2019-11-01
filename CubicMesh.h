@@ -140,7 +140,7 @@ public:
 			std::vector<CellPartData>& vecCPD) const;
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
-			std::vector<CellPartData>& vecCPD) const;
+			std::vector<CellPartData>& vecCPD, double& time, size_t& cells) const;
 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
