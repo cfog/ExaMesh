@@ -29,7 +29,6 @@ class UMesh: public ExaMesh {
 	emInt (*m_PrismConn)[6];
 	emInt (*m_HexConn)[8];
 	char *m_buffer, *m_fileImage;
-	emInt *m_coarseGlobalIndices;
 	UMesh(const UMesh&);
 	UMesh& operator=(const UMesh&);
 
@@ -92,12 +91,12 @@ public:
 
 	emInt addVert(const double newCoords[3], const emInt coarseGlobalIndex =
 			EMINT_MAX);
-	emInt addBdryTri(const emInt verts[3]);
-	emInt addBdryQuad(const emInt verts[4]);
-	emInt addTet(const emInt verts[4]);
-	emInt addPyramid(const emInt verts[5]);
-	emInt addPrism(const emInt verts[6]);
-	emInt addHex(const emInt verts[8]);
+	emInt addBdryTri(const emInt verts[]);
+	emInt addBdryQuad(const emInt verts[]);
+	emInt addTet(const emInt verts[]);
+	emInt addPyramid(const emInt verts[]);
+	emInt addPrism(const emInt verts[]);
+	emInt addHex(const emInt verts[]);
 
 	virtual void getCoords(const emInt vert, double coords[3]) const {
 		assert(vert < m_nVerts && vert < m_header[eVert]);
@@ -161,6 +160,10 @@ public:
 
 	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD) const;
+
+	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
+			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
+			double& zmax) const;
 
 	bool writeVTKFile(const char fileName[]);
 	bool writeUGridFile(const char fileName[]);

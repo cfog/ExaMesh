@@ -10,6 +10,7 @@
 
 #include <cmath>
 #include <stdint.h>
+#include <limits.h>
 
 #ifdef USE_ORDERED
 
@@ -86,18 +87,24 @@ struct EdgeVerts {
 struct TriFaceVerts {
 	emInt corners[3], sorted[3];
 	emInt intVerts[MAX_DIVS - 2][MAX_DIVS - 2];
-	TriFaceVerts() {
+	emInt volElement, volElementType;
+	TriFaceVerts() :
+			volElement(EMINT_MAX), volElementType(0) {
 	}
-	TriFaceVerts(const emInt v0, const emInt v1, const emInt v2);
+	TriFaceVerts(const emInt v0, const emInt v1, const emInt v2,
+			const emInt type = 0, const emInt elemInd = EMINT_MAX);
 	void setupSorted();
 };
 
 struct QuadFaceVerts {
 	emInt corners[4], sorted[4];
 	emInt intVerts[MAX_DIVS - 1][MAX_DIVS - 1];
-	QuadFaceVerts() {
+	emInt volElement, volElementType;
+	QuadFaceVerts() :
+			volElement(EMINT_MAX), volElementType(0) {
 	}
-	QuadFaceVerts(const emInt v0, const emInt v1, const emInt v2, const emInt v3);
+	QuadFaceVerts(const emInt v0, const emInt v1, const emInt v2, const emInt v3,
+			const emInt type = 0, const emInt elemInd = EMINT_MAX);
 	void setupSorted();
 };
 

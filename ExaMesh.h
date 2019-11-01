@@ -26,14 +26,17 @@ struct MeshSize {
 class ExaMesh {
 protected:
 	double *m_lenScale;
+	emInt *m_coarseGlobalIndices;
+
 	void setupLengthScales();
 
 public:
 	ExaMesh() :
-			m_lenScale(nullptr) {
+			m_lenScale(nullptr), m_coarseGlobalIndices(nullptr) {
 	}
 	virtual ~ExaMesh() {
 		if (m_lenScale) delete[] m_lenScale;
+		if (m_coarseGlobalIndices) delete[] m_coarseGlobalIndices;
 	}
 	virtual double getX(const emInt vert) const = 0;
 	virtual double getY(const emInt vert) const = 0;
@@ -51,6 +54,17 @@ public:
 	virtual emInt numVertsToCopy() const {
 		return numVerts();
 	}
+
+	virtual emInt addVert(const double newCoords[3],
+			const emInt coarseGlobalIndex =
+			EMINT_MAX) = 0;
+	virtual emInt addBdryTri(const emInt verts[]) = 0;
+	virtual emInt addBdryQuad(const emInt verts[]) = 0;
+	virtual emInt addTet(const emInt verts[]) = 0;
+	virtual emInt addPyramid(const emInt verts[]) = 0;
+	virtual emInt addPrism(const emInt verts[]) = 0;
+	virtual emInt addHex(const emInt verts[]) = 0;
+
 
 	const virtual emInt* getBdryTriConn(const emInt bdryTri) const=0;
 	const virtual emInt* getBdryQuadConn(const emInt bdryQuad) const=0;
@@ -72,7 +86,14 @@ public:
 			return 1;
 		}
 	}
-
+	void setLengthScale(const emInt vert, const double len) const {
+		assert(vert < numVerts());
+		assert(len > 0);
+		// TODO Would be better to always associate a length scale with the mesh.
+		if (m_lenScale) {
+			m_lenScale[vert] = len;
+		}
+	}
 	MeshSize computeFineMeshSize(const int nDivs) const;
 
 	virtual void refineForParallel(const emInt numDivs,
@@ -80,7 +101,30 @@ public:
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD) const = 0;
+
+	virtual void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
+			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
+			double& zmax) const = 0;
+
+protected:
+	void addCellToPartitionData(const emInt* verts, emInt nPts, emInt ii,
+			int type, std::vector<CellPartData>& vecCPD, double& xmin, double& ymin,
+			double& zmin, double& xmax, double& ymax, double& zmax) const;
+private:
+	void findCentroidOfVerts(const emInt* verts, emInt nPts, double& x, double& y,
+			double& z) const;
 };
+
+template<typename T>
+void addUniquely(exaSet<T>& mySet, T& val) {
+	auto iter = mySet.find(val);
+	if (iter != mySet.end()) {
+		mySet.erase(iter);
+	}
+	else {
+		mySet.insert(val);
+	}
+}
 
 bool computeMeshSize(const struct MeshSize& MSIn, const emInt nDivs,
 		struct MeshSize& MSOut);

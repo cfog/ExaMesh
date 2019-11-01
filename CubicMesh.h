@@ -14,6 +14,7 @@
 
 // This data structure is organized to read and write easily to/from CGNS files.
 class CubicMesh: public ExaMesh {
+	emInt m_vert, m_tri, m_quad, m_tet, m_pyr, m_prism, m_hex;
 	emInt m_nVerts, m_nBdryVerts, m_nTri10, m_nQuad16, m_nTet20, m_nPyr30,
 			m_nPrism40, m_nHex64, m_nVertNodes;
 	double *m_xcoords, *m_ycoords, *m_zcoords;
@@ -69,6 +70,15 @@ public:
 	virtual emInt numVertsToCopy() const {
 		return m_nVertNodes;
 	}
+
+	emInt addVert(const double newCoords[3], const emInt coarseGlobalIndex =
+	EMINT_MAX);
+	emInt addBdryTri(const emInt verts[]);
+	emInt addBdryQuad(const emInt verts[]);
+	emInt addTet(const emInt verts[]);
+	emInt addPyramid(const emInt verts[]);
+	emInt addPrism(const emInt verts[]);
+	emInt addHex(const emInt verts[]);
 
 	double getX(const emInt vert) const {
 		assert(vert < m_nVerts);
@@ -131,6 +141,14 @@ public:
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD) const;
+
+	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
+			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
+			double& zmax) const;
+
+	void setNVertNodes(emInt nVertNodes) {
+		m_nVertNodes = nVertNodes;
+	}
 };
 
 

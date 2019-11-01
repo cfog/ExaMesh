@@ -13,13 +13,14 @@
 #include "ExaMesh.h"
 #include "Part.h"
 
-void findCentroidOfVerts(const ExaMesh* const pEM, const emInt* verts,
-		emInt nPts, double& x, double& y, double& z) {
+void ExaMesh::findCentroidOfVerts(const emInt* verts,
+		emInt nPts, double& x,
+		double& y, double& z) const {
 	x = y = z = 0;
 	for (emInt jj = 0; jj < nPts; jj++) {
-		x += pEM->getX(verts[jj]);
-		y += pEM->getY(verts[jj]);
-		z += pEM->getZ(verts[jj]);
+		x += getX(verts[jj]);
+		y += getY(verts[jj]);
+		z += getZ(verts[jj]);
 	}
 	x /= nPts;
 	y /= nPts;
@@ -36,13 +37,13 @@ void extentBoundingBox(double x, double y, double z, double& xmin, double& ymin,
 	zmax = std::max(zmax, z);
 }
 
-void addCellToPartitionData(const ExaMesh* const pEM, const emInt* verts,
+void ExaMesh::addCellToPartitionData(const emInt* verts,
 		emInt nPts, emInt ii, int type, std::vector<CellPartData>& vecCPD,
 		double& xmin, double& ymin, double& zmin, double& xmax, double& ymax,
-		double& zmax) {
+		double& zmax) const {
 	{
 		double x(0), y(0), z(0);
-		findCentroidOfVerts(pEM, verts, nPts, x, y, z);
+		findCentroidOfVerts(verts, nPts, x, y, z);
 		extentBoundingBox(x, y, z, xmin, ymin, zmin, xmax, ymax, zmax);
 		CellPartData CPD(ii, type, x, y, z);
 		vecCPD.push_back(CPD);
@@ -59,27 +60,7 @@ bool partitionCells(const ExaMesh* const pEM, const emInt nPartsToMake,
 
 	// Partitioning only cells, not bdry faces.  Also, currently no
 	// cost differential for different cell types.
-	for (emInt ii = 0; ii < pEM->numTets(); ii++) {
-		const emInt* verts = pEM->getTetConn(ii);
-		addCellToPartitionData(pEM, verts, 4, ii, TETRA_4, vecCPD, xmin, ymin, zmin,
-														xmax, ymax, zmax);
-	}
-	for (emInt ii = 0; ii < pEM->numPyramids(); ii++) {
-		const emInt* verts = pEM->getPyrConn(ii);
-		addCellToPartitionData(pEM, verts, 5, ii, PYRA_5, vecCPD, xmin, ymin, zmin,
-														xmax, ymax, zmax);
-	}
-	for (emInt ii = 0; ii < pEM->numPrisms(); ii++) {
-		const emInt* verts = pEM->getPrismConn(ii);
-		addCellToPartitionData(pEM, verts, 6, ii, PENTA_6, vecCPD, xmin, ymin, zmin,
-														xmax, ymax, zmax);
-	}
-	for (emInt ii = 0; ii < pEM->numHexes(); ii++) {
-		const emInt* verts = pEM->getHexConn(ii);
-		addCellToPartitionData(pEM, verts, 8, ii, HEXA_8, vecCPD, xmin, ymin, zmin,
-														xmax, ymax, zmax);
-	}
-
+	pEM->setupCellDataForPartitioning(vecCPD, xmin, ymin, zmin, xmax, ymax, zmax);
 	// Create a single part that contains all the cells, and put it in a deque.
 	std::deque<Part> partsToSplit;
 

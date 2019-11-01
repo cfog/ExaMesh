@@ -67,7 +67,7 @@ int main(int argc, char* const argv[]) {
 		else {
 			UMesh UMrefined(CMorig, nDivs);
 			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
-//		UMrefined.writeVTKFile("/tmp/junk.vtk");
+			UMrefined.writeVTKFile("/tmp/junk.vtk");
 		}
 	}
 	else {
@@ -78,7 +78,7 @@ int main(int argc, char* const argv[]) {
 		if (!isParallel) {
 			UMesh UMrefined(UMorig, nDivs);
 			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
-//		UMrefined.writeVTKFile("/tmp/junk.vtk");
+			UMrefined.writeVTKFile("/tmp/junk.vtk");
 		}
 	}
 

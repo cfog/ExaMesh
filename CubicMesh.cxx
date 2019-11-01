@@ -12,13 +12,15 @@
 #include <cgnslib.h>
 
 #include "CubicMesh.h"
+#include "UMesh.h"
 
 #define CHECK_STATUS if (status != CG_OK) cg_error_exit()
 
 CubicMesh::CubicMesh(const emInt nVerts, const emInt nBdryVerts,
 		const emInt nBdryTris, const emInt nBdryQuads, const emInt nTets,
 		const emInt nPyramids, const emInt nPrisms, const emInt nHexes) :
-		m_nVerts(nVerts), m_nBdryVerts(nBdryVerts), m_nTri10(nBdryTris),
+		m_vert(0), m_tri(0), m_quad(0), m_tet(0), m_pyr(0), m_prism(0), m_hex(0),
+				m_nVerts(nVerts), m_nBdryVerts(nBdryVerts), m_nTri10(nBdryTris),
 				m_nQuad16(nBdryQuads), m_nTet20(nTets), m_nPyr30(nPyramids),
 				m_nPrism40(nPrisms), m_nHex64(nHexes), m_nVertNodes(0) {
 	m_xcoords = new double[m_nVerts];
@@ -31,6 +33,8 @@ CubicMesh::CubicMesh(const emInt nVerts, const emInt nBdryVerts,
 	m_Pyr30Conn = new emInt[m_nPyr30][30];
 	m_Prism40Conn = new emInt[m_nPrism40][40];
 	m_Hex64Conn = new emInt[m_nHex64][64];
+
+	m_coarseGlobalIndices = new emInt[m_nVerts];
 }
 
 void CubicMesh::decrementVertIndices(emInt connSize, emInt* const connect) {
@@ -207,9 +211,9 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 //						m_Tet20Conn[ii][1], m_Tet20Conn[ii][2], m_Tet20Conn[ii][3]);
 //	}
 
-	// Need to decrement all the connectivity, because CGNS is 1-based, and
-	// everything else in the non-Fortran parts of the universe is 0-based.
-	// With a little casting, this can be factored and easy.
+// Need to decrement all the connectivity, because CGNS is 1-based, and
+// everything else in the non-Fortran parts of the universe is 0-based.
+// With a little casting, this can be factored and easy.
 	decrementVertIndices(10 * m_nTri10, reinterpret_cast<emInt*>(m_Tri10Conn));
 	decrementVertIndices(16 * m_nQuad16, reinterpret_cast<emInt*>(m_Quad16Conn));
 	decrementVertIndices(20 * m_nTet20, reinterpret_cast<emInt*>(m_Tet20Conn));
@@ -247,6 +251,13 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 
 CubicMesh::CubicMesh(const char CGNSfilename[]) {
 	readCGNSfile(CGNSfilename);
+	m_vert = m_nVerts;
+	m_tri = m_nTri10;
+	m_quad = m_nQuad16;
+	m_tet = m_nTet20;
+	m_pyr = m_nPyr30;
+	m_prism = m_nPrism40;
+	m_hex = m_nHex64;
 	reorderCubicMesh();
 }
 
@@ -336,7 +347,7 @@ void CubicMesh::reorderCubicMesh() {
 		m_zcoords[newNodeInd[ii]] = cloneCoords[ii];
 	}
 	fprintf(stderr, "\n");
-	delete cloneCoords;
+	delete[] cloneCoords;
 
 	// Now update the connectivity.  This is done with a "mapping" to a 1D
 	// array to reduce loop overhead and, at least as importantly, make it so
@@ -370,8 +381,478 @@ CubicMesh::~CubicMesh() {
 	delete[] m_Hex64Conn;
 }
 
+static void remapIndices(const emInt nPts, const std::vector<emInt>& newIndices,
+		const emInt* conn, emInt* newConn) {
+	for (emInt jj = 0; jj < nPts; jj++) {
+		newConn[jj] = newIndices[conn[jj]];
+	}
+}
+
 std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		std::vector<CellPartData>& vecCPD) const {
-	auto CUM = std::make_unique<CubicMesh>(0, 0, 0, 0, 0, 0, 0, 0);
-	return CUM;
+	// Count the number of tris, quads, tets, pyrs, prisms and hexes.
+	const emInt first = P.getFirst();
+	const emInt last = P.getLast();
+
+	exaSet<TriFaceVerts> partBdryTris;
+	exaSet<QuadFaceVerts> partBdryQuads;
+
+	emInt nTris(0), nQuads(0), nTets(0), nPyrs(0), nPrisms(0), nHexes(0);
+	const emInt *conn;
+
+	std::vector<bool> isVertUsed(numVerts(), false);
+	std::vector<bool> isBdryVert(numVerts(), false);
+	std::vector<bool> isCornerNode(numVerts(), false);
+
+	for (emInt ii = first; ii < last; ii++) {
+		emInt type = vecCPD[ii].getCellType();
+		emInt ind = vecCPD[ii].getIndex();
+		switch (type) {
+			default:
+				// Panic! Should never get here.
+				assert(0);
+				break;
+			case TETRA_20: {
+				nTets++;
+				conn = getTetConn(ind);
+				TriFaceVerts TFV012(conn[0], conn[1], conn[2], TETRA_20, ind);
+				TriFaceVerts TFV013(conn[0], conn[1], conn[3], TETRA_20, ind);
+				TriFaceVerts TFV123(conn[1], conn[2], conn[3], TETRA_20, ind);
+				TriFaceVerts TFV203(conn[2], conn[0], conn[3], TETRA_20, ind);
+				addUniquely(partBdryTris, TFV012);
+				addUniquely(partBdryTris, TFV013);
+				addUniquely(partBdryTris, TFV123);
+				addUniquely(partBdryTris, TFV203);
+				for (int jj = 0; jj < 20; jj++) {
+					isVertUsed[conn[jj]] = true;
+				}
+				for (int jj = 0; jj < 4; jj++) {
+					isCornerNode[conn[jj]] = true;
+				}
+				break;
+			}
+			case PYRA_30: {
+				nPyrs++;
+				conn = getPyrConn(ind);
+				QuadFaceVerts QFV0123(conn[0], conn[1], conn[2], conn[3], PYRA_30, ind);
+				TriFaceVerts TFV014(conn[0], conn[1], conn[4], PYRA_30, ind);
+				TriFaceVerts TFV124(conn[1], conn[2], conn[4], PYRA_30, ind);
+				TriFaceVerts TFV234(conn[2], conn[3], conn[4], PYRA_30, ind);
+				TriFaceVerts TFV304(conn[3], conn[0], conn[4], PYRA_30, ind);
+				addUniquely(partBdryQuads, QFV0123);
+				addUniquely(partBdryTris, TFV014);
+				addUniquely(partBdryTris, TFV124);
+				addUniquely(partBdryTris, TFV234);
+				addUniquely(partBdryTris, TFV304);
+				for (int jj = 0; jj < 30; jj++) {
+					isVertUsed[conn[jj]] = true;
+				}
+				for (int jj = 0; jj < 5; jj++) {
+					isCornerNode[conn[jj]] = true;
+				}
+				break;
+			}
+			case PENTA_40: {
+				nPrisms++;
+				conn = getPrismConn(ind);
+				QuadFaceVerts QFV0143(conn[0], conn[1], conn[4], conn[3], PENTA_40,
+															ind);
+				QuadFaceVerts QFV1254(conn[1], conn[2], conn[5], conn[4], PENTA_40,
+															ind);
+				QuadFaceVerts QFV2035(conn[2], conn[0], conn[3], conn[5], PENTA_40,
+															ind);
+				TriFaceVerts TFV012(conn[0], conn[1], conn[2], PENTA_40, ind);
+				TriFaceVerts TFV345(conn[3], conn[4], conn[5], PENTA_40, ind);
+				addUniquely(partBdryQuads, QFV0143);
+				addUniquely(partBdryQuads, QFV1254);
+				addUniquely(partBdryQuads, QFV2035);
+				addUniquely(partBdryTris, TFV012);
+				addUniquely(partBdryTris, TFV345);
+				for (int jj = 0; jj < 40; jj++) {
+					isVertUsed[conn[jj]] = true;
+				}
+				for (int jj = 0; jj < 6; jj++) {
+					isCornerNode[conn[jj]] = true;
+				}
+				break;
+			}
+			case HEXA_64: {
+				nHexes++;
+				conn = getHexConn(ind);
+				QuadFaceVerts QFV0154(conn[0], conn[1], conn[5], conn[4], HEXA_64, ind);
+				QuadFaceVerts QFV1265(conn[1], conn[2], conn[6], conn[5], HEXA_64, ind);
+				QuadFaceVerts QFV2376(conn[2], conn[3], conn[7], conn[6], HEXA_64, ind);
+				QuadFaceVerts QFV3047(conn[3], conn[0], conn[6], conn[7], HEXA_64, ind);
+				QuadFaceVerts QFV0123(conn[0], conn[1], conn[2], conn[3], HEXA_64, ind);
+				QuadFaceVerts QFV4567(conn[4], conn[5], conn[6], conn[7], HEXA_64, ind);
+				addUniquely(partBdryQuads, QFV0154);
+				addUniquely(partBdryQuads, QFV1265);
+				addUniquely(partBdryQuads, QFV2376);
+				addUniquely(partBdryQuads, QFV3047);
+				addUniquely(partBdryQuads, QFV0123);
+				addUniquely(partBdryQuads, QFV4567);
+				for (int jj = 0; jj < 64; jj++) {
+					isVertUsed[conn[jj]] = true;
+				}
+				for (int jj = 0; jj < 8; jj++) {
+					isCornerNode[conn[jj]] = true;
+				}
+				break;
+			}
+		} // end switch
+	} // end loop to gather information
+
+	// Now check to see which bdry entities are in this part.  That'll be the
+	// ones whose verts are all marked as used.  Unfortunately, this requires
+	// searching through -all- the bdry entities for each part.
+	std::vector<emInt> realBdryTris;
+	std::vector<emInt> realBdryQuads;
+	for (emInt ii = 0; ii < numBdryTris(); ii++) {
+		conn = getBdryTriConn(ii);
+		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]) {
+			TriFaceVerts TFV(conn[0], conn[1], conn[2]);
+			auto iter = partBdryTris.find(TFV);
+			// If this bdry tri is an unmatched tri from this part, match it, and
+			// add the bdry tri to the list of things to copy to the part coarse
+			// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
+			// bdry face from slipping through.
+			if (iter != partBdryTris.end()) {
+				partBdryTris.erase(iter);
+				isBdryVert[conn[0]] = true;
+				isBdryVert[conn[1]] = true;
+				isBdryVert[conn[2]] = true;
+				realBdryTris.push_back(ii);
+				nTris++;
+			}
+		}
+	}
+	for (emInt ii = 0; ii < numBdryQuads(); ii++) {
+		conn = getBdryQuadConn(ii);
+		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]
+				&& isVertUsed[conn[3]]) {
+			QuadFaceVerts QFV(conn[0], conn[1], conn[2], conn[3]);
+			auto iter = partBdryQuads.find(QFV);
+			// If this bdry tri is an unmatched tri from this part, match it, and
+			// add the bdry tri to the list of things to copy to the part coarse
+			// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
+			// bdry face from slipping through.
+			if (iter != partBdryQuads.end()) {
+				partBdryQuads.erase(iter);
+				isBdryVert[conn[0]] = true;
+				isBdryVert[conn[1]] = true;
+				isBdryVert[conn[2]] = true;
+				isBdryVert[conn[3]] = true;
+				realBdryQuads.push_back(ii);
+				nQuads++;
+			}
+		}
+	}
+
+	emInt nPartBdryTris = partBdryTris.size();
+	emInt nPartBdryQuads = partBdryQuads.size();
+
+	for (auto tri : partBdryTris) {
+		isBdryVert[tri.corners[0]] = true;
+		isBdryVert[tri.corners[1]] = true;
+		isBdryVert[tri.corners[2]] = true;
+	}
+	for (auto quad : partBdryQuads) {
+		isBdryVert[quad.corners[0]] = true;
+		isBdryVert[quad.corners[1]] = true;
+		isBdryVert[quad.corners[2]] = true;
+		isBdryVert[quad.corners[3]] = true;
+	}
+	emInt nBdryVerts = 0, nNodes = 0;
+	emInt nVertNodes = 0;
+	for (emInt ii = 0; ii < numVerts(); ii++) {
+		if (isBdryVert[ii]) nBdryVerts++;
+		if (isVertUsed[ii]) nNodes++;
+		if (isCornerNode[ii]) nVertNodes++;
+	}
+
+	// Now set up the data structures for the new coarse UMesh
+	auto UCM = std::make_unique<CubicMesh>(nNodes, nBdryVerts,
+																					nTris + nPartBdryTris,
+																					nQuads + nPartBdryQuads, nTets, nPyrs,
+																					nPrisms, nHexes);
+	UCM->setNVertNodes(nVertNodes);
+
+	// Store the vertices, while keeping a mapping from the full list of verts
+	// to the restricted list so the connectivity can be copied properly.
+	std::vector<emInt> newIndices(numVerts(), EMINT_MAX);
+	for (emInt ii = 0; ii < numVerts(); ii++) {
+		if (isVertUsed[ii]) {
+			double coords[3];
+			getCoords(ii, coords);
+			newIndices[ii] = UCM->addVert(coords, ii);
+			// Copy length scale for vertices from the parent; otherwise, there will be
+			// mismatches in the refined meshes.
+			UCM->setLengthScale(newIndices[ii], getLengthScale(ii));
+		}
+	}
+
+	// Now copy connectivity.
+	emInt newConn[64];
+	for (emInt ii = first; ii < last; ii++) {
+		emInt type = vecCPD[ii].getCellType();
+		emInt ind = vecCPD[ii].getIndex();
+		switch (type) {
+			default:
+				// Panic! Should never get here.
+				assert(0);
+				break;
+			case TETRA_20: {
+				conn = getTetConn(ind);
+				remapIndices(20, newIndices, conn, newConn);
+				UCM->addTet(newConn);
+				break;
+			}
+			case PYRA_30: {
+				conn = getPyrConn(ind);
+				remapIndices(30, newIndices, conn, newConn);
+				UCM->addPyramid(newConn);
+				break;
+			}
+			case PENTA_40: {
+				conn = getPrismConn(ind);
+				remapIndices(40, newIndices, conn, newConn);
+				UCM->addPrism(newConn);
+				break;
+			}
+			case HEXA_64: {
+				conn = getHexConn(ind);
+				remapIndices(64, newIndices, conn, newConn);
+				UCM->addHex(newConn);
+				break;
+			}
+		} // end switch
+	} // end loop to copy most connectivity
+
+	for (emInt ii = 0; ii < realBdryTris.size(); ii++) {
+		conn = getBdryTriConn(realBdryTris[ii]);
+		remapIndices(10, newIndices, conn, newConn);
+		UCM->addBdryTri(newConn);
+	}
+	for (emInt ii = 0; ii < realBdryQuads.size(); ii++) {
+		conn = getBdryQuadConn(realBdryQuads[ii]);
+		remapIndices(16, newIndices, conn, newConn);
+		UCM->addBdryQuad(newConn);
+	}
+
+	// Now, finally, the part bdry connectivity.
+	// TODO: Currently, there's nothing in the data structure that marks which
+	// are part bdry faces.
+#warning Need to extract the face nodes from the cells
+	for (auto tri : partBdryTris) {
+		emInt cellInd = tri.volElement;
+		emInt conn[10];
+		switch (tri.volElementType) {
+			case TETRA_20: {
+				emInt *elemConn = m_Tet20Conn[cellInd];
+				// Identify which face this is.  Has to be 012, 013, 123, or 203.
+				if (tri.corners[2] == elemConn[2]) {
+					// Has to be 012
+					assert(tri.corners[0] == elemConn[0]);
+					assert(tri.corners[1] == elemConn[1]);
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[2];
+					conn[3] = elemConn[4];
+					conn[4] = elemConn[5];
+					conn[5] = elemConn[6];
+					conn[6] = elemConn[7];
+					conn[7] = elemConn[8];
+					conn[8] = elemConn[9];
+					conn[9] = elemConn[16];
+				}
+				else if (tri.corners[0] == elemConn[0]) {
+					// Has to be 013
+					assert(tri.corners[1] == elemConn[1]);
+					assert(tri.corners[2] == elemConn[3]);
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[3];
+					// Between 0 and 1
+					conn[3] = elemConn[4];
+					conn[4] = elemConn[5];
+					// Between 1 and 3
+					conn[5] = elemConn[12];
+					conn[6] = elemConn[13];
+					// Between 3 and 0
+					conn[7] = elemConn[11];
+					conn[8] = elemConn[10];
+					// On face
+					conn[9] = elemConn[17];
+				}
+				else if (tri.corners[0] == elemConn[1]) {
+					// Has to be 123
+					assert(tri.corners[1] == elemConn[2]);
+					assert(tri.corners[2] == elemConn[3]);
+					conn[0] = elemConn[1];
+					conn[1] = elemConn[2];
+					conn[2] = elemConn[3];
+					// Between 1 and 2
+					conn[3] = elemConn[6];
+					conn[4] = elemConn[7];
+					// Between 2 and 3
+					conn[5] = elemConn[14];
+					conn[6] = elemConn[15];
+					// Between 3 and 1
+					conn[7] = elemConn[13];
+					conn[8] = elemConn[12];
+					// On face
+					conn[9] = elemConn[18];
+				}
+				else if (tri.corners[0] == elemConn[2]) {
+					// Has to be 203
+					assert(tri.corners[1] == elemConn[0]);
+					assert(tri.corners[2] == elemConn[3]);
+					conn[0] = elemConn[2];
+					conn[1] = elemConn[0];
+					conn[2] = elemConn[3];
+					// Between 2 and 0
+					conn[3] = elemConn[8];
+					conn[4] = elemConn[9];
+					// Between 0 and 3
+					conn[5] = elemConn[10];
+					conn[6] = elemConn[11];
+					// Between 3 and 2
+					conn[7] = elemConn[15];
+					conn[8] = elemConn[14];
+					// On face
+					conn[9] = elemConn[19];
+				}
+				else {
+					// Should never get here
+					assert(0);
+				}
+				break;
+			}
+			case PYRA_30: {
+				emInt *elemConn = m_Pyr30Conn[cellInd];
+				break;
+			}
+			case PENTA_40: {
+				emInt *elemConn = m_Prism40Conn[cellInd];
+				break;
+			}
+			default: {
+				// Should never get here.
+				assert(0);
+			}
+		}
+		emInt newConn[10];
+		remapIndices(10, newIndices, conn, newConn);
+		UCM->addBdryTri(newConn);
+	}
+
+	for (auto quad : partBdryQuads) {
+		emInt conn[] = { newIndices[quad.corners[0]], newIndices[quad.corners[1]],
+											newIndices[quad.corners[2]], newIndices[quad.corners[3]] };
+		UCM->addBdryQuad(conn);
+	}
+
+	return UCM;
 }
+
+emInt CubicMesh::addVert(const double newCoords[3],
+		const emInt coarseGlobalIndex) {
+	assert(m_vert < m_nVerts);
+	m_xcoords[m_vert] = newCoords[0];
+	m_ycoords[m_vert] = newCoords[1];
+	m_zcoords[m_vert] = newCoords[2];
+	m_coarseGlobalIndices[m_vert] = coarseGlobalIndex;
+	return (m_vert++);
+}
+
+emInt CubicMesh::addBdryTri(const emInt verts[]) {
+	assert(m_tri < m_nTri10);
+	for (int ii = 0; ii < 10; ii++) {
+		assert(verts[ii] < m_nVerts);
+		m_Tri10Conn[m_tri][ii] = verts[ii];
+	}
+	return (m_tri++);
+}
+
+emInt CubicMesh::addBdryQuad(const emInt verts[]) {
+	assert(m_quad < m_nQuad16);
+	for (int ii = 0; ii < 16; ii++) {
+		assert(verts[ii] < m_nVerts);
+		m_Quad16Conn[m_quad][ii] = verts[ii];
+	}
+	return (m_quad++);
+}
+
+emInt CubicMesh::addTet(const emInt verts[]) {
+	assert(m_tet < m_nTet20);
+	for (int ii = 0; ii < 20; ii++) {
+		assert(verts[ii] < m_nVerts);
+		m_Tet20Conn[m_tet][ii] = verts[ii];
+	}
+	return (m_tet++);
+}
+
+emInt CubicMesh::addPyramid(const emInt verts[]) {
+	assert(m_pyr < m_nPyr30);
+	for (int ii = 0; ii < 30; ii++) {
+		assert(verts[ii] < m_nVerts);
+		m_Pyr30Conn[m_pyr][ii] = verts[ii];
+	}
+	return (m_pyr++);
+}
+
+emInt CubicMesh::addPrism(const emInt verts[]) {
+	assert(m_prism < m_nPrism40);
+	for (int ii = 0; ii < 40; ii++) {
+		assert(verts[ii] < m_nVerts);
+		m_Prism40Conn[m_prism][ii] = verts[ii];
+	}
+	return (m_prism++);
+}
+
+emInt CubicMesh::addHex(const emInt verts[]) {
+	assert(m_hex < m_nHex64);
+	for (int ii = 0; ii < 64; ii++) {
+		assert(verts[ii] < m_nVerts);
+		m_Hex64Conn[m_hex][ii] = verts[ii];
+	}
+	return (m_hex++);
+}
+
+std::unique_ptr<UMesh> CubicMesh::createFineUMesh(const emInt numDivs, Part& P,
+		std::vector<CellPartData>& vecCPD) const {
+	// Create a coarse
+	auto coarse = extractCoarseMesh(P, vecCPD);
+
+	auto UUM = std::make_unique<UMesh>(*coarse, numDivs);
+	return UUM;
+}
+
+void CubicMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
+		double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
+		double& zmax) const {
+	// Partitioning only cells, not bdry faces.  Also, currently no
+	// cost differential for different cell types.
+	for (emInt ii = 0; ii < numTets(); ii++) {
+		const emInt* verts = getTetConn(ii);
+		addCellToPartitionData(verts, 20, ii, TETRA_20, vecCPD, xmin, ymin, zmin,
+														xmax, ymax, zmax);
+	}
+	for (emInt ii = 0; ii < numPyramids(); ii++) {
+		const emInt* verts = getPyrConn(ii);
+		addCellToPartitionData(verts, 30, ii, PYRA_30, vecCPD, xmin, ymin, zmin,
+														xmax, ymax, zmax);
+	}
+	for (emInt ii = 0; ii < numPrisms(); ii++) {
+		const emInt* verts = getPrismConn(ii);
+		addCellToPartitionData(verts, 40, ii, PENTA_40, vecCPD, xmin, ymin, zmin,
+														xmax, ymax, zmax);
+	}
+	for (emInt ii = 0; ii < numHexes(); ii++) {
+		const emInt* verts = getHexConn(ii);
+		addCellToPartitionData(verts, 64, ii, HEXA_64, vecCPD, xmin, ymin, zmin,
+														xmax, ymax, zmax);
+	}
+}
+
+

@@ -173,7 +173,6 @@ emInt UMesh::addHex(const emInt verts[8]) {
 
 UMesh::~UMesh() {
 	free(m_buffer);
-	delete[] m_coarseGlobalIndices;
 }
 
 void checkConnectivitySize(const char cellType, const emInt nVerts) {
@@ -641,17 +640,6 @@ bool UMesh::writeUGridFile(const char fileName[]) {
 	return true;
 }
 
-template<typename T>
-void addUniquely(exaSet<T>& mySet, T& val) {
-	auto iter = mySet.find(val);
-	if (iter != mySet.end()) {
-		mySet.erase(iter);
-	}
-	else {
-		mySet.insert(val);
-	}
-}
-
 static void remapIndices(const emInt nPts, const std::vector<emInt>& newIndices,
 		const emInt* conn, emInt* newConn) {
 	for (emInt jj = 0; jj < nPts; jj++) {
@@ -847,6 +835,9 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 			double coords[3];
 			getCoords(ii, coords);
 			newIndices[ii] = UUM->addVert(coords, ii);
+			// Copy length scale for vertices from the parent; otherwise, there will be
+			// mismatches in the refined meshes.
+			UUM->setLengthScale(newIndices[ii], getLengthScale(ii));
 		}
 	}
 
@@ -913,9 +904,45 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 		UUM->addBdryQuad(conn);
 	}
 
-	UUM->setupLengthScales();
 	return UUM;
 }
+
+std::unique_ptr<UMesh> UMesh::createFineUMesh(const emInt numDivs, Part& P,
+		std::vector<CellPartData>& vecCPD) const {
+	// Create a coarse
+	auto coarse = extractCoarseMesh(P, vecCPD);
+
+	auto UUM = std::make_unique<UMesh>(*coarse, numDivs);
+	return UUM;
+}
+
+void UMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
+		double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
+		double& zmax) const {
+	// Partitioning only cells, not bdry faces.  Also, currently no
+	// cost differential for different cell types.
+	for (emInt ii = 0; ii < numTets(); ii++) {
+		const emInt* verts = getTetConn(ii);
+		addCellToPartitionData(verts, 4, ii, TETRA_4, vecCPD, xmin, ymin, zmin,
+														xmax, ymax, zmax);
+	}
+	for (emInt ii = 0; ii < numPyramids(); ii++) {
+		const emInt* verts = getPyrConn(ii);
+		addCellToPartitionData(verts, 5, ii, PYRA_5, vecCPD, xmin, ymin, zmin, xmax,
+														ymax, zmax);
+	}
+	for (emInt ii = 0; ii < numPrisms(); ii++) {
+		const emInt* verts = getPrismConn(ii);
+		addCellToPartitionData(verts, 6, ii, PENTA_6, vecCPD, xmin, ymin, zmin,
+														xmax, ymax, zmax);
+	}
+	for (emInt ii = 0; ii < numHexes(); ii++) {
+		const emInt* verts = getHexConn(ii);
+		addCellToPartitionData(verts, 8, ii, HEXA_8, vecCPD, xmin, ymin, zmin, xmax,
+														ymax, zmax);
+	}
+}
+
 
 //bool UMesh::writeCompressedUGridFile(const char fileName[]) {
 //	double timeBefore = clock() / double(CLOCKS_PER_SEC);

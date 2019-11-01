@@ -34,10 +34,13 @@ void sortVerts3(const emInt input[3], emInt output[3]) {
 	}
 }
 
-TriFaceVerts::TriFaceVerts(const emInt v0, const emInt v1, const emInt v2) {
+TriFaceVerts::TriFaceVerts(const emInt v0, const emInt v1, const emInt v2,
+		const emInt type, const emInt elemInd) {
 	corners[0] = v0;
 	corners[1] = v1;
 	corners[2] = v2;
+	volElement = elemInd;
+	volElementType = type;
 	setupSorted();
 }
 
@@ -58,11 +61,13 @@ bool operator<(const TriFaceVerts& a, const TriFaceVerts& b) {
 }
 
 QuadFaceVerts::QuadFaceVerts(const emInt v0, const emInt v1, const emInt v2,
-		const emInt v3) {
+		const emInt v3, const emInt type, const emInt elemInd) {
 	corners[0] = v0;
 	corners[1] = v1;
 	corners[2] = v2;
 	corners[3] = v3;
+	volElement = elemInd;
+	volElementType = type;
 	setupSorted();
 }
 
