@@ -753,7 +753,7 @@ BOOST_AUTO_TEST_SUITE(MappingTests)
 		TLSM.computeTransformedCoords(uvw, xyz);
 		BOOST_CHECK_CLOSE(xyz[0], 1.476794722573, 1.e-8);
 		BOOST_CHECK_CLOSE(xyz[1], 1.373834680205, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], 2.158765461278, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], 2.158765461277, 1.e-8);
 
 		emInt verts2[] = { 3, 1, 2, 0 };
 		TLSM.setupCoordMapping(verts2);
@@ -796,26 +796,32 @@ BOOST_AUTO_TEST_SUITE(MappingTests)
 
 	BOOST_AUTO_TEST_SUITE_END()
 
-BOOST_AUTO_TEST_SUITE(LagrangeCubicMapping)
+BOOST_AUTO_TEST_SUITE(LagrangeCubicMappingTest)
 	static void cubicXYZ(const double uvw[3], double xyz[3]) {
 		const double& u = uvw[0];
 		const double& v = uvw[1];
 		const double& w = uvw[2];
 		xyz[0] = u * u * u + 2 * u * u * v + 4 * u * v * v - 30 * u * v * w
-				+ 5 * u * u + 6 * u + 3;
+				+ 5 * u * u + 6 * u
+							- 3 * u * v
+							+ 3;
 		xyz[1] = v * v * v + 2 * v * v * w + 4 * v * w * w - 54 * u * v * w
-				+ 5 * v * v + 6 * v + 7;
+				+ 5 * v * v + 6 * v
+							- 4 * v * w
+							+ 7;
 		xyz[2] = w * w * w + 2 * w * w * u + 4 * w * u * u - 72 * u * v * w
-				+ 5 * w * w + 6 * w + 10;
+				+ 5 * w * w + 6 * w
+							- 5 * w * u
+							+ 10;
 	}
 
 	BOOST_AUTO_TEST_CASE(CubicTet) {
 		CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
 		LagrangeCubicTetMapping LCTM(&CM);
 		// Test for known cubic functions:
-		// x = u^3 + 2 u^2 v + 4 u v^2 - 30 u v w + 5 u^2 + 6 u + 3
-		// y = v^3 + 2 v^2 w + 4 v w^2 - 54 u v w + 5 v^2 + 6 v + 7
-		// z = w^3 + 2 w^2 u + 4 w u^2 - 72 u v w + 5 w^2 + 6 w + 10
+		// x = u^3 + 2 u^2 v + 4 u v^2 - 30 u v w + 5 u^2 + 6 u - 3 u v + 3
+		// y = v^3 + 2 v^2 w + 4 v w^2 - 54 u v w + 5 v^2 + 6 v - 4 v w + 7
+		// z = w^3 + 2 w^2 u + 4 w u^2 - 72 u v w + 5 w^2 + 6 w - 5 w u+ 10
 
 		// So the nodal values are just these functions evaluated at nodes, where for the
 		// canonical tet, we have:
@@ -841,6 +847,7 @@ BOOST_AUTO_TEST_SUITE(LagrangeCubicMapping)
 			cubicXYZ(uvw[ii], xyz[ii]);
 		}
 		LCTM.setNodalValues(xyz);
+		LCTM.setModalValues();
 
 		for (int iFunc = 0; iFunc < 20; iFunc++) {
 			for (int iNode = 0; iNode < 20; iNode++) {

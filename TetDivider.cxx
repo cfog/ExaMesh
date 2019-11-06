@@ -23,8 +23,8 @@ void TetDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 }
 
 void TetDivider::divideInterior() {
-  // Number of verts added:
-  //    Tets:      (nD-1)(nD-2)(nD-3)/6
+	// Number of verts added:
+	//    Tets:      (nD-1)(nD-2)(nD-3)/6
 	double uvw[3];
 	double& u = uvw[0];
 	double& v = uvw[1];
@@ -40,26 +40,28 @@ void TetDivider::divideInterior() {
 				m_Map->computeTransformedCoords(uvw, coords);
 				emInt vNew = m_pMesh->addVert(coords);
 				localVerts[ii + 1][jj + 1][nDivs - (kk + 1)] = vNew;
-      }
-    }
-  } // Done looping to create all verts inside the tet.
+			}
+		}
+	} // Done looping to create all verts inside the tet.
 }
 
 void TetDivider::stuffTetsIntoOctahedron(emInt vertsNew[][4]) {
-	for (int ii = 0; ii < 4; ii++) {
-		emInt tet = m_pMesh->addTet(vertsNew[ii]);
-		assert(tet < m_pMesh->maxNTets());
+	emInt tet = m_pMesh->addTet(vertsNew[0]);
+	tet = m_pMesh->addTet(vertsNew[1]);
+	tet = m_pMesh->addTet(vertsNew[2]);
+	tet = m_pMesh->addTet(vertsNew[3]);
+	assert(tet < m_pMesh->maxNTets());
 #ifndef NDEBUG
-		// TODO Re-enable this after you have a better criterion for
-		// octa splitting.
-		assert(checkOrient3D(vertsNew[ii]) != -1);
+	assert(checkOrient3D(vertsNew[0]) != -1);
+	assert(checkOrient3D(vertsNew[1]) != -1);
+	assert(checkOrient3D(vertsNew[2]) != -1);
+	assert(checkOrient3D(vertsNew[3]) != -1);
 #endif
-	}
 }
 
 void TetDivider::createNewCells() {
-  //		// Output info about the points for this tet, layer by layer
-  //
+//		// Output info about the points for this tet, layer by layer
+//
 //	for (int level = 0; level <= nDivs; level++) {
 //		fprintf(stderr, "Level = %d\n", level);
 //		for (int jj = 0; jj <= level; jj++) {
@@ -75,15 +77,15 @@ void TetDivider::createNewCells() {
 
 	for (int level = 1; level <= nDivs; level++) {
 //		fprintf(stderr, "Level: %d\n", level);
-    // Create up-pointing tets.  For a given level, there are
-    // (level+1)(level)/2 of these.
-    for (int jj = 0; jj < level; jj++) {
-      for (int ii = 0; ii < level - jj; ii++) {
-        //					logMessage(
-        //							MSG_DEBUG,
-        //							"Tet: (%d, %d, %d), (%d, %d,
-        //%d), (%d, %d, %d), (%d, %d, %d)\n", 							ii, jj, level, ii + 1, jj, level,
-        //ii, jj + 1, level, ii, jj, 							level - 1);
+		// Create up-pointing tets.  For a given level, there are
+		// (level+1)(level)/2 of these.
+		for (int jj = 0; jj < level; jj++) {
+			for (int ii = 0; ii < level - jj; ii++) {
+				//					logMessage(
+				//							MSG_DEBUG,
+				//							"Tet: (%d, %d, %d), (%d, %d,
+				//%d), (%d, %d, %d), (%d, %d, %d)\n", 							ii, jj, level, ii + 1, jj, level,
+				//ii, jj + 1, level, ii, jj, 							level - 1);
 				emInt vert0 = localVerts[ii][jj][level];
 				emInt vert1 = localVerts[ii + 1][jj][level];
 				emInt vert2 = localVerts[ii][jj + 1][level];
@@ -93,36 +95,36 @@ void TetDivider::createNewCells() {
 				emInt tet = m_pMesh->addTet(verts);
 				assert(tet < m_pMesh->maxNTets());
 				assert(checkOrient3D(verts) == 1);
-      }
-    }
+			}
+		}
 
 		// Each down-point triangle on the previous level has a tet
-    // that extends down to a point on this level. There are
-    // (levels-1)*(levels-2)/2 of thes.
-    for (int jj = 0; jj <= level - 3; jj++) {
-      for (int ii = 1; ii <= level - jj - 2; ii++) {
+		// that extends down to a point on this level. There are
+		// (levels-1)*(levels-2)/2 of thes.
+		for (int jj = 0; jj <= level - 3; jj++) {
+			for (int ii = 1; ii <= level - jj - 2; ii++) {
 				emInt vert0 = localVerts[ii][jj][level - 1];
 				emInt vert1 = localVerts[ii - 1][jj + 1][level - 1];
 				emInt vert2 = localVerts[ii][jj + 1][level - 1];
 				emInt vert3 = localVerts[ii][jj + 1][level];
 				emInt verts[] = { vert0, vert1, vert2, vert3 };
-        //					logMessage(
-        //							MSG_DEBUG,
-        //							"Tet: (%d, %d, %d), (%d, %d,
-        //%d), (%d, %d, %d), (%d, %d, %d)\n", 							ii, jj, level - 1, ii - 1, jj + 1,
-        //level - 1, ii, jj + 1, 							level - 1, ii, jj + 1, level);
+				//					logMessage(
+				//							MSG_DEBUG,
+				//							"Tet: (%d, %d, %d), (%d, %d,
+				//%d), (%d, %d, %d), (%d, %d, %d)\n", 							ii, jj, level - 1, ii - 1, jj + 1,
+				//level - 1, ii, jj + 1, 							level - 1, ii, jj + 1, level);
 				emInt tet = m_pMesh->addTet(verts);
 				assert(tet < m_pMesh->maxNTets());
 				assert(checkOrient3D(verts) == 1);
-      }
-    }
+			}
+		}
 
-    // The rest of the tris (down-pointing) in this level have an octahedron
-    // on them, connecting them to an (up-pointing) tri the level above.
-    // There are (level)(level-1)/2 octahedra, each of which will be split
-    // into four tetrahedra.
+		// The rest of the tris (down-pointing) in this level have an octahedron
+		// on them, connecting them to an (up-pointing) tri the level above.
+		// There are (level)(level-1)/2 octahedra, each of which will be split
+		// into four tetrahedra.
 
-    bool useDiagAF = true, useDiagBD = false, useDiagCE = false;
+		bool useDiagAF = true, useDiagBD = false, useDiagCE = false;
 		for (int jj = 0; jj <= level - 2; jj++) {
 			for (int ii = 1; ii <= level - jj - 1; ii++) {
 				emInt vertA = localVerts[ii][jj][level];
@@ -142,42 +144,44 @@ void TetDivider::createNewCells() {
 				m_pMesh->getCoords(vertF, coordsF);
 
 				useDiagAF = useDiagBD = useDiagCE = false;
-				double distAF = dDIST3D(coordsA, coordsF);
-				double distBD = dDIST3D(coordsB, coordsD);
-				double distCE = dDIST3D(coordsC, coordsE);
-				if (distAF <= distBD && distAF <= distCE) {
+				double distsqAF = dDISTSQ3D(coordsA, coordsF);
+				double distsqBD = dDISTSQ3D(coordsB, coordsD);
+				double distsqCE = dDISTSQ3D(coordsC, coordsE);
+				if (distsqAF <= distsqBD && distsqAF <= distsqCE) {
 					useDiagAF = true;
 				}
-				else if (distBD <= distCE) {
+				else if (distsqBD <= distsqCE) {
 					useDiagBD = true;
 				}
 				else {
 					useDiagCE = true;
 				}
 
-        if (useDiagAF) {
-          assert(!useDiagBD && !useDiagCE);
+				if (useDiagAF) {
+					assert(!useDiagBD && !useDiagCE);
 					emInt vertsNew[][4] = { { vertB, vertC, vertA, vertF },
 																	{ vertC, vertD, vertA, vertF },
 																	{ vertD, vertE, vertA, vertF },
 																	{ vertE, vertB, vertA, vertF } };
 					stuffTetsIntoOctahedron(vertsNew);
-        } else if (useDiagBD) {
-          assert(!useDiagAF && !useDiagCE);
+				}
+				else if (useDiagBD) {
+					assert(!useDiagAF && !useDiagCE);
 					emInt vertsNew[][4] = { { vertC, vertA, vertB, vertD },
 																	{ vertA, vertE, vertB, vertD },
 																	{ vertE, vertF, vertB, vertD },
 																	{ vertF, vertC, vertB, vertD } };
 					stuffTetsIntoOctahedron(vertsNew);
-        } else {
-          assert(!useDiagAF && !useDiagBD);
+				}
+				else {
+					assert(!useDiagAF && !useDiagBD);
 					emInt vertsNew[][4] = { { vertA, vertB, vertC, vertE },
 																	{ vertB, vertF, vertC, vertE },
 																	{ vertF, vertD, vertC, vertE },
 																	{ vertD, vertA, vertC, vertE } };
 					stuffTetsIntoOctahedron(vertsNew);
-        }
-      }
-    } // Done with octahedra
-  }   // Done with this level
+				}
+			}
+		} // Done with octahedra
+	}   // Done with this level
 }

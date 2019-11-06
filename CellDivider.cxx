@@ -208,8 +208,10 @@ void CellDivider::getEdgeVerts(exaMap<Edge, EdgeVerts> &vertsOnEdges,
 }
 
 
-void CellDivider::getTriVerts(exaSet<TriFaceVerts> &vertsOnTris,
-		const int face, TriFaceVerts &TFV) {
+typename exaSet<TriFaceVerts>::iterator CellDivider::getTriVerts(
+		exaSet<TriFaceVerts> &vertsOnTris,
+		const int face, TriFaceVerts &TFV,
+		bool& shouldErase) {
 	int ind0 = faceVertIndices[face][0];
 	int ind1 = faceVertIndices[face][1];
 	int ind2 = faceVertIndices[face][2];
@@ -254,12 +256,15 @@ void CellDivider::getTriVerts(exaSet<TriFaceVerts> &vertsOnTris,
 				TFV.intVerts[ii][jj] = vNew;
 			}
 		} // Done looping over all interior verts for the triangle.
-		vertsOnTris.insert(TFV);
+		iterTris = vertsOnTris.insert(TFV).first;
+		shouldErase = false;
 	}
 	else {
-		TFV = *iterTris;
-		vertsOnTris.erase(iterTris); // Will never need this again.
+		shouldErase = true;
+//		TFV = *iterTris;
+//		vertsOnTris.erase(iterTris); // Will never need this again.
 	}
+	return iterTris;
 }
 
 void CellDivider::getQuadVerts(exaSet<QuadFaceVerts> &vertsOnQuads,
@@ -417,7 +422,8 @@ exaSet<QuadFaceVerts> &vertsOnQuads) {
 
 	for (int iF = numQuadFaces; iF < numQuadFaces + numTriFaces; iF++) {
 		TriFaceVerts TFV;
-		getTriVerts(vertsOnTris, iF, TFV);
+		bool shouldErase = false;
+		auto iterTris = getTriVerts(vertsOnTris, iF, TFV, shouldErase);
 		// Now extract info from the TFV and stuff it into the Prismamid's point
 		// array.
 
@@ -425,7 +431,9 @@ exaSet<QuadFaceVerts> &vertsOnQuads) {
 		emInt corner[] = { 1000, 1000, 1000 };
 		// Critical first step: identify which vert is which.
 		for (int iC = 0; iC < 3; iC++) {
-			const emInt corn = TFV.corners[iC];
+			const emInt corn = iterTris->corners[iC];
+//			const emInt corn = TFV.corners[iC];
+
 			for (int iV = 0; iV < numVerts; iV++) {
 				const emInt cand = cellVerts[iV];
 				if (corn == cand) {
@@ -454,9 +462,11 @@ exaSet<QuadFaceVerts> &vertsOnQuads) {
 				assert(JJ >= 0 && JJ <= nDivs);
 				assert(KK >= 0 && KK <= nDivs);
 
-				localVerts[II][JJ][KK] = TFV.intVerts[ii][jj];
+				localVerts[II][JJ][KK] = iterTris->intVerts[ii][jj];
+//				localVerts[II][JJ][KK] = TFV.intVerts[ii][jj];
 			}
 		}
+		if (shouldErase) vertsOnTris.erase(iterTris);
 	}
 }
 

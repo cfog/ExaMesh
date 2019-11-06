@@ -26,17 +26,15 @@ struct MeshSize {
 class ExaMesh {
 protected:
 	double *m_lenScale;
-	emInt *m_coarseGlobalIndices;
 
 	void setupLengthScales();
 
 public:
 	ExaMesh() :
-			m_lenScale(nullptr), m_coarseGlobalIndices(nullptr) {
+			m_lenScale(nullptr) {
 	}
 	virtual ~ExaMesh() {
 		if (m_lenScale) delete[] m_lenScale;
-		if (m_coarseGlobalIndices) delete[] m_coarseGlobalIndices;
 	}
 	virtual double getX(const emInt vert) const = 0;
 	virtual double getY(const emInt vert) const = 0;

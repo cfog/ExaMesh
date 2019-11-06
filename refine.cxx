@@ -68,8 +68,14 @@ int main(int argc, char* const argv[]) {
 			double time;
 			size_t cells;
 			UMesh UMrefined(CMorig, nDivs, time, cells);
+			fprintf(stderr, "\nDone serial refinement.\n");
+			fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
+			fprintf(stderr,
+							"                          %5.2F million cells / minute\n",
+							(cells / 1000000.) / (time / 60));
+
 			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
-			UMrefined.writeVTKFile("/tmp/junk.vtk");
+//			UMrefined.writeVTKFile("/tmp/junk.vtk");
 		}
 	}
 	else {
@@ -81,11 +87,17 @@ int main(int argc, char* const argv[]) {
 			double time;
 			size_t cells;
 			UMesh UMrefined(UMorig, nDivs, time, cells);
+			fprintf(stderr, "\nDone serial refinement.\n");
+			fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
+			fprintf(stderr,
+							"                          %5.2F million cells / minute\n",
+							(cells / 1000000.) / (time / 60));
 			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
-			UMrefined.writeVTKFile("/tmp/junk.vtk");
+			// UMrefined.writeVTKFile("/tmp/junk.vtk");
 		}
 	}
 
+	printf("Exiting\n");
 	exit(0);
 }
 

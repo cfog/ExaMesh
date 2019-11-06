@@ -12,6 +12,10 @@
 #include <stdint.h>
 #include <limits.h>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #ifdef USE_ORDERED
 
 #include <set>
@@ -48,6 +52,14 @@ inline double safe_acos(const double arg) {
 	if (arg < -1) return M_PI;
 	else if (arg > 1) return 0;
 	else return acos(arg);
+}
+
+inline double exaTime() {
+#ifdef _OPENMP
+	return omp_get_wtime();
+#else
+	return clock() / double(CLOCKS_PER_SEC);
+#endif
 }
 
 class Edge {

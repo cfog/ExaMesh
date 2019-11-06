@@ -83,13 +83,14 @@ public:
 
 class LagrangeMapping: public Mapping {
 	int m_numValues;
-	double (*m_nodalValues)[3];
 	virtual double computeBasisFunction(const int whichFunc,
 			const double uvw[3]) const = 0;
+	virtual void setModalValues() = 0;
+protected:
+	double (*m_nodalValues)[3];
 public:
 	LagrangeMapping(const ExaMesh* const EM, const int nVals);
 	virtual ~LagrangeMapping();
-public:
 	void setupCoordMapping(const emInt verts[]);
 	// setNodalValues is public for test purposes only.
 	void setNodalValues(double inputValues[][3]);
@@ -97,16 +98,32 @@ public:
 			double xyz[3]) const;
 };
 
-class LagrangeCubicTetMapping: public LagrangeMapping {
+class LagrangeCubicMapping: public LagrangeMapping {
+protected:
+	double C[3], Cu[3], Cv[3], Cw[3], Cuu[3], Cuv[3], Cuw[3], Cvv[3], Cvw[3],
+			Cww[3], Cuuu[3], Cuuv[3], Cuvv[3], Cuuw[3], Cuww[3], Cuvw[3], Cvvv[3],
+			Cvvw[3], Cvww[3], Cwww[3];
+	LagrangeCubicMapping(const ExaMesh* const EM, const emInt nDOFs) :
+			LagrangeMapping(EM, nDOFs) {
+	}
+public:
+	virtual void computeTransformedCoords(const double uvw[3],
+			double xyz[3]) const;
+private:
+	virtual void setModalValues() = 0;
+};
+
+class LagrangeCubicTetMapping: public LagrangeCubicMapping {
 public:
 	LagrangeCubicTetMapping(const ExaMesh* const EM) :
-			LagrangeMapping(EM, 20) {
+			LagrangeCubicMapping(EM, 20) {
 	}
 	virtual ~LagrangeCubicTetMapping() {
 	}
 	// Public for testing purposes
 	virtual double computeBasisFunction(const int whichFunc,
 			const double uvw[3]) const;
+	void setModalValues();
 };
 
 

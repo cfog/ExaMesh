@@ -33,8 +33,6 @@ CubicMesh::CubicMesh(const emInt nVerts, const emInt nBdryVerts,
 	m_Pyr30Conn = new emInt[m_nPyr30][30];
 	m_Prism40Conn = new emInt[m_nPrism40][40];
 	m_Hex64Conn = new emInt[m_nHex64][64];
-
-	m_coarseGlobalIndices = new emInt[m_nVerts];
 }
 
 void CubicMesh::decrementVertIndices(emInt connSize, emInt* const connect) {
@@ -761,7 +759,6 @@ emInt CubicMesh::addVert(const double newCoords[3],
 	m_xcoords[m_vert] = newCoords[0];
 	m_ycoords[m_vert] = newCoords[1];
 	m_zcoords[m_vert] = newCoords[2];
-	m_coarseGlobalIndices[m_vert] = coarseGlobalIndex;
 	return (m_vert++);
 }
 

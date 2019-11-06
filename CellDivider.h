@@ -38,9 +38,11 @@ private:
 	void getQuadVerts(exaSet<QuadFaceVerts> &vertsOnQuads, const int face,
 			QuadFaceVerts &QFV);
 
-	void getTriVerts(exaSet<TriFaceVerts> &vertsOnTris,
+	typename exaSet<TriFaceVerts>::iterator getTriVerts(
+			exaSet<TriFaceVerts> &vertsOnTris,
 			const int face,
-			TriFaceVerts& TFV);
+			TriFaceVerts& TFV,
+			bool& shouldErase);
 public:
 	CellDivider(UMesh *pVolMesh, const emInt segmentsPerEdge) :
 			m_pMesh(pVolMesh), m_Map(nullptr),

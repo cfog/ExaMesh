@@ -18,6 +18,8 @@ using std::endl;
 #include "Part.h"
 #include "UMesh.h"
 
+
+
 static void triUnitNormal(const double coords0[], const double coords1[],
 		const double coords2[], double normal[]) {
 	double edge01[] = DIFF(coords1, coords0);
@@ -184,7 +186,7 @@ void ExaMesh::setupLengthScales() {
 		diheds[8] = safe_acos(-DOT(norm0253, norm543));
 
 		// Solid angles are in the order: 0, 1, 2, 3, 4, 5
-		double solids[5];
+		double solids[6];
 		solids[0] = diheds[0] + diheds[2] + diheds[3] - M_PI;
 		solids[1] = diheds[0] + diheds[1] + diheds[4] - M_PI;
 		solids[2] = diheds[1] + diheds[2] + diheds[5] - M_PI;
@@ -282,8 +284,9 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 	// Create new sub-meshes and refine them.
 	double totalTime = 0;
 	size_t totalCells = 0;
-#pragma omp parallel for
-	for (emInt ii = 0; ii < nParts; ii++) {
+	emInt ii;
+//#pragma omp parallel for schedule(dynamic) reduction(+: totalTime, totalCells)
+	for (ii = 0; ii < nParts; ii++) {
 //		char filename[100];
 //		sprintf(filename, "/tmp/submesh%03d.vtk", ii);
 //		writeVTKFile(filename);
@@ -296,11 +299,8 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 		size_t cells;
 		std::unique_ptr<UMesh> pUM = createFineUMesh(numDivs, parts[ii], vecCPD,
 																									time, cells);
-#pragma omp critical
-		{
-			totalTime += time;
-			totalCells += cells;
-		}
+		totalTime += time;
+		totalCells += cells;
 //		char filename[100];
 //		sprintf(filename, "/tmp/fine-submesh%03d.vtk", ii);
 //		pUM->writeVTKFile(filename);

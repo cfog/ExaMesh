@@ -77,7 +77,9 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 				stderr, "Refined %'12d tets.  Tree sizes: %'12lu %'12lu %'12lu\r",
 				iT + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
   } // Done looping over all tets
+#ifndef NDEBUG
 	fprintf(stderr, "\nDone with tets\n");
+#endif
 
 	PyrDivider PD(pVM_output, nDivs);
 	for (emInt iP = 0; iP < pVM_input->numPyramids(); iP++) {
@@ -103,7 +105,9 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 				stderr, "Refined %'12d pyrs.  Tree sizes: %'12lu %'12lu %'12lu\r",
 				iP + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
   } // Done looping over all pyramids
+#ifndef NDEBUG
 	fprintf(stderr, "\nDone with pyramids\n");
+#endif
 
 	PrismDivider PrismD(pVM_output, nDivs);
 	for (emInt iP = 0; iP < pVM_input->numPrisms(); iP++) {
@@ -129,7 +133,9 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 				stderr, "Refined %'12d prisms.  Tree sizes: %'12lu %'12lu %'12lu\r",
 				iP + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
 	} // Done looping over all prisms
+#ifndef NDEBUG
 	fprintf(stderr, "\nDone with prisms\n");
+#endif
 
 	HexDivider HD(pVM_output, nDivs);
 	for (emInt iH = 0; iH < pVM_input->numHexes(); iH++) {
@@ -155,7 +161,9 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 				stderr, "Refined %'12d hexes.  Tree sizes: %'12lu %'12lu %'12lu\r",
 				iH + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
 	} // Done looping over all hexes
+#ifndef NDEBUG
 	fprintf(stderr, "\nDone with hexes\n");
+#endif
 
 	BdryTriDivider BTD(pVM_output, nDivs);
 	for (emInt iBT = 0; iBT < pVM_input->numBdryTris(); iBT++) {
@@ -171,7 +179,9 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 				stderr, "Refined %'12d bdry tris.  Tree sizes: %'12lu %'12lu %'12lu\r",
 				iBT + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
 	}
+#ifndef NDEBUG
 	fprintf(stderr, "\nDone with bdry tris\n");
+#endif
 
 	BdryQuadDivider BQD(pVM_output, nDivs);
 	for (emInt iBQ = 0; iBQ < pVM_input->numBdryQuads(); iBQ++) {
@@ -188,14 +198,18 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 				stderr, "Refined %'12d bdry quads.  Tree sizes: %'12lu %'12lu %'12lu\r",
 				iBQ + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
 	}
+#ifndef NDEBUG
 	fprintf(stderr, "\nDone with bdry quads\n");
+#endif
 
 //	assert(vertsOnTris.empty());
 //	assert(vertsOnQuads.empty());
 //
+#ifndef NDEBUG
 	fprintf(stderr, "Final size of edge list: %'lu\n", vertsOnEdges.size());
 	fprintf(stderr, "Final size of tri list: %'lu\n", vertsOnTris.size());
 	fprintf(stderr, "Final size of quad list: %'lu\n", vertsOnQuads.size());
+#endif
 
 	return pVM_output->numCells();
 }

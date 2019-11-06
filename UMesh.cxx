@@ -30,7 +30,7 @@ static bool memoryCheck(void* address, int nBytes) {
 	char* checkPtr = reinterpret_cast<char*>(address);
 	bool retVal = true;
 	for (int ii = 0; ii < nBytes; ii++) {
-		retVal = retVal && (checkPtr[ii] = 0xff);
+		retVal = retVal && (checkPtr[ii] = 0x00);
 	}
 	return retVal;
 }
@@ -69,7 +69,7 @@ void UMesh::init(const emInt nVerts, const emInt nBdryVerts,
 	size_t bufferWords = bufferBytes / 8;
 	// Use words instead of bytes to ensure 8-byte alignment.
 	m_buffer = reinterpret_cast<char*>(calloc(bufferWords, 8));
-	memset(m_buffer, 0xFF, bufferBytes);
+
 	// The pointer arithmetic here is made more complicated because the pointers aren't
 	// compatible with each other.
 	m_header = reinterpret_cast<emInt*>(m_buffer + slack1Size);
@@ -87,7 +87,6 @@ void UMesh::init(const emInt nVerts, const emInt nBdryVerts,
 	m_fileImageSize = bufferBytes - slack1Size - slack2Size;
 
 	m_lenScale = new double[m_nVerts];
-	m_coarseGlobalIndices = new emInt[m_nVerts];
 }
 
 UMesh::UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
@@ -109,11 +108,11 @@ UMesh::UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 }
 
 emInt UMesh::addVert(const double newCoords[3], const emInt coarseGlobalIndex) {
+	assert(m_header[eVert] < m_nVerts);
 	assert(memoryCheck(m_coords[m_header[eVert]], 24));
 	m_coords[m_header[eVert]][0] = newCoords[0];
 	m_coords[m_header[eVert]][1] = newCoords[1];
 	m_coords[m_header[eVert]][2] = newCoords[2];
-	m_coarseGlobalIndices[m_header[eVert]] = coarseGlobalIndex;
 	return (m_header[eVert]++);
 }
 
@@ -136,21 +135,37 @@ emInt UMesh::addBdryQuad(const emInt verts[4]) {
 }
 
 emInt UMesh::addTet(const emInt verts[4]) {
+#ifndef OLD_ADD_ELEMENT
+	emInt thisTetInd = m_header[eTet]++;
+	emInt *thisConn = m_TetConn[thisTetInd];
+	assert(memoryCheck(thisConn, 4 * sizeof(emInt)));
+	std::copy(verts, verts + 4, thisConn);
+	return thisTetInd;
+#else
 	assert(memoryCheck(m_TetConn[m_header[eTet]], 4 * sizeof(emInt)));
 	for (int ii = 0; ii < 4; ii++) {
 		assert(verts[ii] < m_header[eVert]);
 		m_TetConn[m_header[eTet]][ii] = verts[ii];
 	}
 	return (m_header[eTet]++);
+#endif
 }
 
 emInt UMesh::addPyramid(const emInt verts[5]) {
+#ifndef OLD_ADD_ELEMENT
+	emInt thisPyrInd = m_header[ePyr]++;
+	emInt *thisConn = m_PyrConn[thisPyrInd];
+	assert(memoryCheck(thisConn, 5 * sizeof(emInt)));
+	std::copy(verts, verts + 5, thisConn);
+	return thisPyrInd;
+#else
 	assert(memoryCheck(m_PyrConn[m_header[ePyr]], 5 * sizeof(emInt)));
 	for (int ii = 0; ii < 5; ii++) {
 		assert(verts[ii] < m_header[eVert]);
 		m_PyrConn[m_header[ePyr]][ii] = verts[ii];
 	}
 	return (m_header[ePyr]++);
+#endif
 }
 
 emInt UMesh::addPrism(const emInt verts[6]) {
@@ -446,9 +461,9 @@ UMesh::UMesh(const UMesh& UMIn, const int nDivs, double& elapsedTime,
 		m_lenScale[vv] = UMIn.m_lenScale[vv];
 	}
 
-	double timeBefore = clock() / double(CLOCKS_PER_SEC);
+	double timeBefore = exaTime();
 	subdividePartMesh(&UMIn, this, nDivs);
-	double timeAfter = clock() / double(CLOCKS_PER_SEC);
+	double timeAfter = exaTime();
 	elapsedTime = timeAfter - timeBefore;
 	setlocale(LC_ALL, "");
 	totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
@@ -474,12 +489,14 @@ UMesh::UMesh(const CubicMesh& CMIn, const int nDivs, double& elapsedTime,
 	setlocale(LC_ALL, "");
 	size_t totalInputCells = size_t(CMIn.numTets()) + CMIn.numPyramids()
 											+ CMIn.numPrisms() + CMIn.numHexes();
+#ifndef NDEBUG
 	fprintf(
 			stderr,
 			"Initial mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",
 			CMIn.numVertsToCopy(), CMIn.numBdryTris(), CMIn.numBdryQuads(),
 			CMIn.numTets(), CMIn.numPyramids(), CMIn.numPrisms(), CMIn.numHexes(),
 			totalInputCells);
+#endif
 
 	MeshSize MSIn, MSOut;
 	MSIn.nBdryVerts = CMIn.numBdryVerts();
@@ -500,12 +517,13 @@ UMesh::UMesh(const CubicMesh& CMIn, const int nDivs, double& elapsedTime,
 		m_lenScale[vv] = CMIn.getLengthScale(vv);
 	}
 
-	double timeBefore = clock() / double(CLOCKS_PER_SEC);
+	double timeBefore = exaTime();
 	subdividePartMesh(&CMIn, this, nDivs);
-	double timeAfter = clock() / double(CLOCKS_PER_SEC);
+	double timeAfter = exaTime();
 	elapsedTime = timeAfter - timeBefore;
-	setlocale(LC_ALL, "");
 	totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
+#ifndef NDEBUG
+	setlocale(LC_ALL, "");
 	fprintf(
 			stderr,
 			"Final mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",
@@ -514,10 +532,15 @@ UMesh::UMesh(const CubicMesh& CMIn, const int nDivs, double& elapsedTime,
 	fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", elapsedTime);
 	fprintf(stderr, "                          %5.2F million cells / minute\n",
 					(totalCells / 1000000.) / (elapsedTime / 60));
+#endif
+	fprintf(stderr, "CPU time for refinement = %5.2F seconds (%.5F - %.5F)\n",
+					elapsedTime, timeAfter, timeBefore);
+	fprintf(stderr, "                          %5.2F million cells / minute\n",
+					(totalCells / 1000000.) / (elapsedTime / 60));
 }
 
 bool UMesh::writeVTKFile(const char fileName[]) {
-	double timeBefore = clock() / double(CLOCKS_PER_SEC);
+	double timeBefore = exaTime();
 
 	FILE* outFile = fopen(fileName, "w");
 	if (!outFile) {
@@ -610,7 +633,7 @@ bool UMesh::writeVTKFile(const char fileName[]) {
 		fprintf(outFile, "12\n");
 
 	fclose(outFile);
-	double timeAfter = clock() / double(CLOCKS_PER_SEC);
+	double timeAfter = exaTime();
 	double elapsed = timeAfter - timeBefore;
 	size_t totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
 	fprintf(stderr, "CPU time for VTK file write = %5.2F seconds\n", elapsed);
@@ -621,7 +644,7 @@ bool UMesh::writeVTKFile(const char fileName[]) {
 }
 
 bool UMesh::writeUGridFile(const char fileName[]) {
-	double timeBefore = clock() / double(CLOCKS_PER_SEC);
+	double timeBefore = exaTime();
 
 	FILE* outFile = fopen(fileName, "w");
 	if (!outFile) {
@@ -632,7 +655,7 @@ bool UMesh::writeUGridFile(const char fileName[]) {
 	fwrite(m_fileImage, m_fileImageSize, 1, outFile);
 	fclose(outFile);
 
-	double timeAfter = clock() / double(CLOCKS_PER_SEC);
+	double timeAfter = exaTime();
 	double elapsed = timeAfter - timeBefore;
 	size_t totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
 	fprintf(stderr, "CPU time for UGRID file write = %5.2F seconds\n", elapsed);

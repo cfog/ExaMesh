@@ -121,9 +121,6 @@ void TetLengthScaleMapping::computeTransformedCoords(const double uvw[3],
 	const double& v = uvw[1];
 	const double& w = uvw[2];
 	for (int ii = 0; ii < 3; ii++) {
-		xyz[ii] = xyzOffset[ii] + u * uVec[ii] + v * vVec[ii] + w * wVec[ii];
-	}
-	for (int ii = 0; ii < 3; ii++) {
 		xyz[ii] = u
 				* (U[ii] + u * (M[ii] + u * A[ii] + v * B[ii] + w * K[ii])
 						+ v * w * L[ii])
