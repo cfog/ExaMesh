@@ -65,9 +65,10 @@ int main(int argc, char* const argv[]) {
 			CMorig.refineForParallel(nDivs, maxCellsPerPart);
 		}
 		else {
-			double time;
-			size_t cells;
-			UMesh UMrefined(CMorig, nDivs, time, cells);
+			double start = exaTime();
+			UMesh UMrefined(CMorig, nDivs);
+			double time = exaTime() - start;
+			size_t cells = UMrefined.numCells();
 			fprintf(stderr, "\nDone serial refinement.\n");
 			fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
 			fprintf(stderr,
@@ -84,9 +85,10 @@ int main(int argc, char* const argv[]) {
 			UMorig.refineForParallel(nDivs, maxCellsPerPart);
 		}
 		if (!isParallel) {
-			double time;
-			size_t cells;
-			UMesh UMrefined(UMorig, nDivs, time, cells);
+			double start = exaTime();
+			UMesh UMrefined(UMorig, nDivs);
+			double time = exaTime() - start;
+			size_t cells = UMrefined.numCells();
 			fprintf(stderr, "\nDone serial refinement.\n");
 			fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
 			fprintf(stderr,

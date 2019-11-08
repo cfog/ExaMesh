@@ -64,7 +64,7 @@ BdryTriDivider.o: BdryTriDivider.h CellDivider.h ExaMesh.h Mapping.h
 BdryTriDivider.o: exa-defs.h Part.h UMesh.h CubicMesh.h
 CellDivider.o: ExaMesh.h Mapping.h exa-defs.h Part.h GeomUtils.h
 CellDivider.o: CellDivider.h UMesh.h CubicMesh.h
-CubicMesh.o: CubicMesh.h ExaMesh.h Mapping.h exa-defs.h Part.h
+CubicMesh.o: CubicMesh.h ExaMesh.h Mapping.h exa-defs.h Part.h UMesh.h
 ExaMesh.o: ExaMesh.h Mapping.h exa-defs.h Part.h GeomUtils.h UMesh.h
 ExaMesh.o: CubicMesh.h
 HexDivider.o: HexDivider.h CellDivider.h ExaMesh.h Mapping.h exa-defs.h

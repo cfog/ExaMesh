@@ -176,60 +176,10 @@ bool operator<(const TriFaceVerts& a, const TriFaceVerts& b);
 bool operator==(const QuadFaceVerts& a, const QuadFaceVerts& b);
 bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b);
 
-enum {
-	UNKNOWN, TRIANGLE, QUADRILATERAL, TETRAHEDRON, PYRAMID, PRISM, HEXAHEDRON
+struct RefineStats {
+	double refineTime, extractTime;
+	emInt cells;
+	size_t fileSize;
 };
 
-class TriFaceToCell {
-	emInt m_corners[3];
-	emInt m_cellLeftIndex, m_cellRightIndex;
-	emInt m_cellLeftType, m_cellRightType;
-	emInt m_refinedVerts[MAX_DIVS][MAX_DIVS];
-	bool isRefined;
-public:
-	TriFaceToCell() :
-			m_cellLeftIndex(EMINT_MAX), m_cellRightIndex(EMINT_MAX),
-					m_cellLeftType(EMINT_MAX), m_cellRightType(EMINT_MAX),
-					isRefined(false) {
-	}
-//	TriFaceToCell(const emInt corners[3], const emInt leftInd,
-//			const emInt rightInd, const emInt leftType, const emInt rightType) :
-//			m_cellLeftIndex(leftInd), m_cellRightIndex(rightInd),
-//					m_cellLeftType(leftType), m_cellRightType(rightType), isRefined(false) {
-//		m_corners[0] = corners[0];
-//		m_corners[1] = corners[1];
-//		m_corners[2] = corners[2];
-//	}
-	void init(const emInt corners[], const emInt leftInd, const emInt rightInd,
-			const emInt leftType, const emInt rightType) {
-		m_corners[0] = corners[0];
-		m_corners[1] = corners[1];
-		m_corners[2] = corners[2];
-		m_cellLeftIndex = leftInd;
-		m_cellRightIndex = rightInd;
-		m_cellLeftType = leftType;
-		m_cellRightType = rightType;
-		isRefined = false;
-	}
-};
-
-class CellInfo {
-	emInt m_index, m_type, m_whichFace;
-public:
-	CellInfo(const emInt ind, const emInt type, const emInt face) :
-			m_index(ind), m_type(type), m_whichFace(face) {
-	}
-
-	emInt getIndex() const {
-		return m_index;
-	}
-
-	emInt getType() const {
-		return m_type;
-	}
-
-	emInt getWhichFace() const {
-		return m_whichFace;
-	}
-};
 #endif /* SRC_EXA_DEFS_H_ */

@@ -139,8 +139,7 @@ public:
 			std::vector<CellPartData>& vecCPD) const;
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
-			std::vector<CellPartData>& vecCPD, double& time, size_t& cells,
-			double& extractTime) const;
+			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;
 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,

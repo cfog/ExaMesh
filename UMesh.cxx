@@ -437,8 +437,7 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	setupLengthScales();
 }
 
-UMesh::UMesh(const UMesh& UMIn, const int nDivs, double& elapsedTime,
-		size_t& totalCells) :
+UMesh::UMesh(const UMesh& UMIn, const int nDivs) :
 		m_nVerts(0), m_nBdryVerts(0), m_nTris(0), m_nQuads(0), m_nTets(0),
 				m_nPyrs(0), m_nPrisms(0), m_nHexes(0), m_fileImageSize(0),
 				m_header(nullptr), m_coords(nullptr), m_TriConn(nullptr),
@@ -463,24 +462,16 @@ UMesh::UMesh(const UMesh& UMIn, const int nDivs, double& elapsedTime,
 		m_lenScale[vv] = UMIn.m_lenScale[vv];
 	}
 
-	double timeBefore = exaTime();
 	subdividePartMesh(&UMIn, this, nDivs);
-	double timeAfter = exaTime();
-	elapsedTime = timeAfter - timeBefore;
 	setlocale(LC_ALL, "");
-	totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
 	fprintf(
 			stderr,
 			"Final mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",
 			m_nVerts, m_nTris, m_nQuads, m_nTets, m_nPyrs, m_nPrisms, m_nHexes,
-			totalCells);
-	fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", elapsedTime);
-	fprintf(stderr, "                          %5.2F million cells / minute\n",
-					(totalCells / 1000000.) / (elapsedTime / 60));
+			numCells());
 }
 
-UMesh::UMesh(const CubicMesh& CMIn, const int nDivs, double& elapsedTime,
-		size_t& totalCells) :
+UMesh::UMesh(const CubicMesh& CMIn, const int nDivs) :
 		m_nVerts(0), m_nBdryVerts(0), m_nTris(0), m_nQuads(0), m_nTets(0),
 				m_nPyrs(0), m_nPrisms(0), m_nHexes(0), m_fileImageSize(0),
 				m_header(nullptr), m_coords(nullptr), m_TriConn(nullptr),
@@ -519,26 +510,16 @@ UMesh::UMesh(const CubicMesh& CMIn, const int nDivs, double& elapsedTime,
 		m_lenScale[vv] = CMIn.getLengthScale(vv);
 	}
 
-	double timeBefore = exaTime();
 	subdividePartMesh(&CMIn, this, nDivs);
-	double timeAfter = exaTime();
-	elapsedTime = timeAfter - timeBefore;
-	totalCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
+
 #ifndef NDEBUG
 	setlocale(LC_ALL, "");
 	fprintf(
 			stderr,
 			"Final mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",
 			m_nVerts, m_nTris, m_nQuads, m_nTets, m_nPyrs, m_nPrisms, m_nHexes,
-			totalCells);
-	fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", elapsedTime);
-	fprintf(stderr, "                          %5.2F million cells / minute\n",
-					(totalCells / 1000000.) / (elapsedTime / 60));
+			numCells());
 #endif
-	fprintf(stderr, "CPU time for refinement = %5.2F seconds (%.5F - %.5F)\n",
-					elapsedTime, timeAfter, timeBefore);
-	fprintf(stderr, "                          %5.2F million cells / minute\n",
-					(totalCells / 1000000.) / (elapsedTime / 60));
 }
 
 bool UMesh::writeVTKFile(const char fileName[]) {
@@ -935,14 +916,16 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 }
 
 std::unique_ptr<UMesh> UMesh::createFineUMesh(const emInt numDivs, Part& P,
-		std::vector<CellPartData>& vecCPD, double& time, size_t& cells,
-		double& extractTime) const {
+		std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const {
 	// Create a coarse
 	double start = exaTime();
 	auto coarse = extractCoarseMesh(P, vecCPD);
-	extractTime = exaTime() - start;
+	double middle = exaTime();
+	RS.extractTime = middle - start;
 
-	auto UUM = std::make_unique<UMesh>(*coarse, numDivs, time, cells);
+	auto UUM = std::make_unique<UMesh>(*coarse, numDivs);
+	RS.cells = UUM->numCells();
+	RS.refineTime = exaTime() - middle;
 	return UUM;
 }
 

@@ -279,15 +279,21 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 	// Partition the mesh.
 	std::vector<Part> parts;
 	std::vector<CellPartData> vecCPD;
+	double start = exaTime();
 	partitionCells(this, nParts, parts, vecCPD);
+	double partitionTime = exaTime() - start;
 
 	// Create new sub-meshes and refine them.
 	double totalRefineTime = 0;
 	double totalExtractTime = 0;
 	size_t totalCells = 0;
+	size_t totalFileSize = 0;
+	struct RefineStats RS;
+	double totalTime = partitionTime;
 	emInt ii;
 //#pragma omp parallel for schedule(dynamic) reduction(+: totalRefineTime, totalCells) num_threads(4)
 	for (ii = 0; ii < nParts; ii++) {
+		start = exaTime();
 //		char filename[100];
 //		sprintf(filename, "/tmp/submesh%03d.vtk", ii);
 //		writeVTKFile(filename);
@@ -296,124 +302,162 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 				ii, parts[ii].getFirst(), parts[ii].getLast(), parts[ii].getXmin(),
 				parts[ii].getYmin(), parts[ii].getZmin(), parts[ii].getXmax(),
 				parts[ii].getYmax(), parts[ii].getZmax());
-		double time, extractTime;
-		size_t cells;
 		std::unique_ptr<UMesh> pUM = createFineUMesh(numDivs, parts[ii], vecCPD,
-																									time, cells, extractTime);
-		totalRefineTime += time;
-		totalExtractTime += extractTime;
-		totalCells += cells;
+																									RS);
+		totalRefineTime += RS.refineTime;
+		totalExtractTime += RS.extractTime;
+		totalCells += RS.cells;
+		totalFileSize += pUM->getFileImageSize();
+		totalTime += exaTime() - start;
+		fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", RS.refineTime);
+		fprintf(stderr, "                          %5.2F million cells / minute\n",
+						(RS.cells / 1000000.) / (RS.refineTime / 60));
+
 //		char filename[100];
 //		sprintf(filename, "/tmp/fine-submesh%03d.vtk", ii);
 //		pUM->writeVTKFile(filename);
 	}
 	fprintf(stderr, "\nDone parallel refinement with %d parts.\n", nParts);
-	fprintf(stderr, "Time for coarse mesh extraction = %5.2F seconds\n",
+	fprintf(stderr, "Time for partitioning:           %10.3F seconds\n",
+					partitionTime);
+	fprintf(stderr, "Time for coarse mesh extraction: %10.3F seconds\n",
 					totalExtractTime);
-	fprintf(stderr, "Time for refinement = %5.2F seconds\n", totalRefineTime);
-	fprintf(stderr, "                          %5.2F million cells / minute\n",
+	fprintf(stderr, "Time for refinement:             %10.3F seconds\n",
+					totalRefineTime);
+	fprintf(stderr, "Rate (refinement only):  %5.2F million cells / minute\n",
 					(totalCells / 1000000.) / (totalRefineTime / 60));
+	fprintf(stderr, "Rate (overall):          %5.2F million cells / minute\n",
+					(totalCells / 1000000.) / (totalTime / 60));
 
+	if (totalFileSize >> 37) {
+		fprintf(stderr, "Total ugrid file size = %lu GB\n", totalFileSize >> 30);
+	}
+	else if (totalFileSize >> 30) {
+		fprintf(stderr, "Total ugrid file size = %.2f G\n",
+						(totalFileSize >> 20) / 1024.);
+	}
+	else {
+		fprintf(stderr, "Total ugrid file size = %lu MB\n", totalFileSize >> 20);
+	}
+
+	if (totalCells >> 37) {
+		fprintf(stderr, "Total cells = %lu G\n", (totalCells >> 30));
+	}
+	else if (totalCells >> 30) {
+		fprintf(stderr, "Total cells = %.2f G\n", (totalCells >> 20) / 1024.);
+	}
+	else if (totalCells >> 27) {
+		fprintf(stderr, "Total cells = %lu M\n", totalCells >> 20);
+	}
+	else if (totalCells >> 20) {
+		fprintf(stderr, "Total cells = %.2f M\n", (totalCells >> 10) / 1024.);
+	}
+	else if (totalCells >> 17) {
+		fprintf(stderr, "Total cells = %lu K\n", totalCells >> 10);
+	}
+	else {
+		fprintf(stderr, "Total cells = %lu \n", totalCells);
+	}
 }
 
-void ExaMesh::buildFaceCellConnectivity() {
-	fprintf(stderr, "Starting to build face cell connectivity\n");
-	// Create a multimap that will hold all of the face data, in duplicate.
-	// The sort key will be a TriFaceVerts / QuadFaceVerts object; the payload
-	// will be a CellInfo object.
-	exa_multimap<TriFaceVerts, CellInfo> triFaceData;
-	exa_multimap<QuadFaceVerts, CellInfo> quadFaceData;
-
-	// Use the linear tag for element type, as this does no harm.
-	for (emInt ii = 0; ii < numTets(); ii++) {
-		const emInt *conn = getTetConn(ii);
-		triFaceData.insert(
-				std::make_pair(TriFaceVerts(conn[0], conn[1], conn[2]),
-												CellInfo(ii, TETRAHEDRON, 0)));
-		triFaceData.insert(
-				std::make_pair(TriFaceVerts(conn[0], conn[1], conn[3]),
-												CellInfo(ii, TETRAHEDRON, 1)));
-		triFaceData.insert(
-				std::make_pair(TriFaceVerts(conn[1], conn[2], conn[3]),
-												CellInfo(ii, TETRAHEDRON, 2)));
-		triFaceData.insert(
-				std::make_pair(TriFaceVerts(conn[2], conn[0], conn[3]),
-												CellInfo(ii, TETRAHEDRON, 3)));
-	}
-
-	for (emInt ii = 0; ii < numPyramids(); ii++) {
-		const emInt *conn = getPyrConn(ii);
-		quadFaceData.insert(
-				std::make_pair(QuadFaceVerts(conn[0], conn[1], conn[2], conn[3]),
-												CellInfo(ii, PYRAMID, 0)));
-		triFaceData.insert(
-				std::make_pair(TriFaceVerts(conn[0], conn[4], conn[1]),
-												CellInfo(ii, PYRAMID, 1)));
-		triFaceData.insert(
-				std::make_pair(TriFaceVerts(conn[1], conn[4], conn[2]),
-												CellInfo(ii, PYRAMID, 2)));
-		triFaceData.insert(
-				std::make_pair(TriFaceVerts(conn[2], conn[4], conn[3]),
-												CellInfo(ii, PYRAMID, 3)));
-		triFaceData.insert(
-				std::make_pair(TriFaceVerts(conn[3], conn[4], conn[0]),
-												CellInfo(ii, PYRAMID, 4)));
-	}
-
-	for (emInt ii = 0; ii < numPrisms(); ii++) {
-		const emInt *conn = getPrismConn(ii);
-		quadFaceData.insert(
-				std::make_pair(QuadFaceVerts(conn[2], conn[1], conn[4], conn[5]),
-												CellInfo(ii, PRISM, 0)));
-		quadFaceData.insert(
-				std::make_pair(QuadFaceVerts(conn[1], conn[0], conn[3], conn[4]),
-												CellInfo(ii, PRISM, 1)));
-		quadFaceData.insert(
-				std::make_pair(QuadFaceVerts(conn[0], conn[2], conn[5], conn[3]),
-												CellInfo(ii, PRISM, 2)));
-		triFaceData.insert(
-				std::make_pair(TriFaceVerts(conn[0], conn[1], conn[2]),
-												CellInfo(ii, PRISM, 3)));
-		triFaceData.insert(
-				std::make_pair(TriFaceVerts(conn[5], conn[4], conn[3]),
-												CellInfo(ii, PRISM, 4)));
-	}
-
-	for (emInt ii = 0; ii < numHexes(); ii++) {
-		const emInt *conn = getHexConn(ii);
-		quadFaceData.insert(
-				std::make_pair(QuadFaceVerts(conn[0], conn[1], conn[2], conn[3]),
-												CellInfo(ii, HEXAHEDRON, 0)));
-		quadFaceData.insert(
-				std::make_pair(QuadFaceVerts(conn[7], conn[6], conn[5], conn[4]),
-												CellInfo(ii, HEXAHEDRON, 1)));
-		quadFaceData.insert(
-				std::make_pair(QuadFaceVerts(conn[0], conn[4], conn[5], conn[1]),
-												CellInfo(ii, HEXAHEDRON, 2)));
-		quadFaceData.insert(
-				std::make_pair(QuadFaceVerts(conn[1], conn[5], conn[6], conn[2]),
-												CellInfo(ii, HEXAHEDRON, 3)));
-		quadFaceData.insert(
-				std::make_pair(QuadFaceVerts(conn[2], conn[6], conn[7], conn[3]),
-												CellInfo(ii, HEXAHEDRON, 4)));
-		quadFaceData.insert(
-				std::make_pair(QuadFaceVerts(conn[3], conn[7], conn[4], conn[0]),
-												CellInfo(ii, HEXAHEDRON, 5)));
-	}
-
-	for (emInt ii = 0; ii < numBdryTris(); ii++) {
-		const emInt *conn = getBdryTriConn(ii);
-		triFaceData.insert(
-				std::make_pair(TriFaceVerts(conn[0], conn[1], conn[2]),
-												CellInfo(ii, TRIANGLE, 0)));
-	}
-
-	for (emInt ii = 0; ii < numBdryQuads(); ii++) {
-		const emInt *conn = getBdryQuadConn(ii);
-		quadFaceData.insert(
-				std::make_pair(QuadFaceVerts(conn[0], conn[1], conn[2], conn[3]),
-												CellInfo(ii, QUADRILATERAL, 0)));
-	}
-	fprintf(stderr, "Done filling up face maps\n");
-	fprintf(stderr, "Done building face cell connectivity\n");
-}
+//void ExaMesh::buildFaceCellConnectivity() {
+//	fprintf(stderr, "Starting to build face cell connectivity\n");
+//	// Create a multimap that will hold all of the face data, in duplicate.
+//	// The sort key will be a TriFaceVerts / QuadFaceVerts object; the payload
+//	// will be a CellInfo object.
+//	exa_multimap<TriFaceVerts, CellInfo> triFaceData;
+//	exa_multimap<QuadFaceVerts, CellInfo> quadFaceData;
+//
+//	// Use the linear tag for element type, as this does no harm.
+//	for (emInt ii = 0; ii < numTets(); ii++) {
+//		const emInt *conn = getTetConn(ii);
+//		triFaceData.insert(
+//				std::make_pair(TriFaceVerts(conn[0], conn[1], conn[2]),
+//												CellInfo(ii, TETRAHEDRON, 0)));
+//		triFaceData.insert(
+//				std::make_pair(TriFaceVerts(conn[0], conn[1], conn[3]),
+//												CellInfo(ii, TETRAHEDRON, 1)));
+//		triFaceData.insert(
+//				std::make_pair(TriFaceVerts(conn[1], conn[2], conn[3]),
+//												CellInfo(ii, TETRAHEDRON, 2)));
+//		triFaceData.insert(
+//				std::make_pair(TriFaceVerts(conn[2], conn[0], conn[3]),
+//												CellInfo(ii, TETRAHEDRON, 3)));
+//	}
+//
+//	for (emInt ii = 0; ii < numPyramids(); ii++) {
+//		const emInt *conn = getPyrConn(ii);
+//		quadFaceData.insert(
+//				std::make_pair(QuadFaceVerts(conn[0], conn[1], conn[2], conn[3]),
+//												CellInfo(ii, PYRAMID, 0)));
+//		triFaceData.insert(
+//				std::make_pair(TriFaceVerts(conn[0], conn[4], conn[1]),
+//												CellInfo(ii, PYRAMID, 1)));
+//		triFaceData.insert(
+//				std::make_pair(TriFaceVerts(conn[1], conn[4], conn[2]),
+//												CellInfo(ii, PYRAMID, 2)));
+//		triFaceData.insert(
+//				std::make_pair(TriFaceVerts(conn[2], conn[4], conn[3]),
+//												CellInfo(ii, PYRAMID, 3)));
+//		triFaceData.insert(
+//				std::make_pair(TriFaceVerts(conn[3], conn[4], conn[0]),
+//												CellInfo(ii, PYRAMID, 4)));
+//	}
+//
+//	for (emInt ii = 0; ii < numPrisms(); ii++) {
+//		const emInt *conn = getPrismConn(ii);
+//		quadFaceData.insert(
+//				std::make_pair(QuadFaceVerts(conn[2], conn[1], conn[4], conn[5]),
+//												CellInfo(ii, PRISM, 0)));
+//		quadFaceData.insert(
+//				std::make_pair(QuadFaceVerts(conn[1], conn[0], conn[3], conn[4]),
+//												CellInfo(ii, PRISM, 1)));
+//		quadFaceData.insert(
+//				std::make_pair(QuadFaceVerts(conn[0], conn[2], conn[5], conn[3]),
+//												CellInfo(ii, PRISM, 2)));
+//		triFaceData.insert(
+//				std::make_pair(TriFaceVerts(conn[0], conn[1], conn[2]),
+//												CellInfo(ii, PRISM, 3)));
+//		triFaceData.insert(
+//				std::make_pair(TriFaceVerts(conn[5], conn[4], conn[3]),
+//												CellInfo(ii, PRISM, 4)));
+//	}
+//
+//	for (emInt ii = 0; ii < numHexes(); ii++) {
+//		const emInt *conn = getHexConn(ii);
+//		quadFaceData.insert(
+//				std::make_pair(QuadFaceVerts(conn[0], conn[1], conn[2], conn[3]),
+//												CellInfo(ii, HEXAHEDRON, 0)));
+//		quadFaceData.insert(
+//				std::make_pair(QuadFaceVerts(conn[7], conn[6], conn[5], conn[4]),
+//												CellInfo(ii, HEXAHEDRON, 1)));
+//		quadFaceData.insert(
+//				std::make_pair(QuadFaceVerts(conn[0], conn[4], conn[5], conn[1]),
+//												CellInfo(ii, HEXAHEDRON, 2)));
+//		quadFaceData.insert(
+//				std::make_pair(QuadFaceVerts(conn[1], conn[5], conn[6], conn[2]),
+//												CellInfo(ii, HEXAHEDRON, 3)));
+//		quadFaceData.insert(
+//				std::make_pair(QuadFaceVerts(conn[2], conn[6], conn[7], conn[3]),
+//												CellInfo(ii, HEXAHEDRON, 4)));
+//		quadFaceData.insert(
+//				std::make_pair(QuadFaceVerts(conn[3], conn[7], conn[4], conn[0]),
+//												CellInfo(ii, HEXAHEDRON, 5)));
+//	}
+//
+//	for (emInt ii = 0; ii < numBdryTris(); ii++) {
+//		const emInt *conn = getBdryTriConn(ii);
+//		triFaceData.insert(
+//				std::make_pair(TriFaceVerts(conn[0], conn[1], conn[2]),
+//												CellInfo(ii, TRIANGLE, 0)));
+//	}
+//
+//	for (emInt ii = 0; ii < numBdryQuads(); ii++) {
+//		const emInt *conn = getBdryQuadConn(ii);
+//		quadFaceData.insert(
+//				std::make_pair(QuadFaceVerts(conn[0], conn[1], conn[2], conn[3]),
+//												CellInfo(ii, QUADRILATERAL, 0)));
+//	}
+//	fprintf(stderr, "Done filling up face maps\n");
+//	fprintf(stderr, "Done building face cell connectivity\n");
+//}

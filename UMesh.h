@@ -37,8 +37,8 @@ public:
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
 	UMesh(const char baseFileName[], const char type[], const char ugridInfix[]);
-	UMesh(const UMesh& UM_in, const int nDivs, double& time, size_t& cells);
-	UMesh(const CubicMesh& CM, const int nDivs, double& time, size_t& cells);
+	UMesh(const UMesh& UM_in, const int nDivs);
+	UMesh(const CubicMesh& CM, const int nDivs);
 	~UMesh();
 	emInt maxNVerts() const {
 		return m_nVerts;
@@ -155,8 +155,7 @@ public:
 	}
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
-			std::vector<CellPartData>& vecCPD, double& time, size_t& cells,
-			double& extractTime) const;
+			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;
 
 	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD) const;
@@ -167,6 +166,10 @@ public:
 
 	bool writeVTKFile(const char fileName[]);
 	bool writeUGridFile(const char fileName[]);
+
+	size_t getFileImageSize() const {
+		return m_fileImageSize;
+	}
 
 	// Writing with compression reduces file size by a little over a factor of two,
 	// at the expense of making file write slower by two orders of magnitude.

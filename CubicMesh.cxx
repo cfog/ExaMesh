@@ -817,14 +817,17 @@ emInt CubicMesh::addHex(const emInt verts[]) {
 }
 
 std::unique_ptr<UMesh> CubicMesh::createFineUMesh(const emInt numDivs, Part& P,
-		std::vector<CellPartData>& vecCPD, double& time, size_t& cells,
-		double& extractTime) const {
+		std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const {
 	// Create a coarse
 	double start = exaTime();
 	auto coarse = extractCoarseMesh(P, vecCPD);
-	extractTime = exaTime() - start;
+	double middle = exaTime();
+	RS.extractTime = middle - start;
 
-	auto UUM = std::make_unique<UMesh>(*coarse, numDivs, time, cells);
+	// For some reason, I needed the helper variable to keep the compiler happy here.
+	auto UUM = std::make_unique<UMesh>(*coarse, numDivs);
+	RS.cells = UUM->numCells();
+	RS.refineTime = exaTime() - middle;
 	return UUM;
 }
 
