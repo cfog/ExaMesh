@@ -30,7 +30,7 @@ static bool memoryCheck(void* address, int nBytes) {
 	char* checkPtr = reinterpret_cast<char*>(address);
 	bool retVal = true;
 	for (int ii = 0; ii < nBytes; ii++) {
-		retVal = retVal && (checkPtr[ii] = 0x00);
+		retVal = retVal && (checkPtr[ii] == 0x00);
 	}
 	return retVal;
 }
@@ -107,7 +107,7 @@ UMesh::UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 				nHexes);
 }
 
-emInt UMesh::addVert(const double newCoords[3], const emInt coarseGlobalIndex) {
+emInt UMesh::addVert(const double newCoords[3]) {
 	assert(m_header[eVert] < m_nVerts);
 	assert(memoryCheck(m_coords[m_header[eVert]], 24));
 	m_coords[m_header[eVert]][0] = newCoords[0];
@@ -678,8 +678,8 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 	const emInt first = P.getFirst();
 	const emInt last = P.getLast();
 
-	exaSet<TriFaceVerts> partBdryTris;
-	exaSet<QuadFaceVerts> partBdryQuads;
+	exa_set<TriFaceVerts> partBdryTris;
+	exa_set<QuadFaceVerts> partBdryQuads;
 
 	emInt nTris(0), nQuads(0), nTets(0), nPyrs(0), nPrisms(0), nHexes(0);
 	const emInt *conn;
@@ -933,9 +933,12 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 }
 
 std::unique_ptr<UMesh> UMesh::createFineUMesh(const emInt numDivs, Part& P,
-		std::vector<CellPartData>& vecCPD, double& time, size_t& cells) const {
+		std::vector<CellPartData>& vecCPD, double& time, size_t& cells,
+		double& extractTime) const {
 	// Create a coarse
+	double start = exaTime();
 	auto coarse = extractCoarseMesh(P, vecCPD);
+	extractTime = exaTime() - start;
 
 	auto UUM = std::make_unique<UMesh>(*coarse, numDivs, time, cells);
 	return UUM;

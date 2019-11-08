@@ -20,16 +20,18 @@
 
 #include <set>
 #include <map>
-#define exaSet std::set
-#define exaMap std::map
+#define exa_set std::set
+#define exa_map std::map
+#define exaMultiMap std::multi_map
 
 #else
 
 #include <unordered_set>
 #include <unordered_map>
 
-#define exaSet std::unordered_set
-#define exaMap std::unordered_map
+#define exa_set std::unordered_set
+#define exa_map std::unordered_map
+#define exa_multimap std::unordered_multimap
 
 #endif
 
@@ -98,13 +100,24 @@ struct EdgeVerts {
 
 struct TriFaceVerts {
 	emInt corners[3], sorted[3];
-	emInt intVerts[MAX_DIVS - 2][MAX_DIVS - 2];
+	volatile emInt (*intVerts)[MAX_DIVS - 2];
+//	emInt intVerts[MAX_DIVS - 2][MAX_DIVS - 2];
 	emInt volElement, volElementType;
 	TriFaceVerts() :
-			volElement(EMINT_MAX), volElementType(0) {
+			intVerts(nullptr), volElement(EMINT_MAX), volElementType(0) {
 	}
 	TriFaceVerts(const emInt v0, const emInt v1, const emInt v2,
 			const emInt type = 0, const emInt elemInd = EMINT_MAX);
+	~TriFaceVerts() {
+	}
+	void allocVertMemory() {
+		intVerts = new emInt[MAX_DIVS - 2][MAX_DIVS - 2];
+	}
+	void freeVertMemory() const {
+		// TODO  It's really stinky to do this to avoid a double free....
+		if (intVerts) delete[] intVerts;
+//		intVerts = nullptr;
+	}
 	void setupSorted();
 };
 
@@ -163,4 +176,60 @@ bool operator<(const TriFaceVerts& a, const TriFaceVerts& b);
 bool operator==(const QuadFaceVerts& a, const QuadFaceVerts& b);
 bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b);
 
+enum {
+	UNKNOWN, TRIANGLE, QUADRILATERAL, TETRAHEDRON, PYRAMID, PRISM, HEXAHEDRON
+};
+
+class TriFaceToCell {
+	emInt m_corners[3];
+	emInt m_cellLeftIndex, m_cellRightIndex;
+	emInt m_cellLeftType, m_cellRightType;
+	emInt m_refinedVerts[MAX_DIVS][MAX_DIVS];
+	bool isRefined;
+public:
+	TriFaceToCell() :
+			m_cellLeftIndex(EMINT_MAX), m_cellRightIndex(EMINT_MAX),
+					m_cellLeftType(EMINT_MAX), m_cellRightType(EMINT_MAX),
+					isRefined(false) {
+	}
+//	TriFaceToCell(const emInt corners[3], const emInt leftInd,
+//			const emInt rightInd, const emInt leftType, const emInt rightType) :
+//			m_cellLeftIndex(leftInd), m_cellRightIndex(rightInd),
+//					m_cellLeftType(leftType), m_cellRightType(rightType), isRefined(false) {
+//		m_corners[0] = corners[0];
+//		m_corners[1] = corners[1];
+//		m_corners[2] = corners[2];
+//	}
+	void init(const emInt corners[], const emInt leftInd, const emInt rightInd,
+			const emInt leftType, const emInt rightType) {
+		m_corners[0] = corners[0];
+		m_corners[1] = corners[1];
+		m_corners[2] = corners[2];
+		m_cellLeftIndex = leftInd;
+		m_cellRightIndex = rightInd;
+		m_cellLeftType = leftType;
+		m_cellRightType = rightType;
+		isRefined = false;
+	}
+};
+
+class CellInfo {
+	emInt m_index, m_type, m_whichFace;
+public:
+	CellInfo(const emInt ind, const emInt type, const emInt face) :
+			m_index(ind), m_type(type), m_whichFace(face) {
+	}
+
+	emInt getIndex() const {
+		return m_index;
+	}
+
+	emInt getType() const {
+		return m_type;
+	}
+
+	emInt getWhichFace() const {
+		return m_whichFace;
+	}
+};
 #endif /* SRC_EXA_DEFS_H_ */

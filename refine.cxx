@@ -74,7 +74,7 @@ int main(int argc, char* const argv[]) {
 							"                          %5.2F million cells / minute\n",
 							(cells / 1000000.) / (time / 60));
 
-			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
+//			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
 //			UMrefined.writeVTKFile("/tmp/junk.vtk");
 		}
 	}
@@ -92,7 +92,7 @@ int main(int argc, char* const argv[]) {
 			fprintf(stderr,
 							"                          %5.2F million cells / minute\n",
 							(cells / 1000000.) / (time / 60));
-			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
+//			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
 			// UMrefined.writeVTKFile("/tmp/junk.vtk");
 		}
 	}

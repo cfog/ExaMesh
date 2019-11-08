@@ -53,9 +53,7 @@ public:
 		return numVerts();
 	}
 
-	virtual emInt addVert(const double newCoords[3],
-			const emInt coarseGlobalIndex =
-			EMINT_MAX) = 0;
+	virtual emInt addVert(const double newCoords[3]) = 0;
 	virtual emInt addBdryTri(const emInt verts[]) = 0;
 	virtual emInt addBdryQuad(const emInt verts[]) = 0;
 	virtual emInt addTet(const emInt verts[]) = 0;
@@ -94,11 +92,14 @@ public:
 	}
 	MeshSize computeFineMeshSize(const int nDivs) const;
 
+	void buildFaceCellConnectivity();
+
 	virtual void refineForParallel(const emInt numDivs,
 			const emInt maxCellsPerPart) const;
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
-			std::vector<CellPartData>& vecCPD, double& time, size_t& cells) const = 0;
+			std::vector<CellPartData>& vecCPD, double& time, size_t& cells,
+			double& extractTime) const = 0;
 
 	virtual void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
@@ -114,7 +115,7 @@ private:
 };
 
 template<typename T>
-void addUniquely(exaSet<T>& mySet, T& val) {
+void addUniquely(exa_set<T>& mySet, T& val) {
 	auto iter = mySet.find(val);
 	if (iter != mySet.end()) {
 		mySet.erase(iter);

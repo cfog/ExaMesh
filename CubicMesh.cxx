@@ -257,6 +257,7 @@ CubicMesh::CubicMesh(const char CGNSfilename[]) {
 	m_prism = m_nPrism40;
 	m_hex = m_nHex64;
 	reorderCubicMesh();
+//	buildFaceCellConnectivity();
 }
 
 void CubicMesh::renumberNodes(emInt thisSize, emInt* aliasConn,
@@ -392,8 +393,8 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	const emInt first = P.getFirst();
 	const emInt last = P.getLast();
 
-	exaSet<TriFaceVerts> partBdryTris;
-	exaSet<QuadFaceVerts> partBdryQuads;
+	exa_set<TriFaceVerts> partBdryTris;
+	exa_set<QuadFaceVerts> partBdryQuads;
 
 	emInt nTris(0), nQuads(0), nTets(0), nPyrs(0), nPrisms(0), nHexes(0);
 	const emInt *conn;
@@ -753,8 +754,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	return UCM;
 }
 
-emInt CubicMesh::addVert(const double newCoords[3],
-		const emInt coarseGlobalIndex) {
+emInt CubicMesh::addVert(const double newCoords[3]) {
 	assert(m_vert < m_nVerts);
 	m_xcoords[m_vert] = newCoords[0];
 	m_ycoords[m_vert] = newCoords[1];
@@ -817,9 +817,12 @@ emInt CubicMesh::addHex(const emInt verts[]) {
 }
 
 std::unique_ptr<UMesh> CubicMesh::createFineUMesh(const emInt numDivs, Part& P,
-		std::vector<CellPartData>& vecCPD, double& time, size_t& cells) const {
+		std::vector<CellPartData>& vecCPD, double& time, size_t& cells,
+		double& extractTime) const {
 	// Create a coarse
+	double start = exaTime();
 	auto coarse = extractCoarseMesh(P, vecCPD);
+	extractTime = exaTime() - start;
 
 	auto UUM = std::make_unique<UMesh>(*coarse, numDivs, time, cells);
 	return UUM;

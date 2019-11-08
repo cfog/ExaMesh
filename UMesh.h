@@ -89,8 +89,7 @@ public:
 		return numTets() + numPyramids() + numPrisms() + numHexes();
 	}
 
-	emInt addVert(const double newCoords[3], const emInt coarseGlobalIndex =
-			EMINT_MAX);
+	emInt addVert(const double newCoords[3]);
 	emInt addBdryTri(const emInt verts[]);
 	emInt addBdryQuad(const emInt verts[]);
 	emInt addTet(const emInt verts[]);
@@ -156,7 +155,8 @@ public:
 	}
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
-			std::vector<CellPartData>& vecCPD, double& time, size_t& cells) const;
+			std::vector<CellPartData>& vecCPD, double& time, size_t& cells,
+			double& extractTime) const;
 
 	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD) const;

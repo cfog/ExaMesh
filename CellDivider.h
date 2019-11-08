@@ -32,16 +32,15 @@ protected:
 	// Used by both tets and pyramids.
 	int checkOrient3D(const emInt verts[4]) const;
 private:
-	void getEdgeVerts(exaMap<Edge, EdgeVerts> &vertsOnEdges, const int edge,
+	void getEdgeVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges, const int edge,
 			const double dihedral, EdgeVerts &EV);
 
-	void getQuadVerts(exaSet<QuadFaceVerts> &vertsOnQuads, const int face,
+	void getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads, const int face,
 			QuadFaceVerts &QFV);
 
-	typename exaSet<TriFaceVerts>::iterator getTriVerts(
-			exaSet<TriFaceVerts> &vertsOnTris,
+	typename exa_set<TriFaceVerts>::iterator getTriVerts(
+			exa_set<TriFaceVerts> &vertsOnTris,
 			const int face,
-			TriFaceVerts& TFV,
 			bool& shouldErase);
 public:
 	CellDivider(UMesh *pVolMesh, const emInt segmentsPerEdge) :
@@ -61,9 +60,9 @@ public:
 		delete[] localVerts;
 		if (m_Map) delete m_Map;
 	}
-	void divideEdges(exaMap<Edge, EdgeVerts> &vertsOnEdges);
-	void divideFaces(exaSet<TriFaceVerts> &vertsOnTris,
-	exaSet<QuadFaceVerts> &vertsOnQuads);
+	void divideEdges(exa_map<Edge, EdgeVerts> &vertsOnEdges);
+	void divideFaces(exa_set<TriFaceVerts> &vertsOnTris,
+	exa_set<QuadFaceVerts> &vertsOnQuads);
 	virtual void divideInterior() = 0;
 	virtual void createNewCells() = 0;
 	virtual void setupCoordMapping(const emInt verts[]) = 0;

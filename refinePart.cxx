@@ -40,9 +40,9 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
   // TODO: Potentially, identify in advance how many times each edge is used,
   // so that when all of them have appeared, the edge can be removed from the
   // map.
-	exaMap<Edge, EdgeVerts> vertsOnEdges;
-	exaSet<TriFaceVerts> vertsOnTris;
-	exaSet<QuadFaceVerts> vertsOnQuads;
+	exa_map<Edge, EdgeVerts> vertsOnEdges;
+	exa_set<TriFaceVerts> vertsOnTris;
+	exa_set<QuadFaceVerts> vertsOnQuads;
 
 	// Copy vertex data into the new mesh.
 	for (emInt iV = 0; iV < pVM_input->numVertsToCopy(); iV++) {

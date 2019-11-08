@@ -71,8 +71,7 @@ public:
 		return m_nVertNodes;
 	}
 
-	emInt addVert(const double newCoords[3], const emInt coarseGlobalIndex =
-	EMINT_MAX);
+	emInt addVert(const double newCoords[3]);
 	emInt addBdryTri(const emInt verts[]);
 	emInt addBdryQuad(const emInt verts[]);
 	emInt addTet(const emInt verts[]);
@@ -140,7 +139,8 @@ public:
 			std::vector<CellPartData>& vecCPD) const;
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
-			std::vector<CellPartData>& vecCPD, double& time, size_t& cells) const;
+			std::vector<CellPartData>& vecCPD, double& time, size_t& cells,
+			double& extractTime) const;
 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,

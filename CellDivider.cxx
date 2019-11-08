@@ -41,6 +41,7 @@ TriFaceVerts::TriFaceVerts(const emInt v0, const emInt v1, const emInt v2,
 	corners[2] = v2;
 	volElement = elemInd;
 	volElementType = type;
+	intVerts = nullptr;
 	setupSorted();
 }
 
@@ -144,7 +145,7 @@ int CellDivider::checkOrient3D(const emInt verts[4]) const {
 	return ::checkOrient3D(coords0, coords1, coords2, coords3);
 }
 
-void CellDivider::getEdgeVerts(exaMap<Edge, EdgeVerts> &vertsOnEdges,
+void CellDivider::getEdgeVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges,
 		const int edge, const double dihedral, EdgeVerts &EV) {
 	int ind0 = edgeVertIndices[edge][0];
 	int ind1 = edgeVertIndices[edge][1];
@@ -208,9 +209,9 @@ void CellDivider::getEdgeVerts(exaMap<Edge, EdgeVerts> &vertsOnEdges,
 }
 
 
-typename exaSet<TriFaceVerts>::iterator CellDivider::getTriVerts(
-		exaSet<TriFaceVerts> &vertsOnTris,
-		const int face, TriFaceVerts &TFV,
+typename exa_set<TriFaceVerts>::iterator CellDivider::getTriVerts(
+		exa_set<TriFaceVerts> &vertsOnTris,
+		const int face,
 		bool& shouldErase) {
 	int ind0 = faceVertIndices[face][0];
 	int ind1 = faceVertIndices[face][1];
@@ -220,8 +221,8 @@ typename exaSet<TriFaceVerts>::iterator CellDivider::getTriVerts(
 	emInt vert1 = cellVerts[ind1];
 	emInt vert2 = cellVerts[ind2];
 	TriFaceVerts TFVTemp(vert0, vert1, vert2);
-
 	auto iterTris = vertsOnTris.find(TFVTemp);
+	TFVTemp.freeVertMemory();
 	if (iterTris == vertsOnTris.end()) {
 		const double inv_nDivs = 1. / (nDivs);
 		const double uvw0[] = { uvwIJK[ind0][0], uvwIJK[ind0][1], uvwIJK[ind0][2] };
@@ -236,11 +237,8 @@ typename exaSet<TriFaceVerts>::iterator CellDivider::getTriVerts(
 															(uvw2[1] - uvw0[1]) * inv_nDivs, (uvw2[2]
 																	- uvw0[2])
 																																* inv_nDivs };
-
-		TFV.corners[0] = vert0;
-		TFV.corners[1] = vert1;
-		TFV.corners[2] = vert2;
-		TFV.setupSorted();
+		TriFaceVerts TFV(vert0, vert1, vert2);
+		TFV.allocVertMemory();
 
 		for (int jj = 0; jj < nDivs - 2; jj++) {
 			for (int ii = 0; ii < nDivs - 2 - jj; ii++) {
@@ -267,7 +265,7 @@ typename exaSet<TriFaceVerts>::iterator CellDivider::getTriVerts(
 	return iterTris;
 }
 
-void CellDivider::getQuadVerts(exaSet<QuadFaceVerts> &vertsOnQuads,
+void CellDivider::getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
 		const int face, QuadFaceVerts &QFV) {
 	int ind0 = faceVertIndices[face][0];
 	int ind1 = faceVertIndices[face][1];
@@ -331,7 +329,7 @@ void CellDivider::getQuadVerts(exaSet<QuadFaceVerts> &vertsOnQuads,
 	}
 }
 
-void CellDivider::divideEdges(exaMap<Edge, EdgeVerts> &vertsOnEdges) {
+void CellDivider::divideEdges(exa_map<Edge, EdgeVerts> &vertsOnEdges) {
 	// Divide all the edges, including storing info about which new verts
 	// are on which edges
 	for (int iE = 0; iE < numEdges; iE++) {
@@ -370,8 +368,8 @@ void CellDivider::divideEdges(exaMap<Edge, EdgeVerts> &vertsOnEdges) {
 	}
 }
 
-void CellDivider::divideFaces(exaSet<TriFaceVerts> &vertsOnTris,
-exaSet<QuadFaceVerts> &vertsOnQuads) {
+void CellDivider::divideFaces(exa_set<TriFaceVerts> &vertsOnTris,
+exa_set<QuadFaceVerts> &vertsOnQuads) {
 	// Divide all the faces, including storing info about which new verts
 	// are on which faces
 
@@ -421,9 +419,8 @@ exaSet<QuadFaceVerts> &vertsOnQuads) {
 	}
 
 	for (int iF = numQuadFaces; iF < numQuadFaces + numTriFaces; iF++) {
-		TriFaceVerts TFV;
 		bool shouldErase = false;
-		auto iterTris = getTriVerts(vertsOnTris, iF, TFV, shouldErase);
+		auto iterTris = getTriVerts(vertsOnTris, iF, shouldErase);
 		// Now extract info from the TFV and stuff it into the Prismamid's point
 		// array.
 
@@ -466,7 +463,10 @@ exaSet<QuadFaceVerts> &vertsOnQuads) {
 //				localVerts[II][JJ][KK] = TFV.intVerts[ii][jj];
 			}
 		}
-		if (shouldErase) vertsOnTris.erase(iterTris);
+		if (shouldErase) {
+			iterTris->freeVertMemory();
+			vertsOnTris.erase(iterTris);
+		}
 	}
 }
 
