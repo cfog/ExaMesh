@@ -8,8 +8,6 @@
 #include "GeomUtils.h"
 #include "TetDivider.h"
 
-static emInt badOctaTets = 0;
-
 void TetDivider::setupCoordMapping(const emInt verts[]) {
 	for (int ii = 0; ii < 4; ii++) {
 		cellVerts[ii] = verts[ii];
@@ -46,11 +44,11 @@ void TetDivider::divideInterior() {
 }
 
 void TetDivider::stuffTetsIntoOctahedron(emInt vertsNew[][4]) {
-	emInt tet = m_pMesh->addTet(vertsNew[0]);
-	tet = m_pMesh->addTet(vertsNew[1]);
-	tet = m_pMesh->addTet(vertsNew[2]);
-	tet = m_pMesh->addTet(vertsNew[3]);
-	assert(tet < m_pMesh->maxNTets());
+	m_pMesh->addTet(vertsNew[0]);
+	m_pMesh->addTet(vertsNew[1]);
+	m_pMesh->addTet(vertsNew[2]);
+	m_pMesh->addTet(vertsNew[3]);
+	assert(m_pMesh->numTets() < m_pMesh->maxNTets());
 #ifndef NDEBUG
 	assert(checkOrient3D(vertsNew[0]) != -1);
 	assert(checkOrient3D(vertsNew[1]) != -1);
@@ -92,7 +90,10 @@ void TetDivider::createNewCells() {
 				emInt vert3 = localVerts[ii][jj][level - 1];
 				emInt verts[] = { vert0, vert1, vert2, vert3 };
 
-				emInt tet = m_pMesh->addTet(verts);
+#ifndef NDEBUG
+				emInt tet =
+#endif
+				m_pMesh->addTet(verts);
 				assert(tet < m_pMesh->maxNTets());
 				assert(checkOrient3D(verts) == 1);
 			}
@@ -113,7 +114,10 @@ void TetDivider::createNewCells() {
 				//							"Tet: (%d, %d, %d), (%d, %d,
 				//%d), (%d, %d, %d), (%d, %d, %d)\n", 							ii, jj, level - 1, ii - 1, jj + 1,
 				//level - 1, ii, jj + 1, 							level - 1, ii, jj + 1, level);
-				emInt tet = m_pMesh->addTet(verts);
+#ifndef NDEBUG
+				emInt tet =
+#endif
+				m_pMesh->addTet(verts);
 				assert(tet < m_pMesh->maxNTets());
 				assert(checkOrient3D(verts) == 1);
 			}

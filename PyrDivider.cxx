@@ -94,8 +94,8 @@ void PyrDivider::createNewCells() {
 															localVerts[ii + 1][jj + 1][level],
 															localVerts[ii][jj + 1][level],
 															localVerts[ii][jj][level - 1] };
-				emInt pyr = m_pMesh->addPyramid(vertsNew);
-				assert(pyr < m_pMesh->numPyramids() && pyr < m_pMesh->maxNPyrs());
+				m_pMesh->addPyramid(vertsNew);
+				assert(m_pMesh->numPyramids() < m_pMesh->maxNPyrs());
       }
     }
 
@@ -108,8 +108,8 @@ void PyrDivider::createNewCells() {
 															localVerts[ii + 1][jj + 1][level - 1],
 															localVerts[ii + 1][jj][level - 1], localVerts[ii
 																	+ 1][jj + 1][level] };
-				emInt pyr = m_pMesh->addPyramid(vertsNew);
-				assert(pyr < m_pMesh->numPyramids() && pyr < m_pMesh->maxNPyrs());
+				m_pMesh->addPyramid(vertsNew);
+				assert(m_pMesh->numPyramids() < m_pMesh->maxNPyrs());
       }
     }
 
@@ -123,8 +123,8 @@ void PyrDivider::createNewCells() {
 															localVerts[ii + 1][jj][level],
 															localVerts[ii][jj][level - 1], localVerts[ii][jj
 																	- 1][level - 1] };
-				emInt tet = m_pMesh->addTet(vertsNew);
-				assert(tet < m_pMesh->numTets() && tet < m_pMesh->maxNTets());
+				m_pMesh->addTet(vertsNew);
+				assert(m_pMesh->numTets() < m_pMesh->maxNTets());
 				assert(checkOrient3D(vertsNew) == 1);
       }
     }
@@ -136,7 +136,10 @@ void PyrDivider::createNewCells() {
 															localVerts[ii][jj + 1][level],
 															localVerts[ii - 1][jj][level - 1],
 															localVerts[ii][jj][level - 1] };
-				emInt tet = m_pMesh->addTet(vertsNew);
+#ifndef NDEBUG
+				emInt tet =
+#endif
+				m_pMesh->addTet(vertsNew);
 				assert(tet < m_pMesh->numTets() && tet < m_pMesh->maxNTets());
 				assert(checkOrient3D(vertsNew) == 1);
       }

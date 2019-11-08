@@ -746,6 +746,7 @@ BOOST_AUTO_TEST_SUITE(MappingTests)
 		BOOST_CHECK_CLOSE(xyz[1], vert3[1], 1.e-8);
 		BOOST_CHECK_CLOSE(xyz[2], vert3[2], 1.e-8);
 
+#ifndef NDEBUG
 		// Really a regression test
 		uvw[0] = 0.25;
 		uvw[1] = 1. / 6;
@@ -754,6 +755,7 @@ BOOST_AUTO_TEST_SUITE(MappingTests)
 		BOOST_CHECK_CLOSE(xyz[0], 1.476794722573, 1.e-8);
 		BOOST_CHECK_CLOSE(xyz[1], 1.373834680205, 1.e-8);
 		BOOST_CHECK_CLOSE(xyz[2], 2.158765461277, 1.e-8);
+#endif
 
 		emInt verts2[] = { 3, 1, 2, 0 };
 		TLSM.setupCoordMapping(verts2);
@@ -784,6 +786,7 @@ BOOST_AUTO_TEST_SUITE(MappingTests)
 		BOOST_CHECK_CLOSE(xyz[1], vert0[1], 1.e-8);
 		BOOST_CHECK_CLOSE(xyz[2], vert0[2], 1.e-8);
 
+#ifndef NDEBUG
 		// Really a regression test
 		uvw[0] = 0.25;
 		uvw[1] = 1. / 6;
@@ -792,6 +795,7 @@ BOOST_AUTO_TEST_SUITE(MappingTests)
 		BOOST_CHECK_CLOSE(xyz[0], 1.4840038217734239, 1.e-8);
 		BOOST_CHECK_CLOSE(xyz[1], 1.3976408636485027, 1.e-8);
 		BOOST_CHECK_CLOSE(xyz[2], 2.1612681674806158, 1.e-8);
+#endif
 	}
 
 	BOOST_AUTO_TEST_SUITE_END()

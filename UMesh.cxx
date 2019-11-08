@@ -26,6 +26,7 @@
 using std::cout;
 using std::endl;
 
+#ifndef NDEBUG
 static bool memoryCheck(void* address, int nBytes) {
 	char* checkPtr = reinterpret_cast<char*>(address);
 	bool retVal = true;
@@ -34,6 +35,7 @@ static bool memoryCheck(void* address, int nBytes) {
 	}
 	return retVal;
 }
+#endif
 
 void UMesh::init(const emInt nVerts, const emInt nBdryVerts,
 		const emInt nBdryTris, const emInt nBdryQuads, const emInt nTets,
@@ -486,10 +488,10 @@ UMesh::UMesh(const CubicMesh& CMIn, const int nDivs, double& elapsedTime,
 				m_PrismConn(nullptr), m_HexConn(nullptr), m_buffer(nullptr),
 				m_fileImage(nullptr) {
 
+#ifndef NDEBUG
 	setlocale(LC_ALL, "");
 	size_t totalInputCells = size_t(CMIn.numTets()) + CMIn.numPyramids()
 											+ CMIn.numPrisms() + CMIn.numHexes();
-#ifndef NDEBUG
 	fprintf(
 			stderr,
 			"Initial mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",
@@ -859,7 +861,7 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 		if (isVertUsed[ii]) {
 			double coords[3];
 			getCoords(ii, coords);
-			newIndices[ii] = UUM->addVert(coords, ii);
+			newIndices[ii] = UUM->addVert(coords);
 			// Copy length scale for vertices from the parent; otherwise, there will be
 			// mismatches in the refined meshes.
 			UUM->setLengthScale(newIndices[ii], getLengthScale(ii));

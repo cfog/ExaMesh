@@ -9,12 +9,12 @@ CXXOBJECTS=refine.o
 LIBOBJECTS=TetDivider.o PyrDivider.o PrismDivider.o HexDivider.o CellDivider.o \
 BdryTriDivider.o BdryQuadDivider.o refinePart.o ExaMesh.o UMesh.o CubicMesh.o GeomUtils.o \
 LagrangeMapping.o LengthScaleMapping.o \
-Part.cxx partition.cxx
+Part.o partition.o
 
 OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
 DEBUG=-g
 OPT=-O3 -DNDEBUG
-OPT_DEBUG=$(DEBUG)
+OPT_DEBUG=$(OPT) -g
 CPPFLAGS=-I/home/cfog/Research/Projects/ExaMesh/src -I/home/cfog/GMGW1/src
 CXX_COMPILE=g++ -Wall -Wextra -fPIC $(OPT_DEBUG) $(CPPFLAGS) $(EXTRAFLAGS) -fopenmp
 CXX_LINK=g++ -fPIC $(EXTRAFLAGS) $(OPT_DEBUG) -fopenmp
@@ -37,7 +37,7 @@ all default: $(OBJECTS) library test-exa refine
 library: $(LIBOBJECTS)
 	-$(CXX_COMPILE) -shared -o libexamesh.so $(EXTRAFLAGS) $(LIBOBJECTS)
 
-refine: $(CXXOBJECTS)
+refine: $(CXXOBJECTS) library
 	echo Linking refine
 	-$(CXX_LINK) -o refine $(CXXOBJECTS) $(LDFLAGS) 
 	echo " "

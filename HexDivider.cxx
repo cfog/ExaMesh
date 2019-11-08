@@ -99,7 +99,10 @@ void HexDivider::createNewCells() {
 															localVerts[ii + 1][jj][level - 1], localVerts[ii
 																	+ 1][jj + 1][level - 1],
 															localVerts[ii][jj + 1][level - 1] };
-				emInt hex = m_pMesh->addHex(vertsNew);
+#ifndef NDEBUG
+				emInt hex =
+#endif
+				m_pMesh->addHex(vertsNew);
 				assert(hex < m_pMesh->maxNHexes() && hex < m_pMesh->numHexes());
       }
     } // Done with this row (constant j)

@@ -18,7 +18,10 @@ void BdryQuadDivider::createNewCells() {
 			emInt vertsNew1[] = { localVerts[ii][jj][0], localVerts[ii + 1][jj][0],
 														localVerts[ii + 1][jj + 1][0],
 														localVerts[ii][jj + 1][0] };
-			emInt bdryQuad = m_pMesh->addBdryQuad(vertsNew1);
+#ifndef NDEBUG
+			emInt bdryQuad =
+#endif
+			m_pMesh->addBdryQuad(vertsNew1);
 			assert(
 					bdryQuad < m_pMesh->numBdryQuads() && bdryQuad
 							< m_pMesh->maxNBdryQuads());

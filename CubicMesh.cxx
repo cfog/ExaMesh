@@ -583,7 +583,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		if (isVertUsed[ii]) {
 			double coords[3];
 			getCoords(ii, coords);
-			newIndices[ii] = UCM->addVert(coords, ii);
+			newIndices[ii] = UCM->addVert(coords);
 			// Copy length scale for vertices from the parent; otherwise, there will be
 			// mismatches in the refined meshes.
 			UCM->setLengthScale(newIndices[ii], getLengthScale(ii));

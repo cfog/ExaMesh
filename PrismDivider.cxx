@@ -91,16 +91,16 @@ void PrismDivider::createNewCells() {
 															localVerts[ii][jj][level - 1],
 															localVerts[ii + 1][jj][level - 1],
 															localVerts[ii][jj + 1][level - 1] };
-				emInt prism = m_pMesh->addPrism(vertsNew1);
-				assert(prism < m_pMesh->numPrisms() && prism < m_pMesh->maxNPrisms());
+				m_pMesh->addPrism(vertsNew1);
+				assert(m_pMesh->numPrisms() < m_pMesh->maxNPrisms());
 
 				// And now the other in that pair:
 				emInt vertsNew2[] = { vertsNew1[1], localVerts[ii + 1][jj + 1][level],
 															vertsNew1[2], vertsNew1[4], localVerts[ii + 1][jj
 																	+ 1][level - 1],
 															vertsNew1[5] };
-				prism = m_pMesh->addPrism(vertsNew2);
-				assert(prism < m_pMesh->numPrisms() && prism < m_pMesh->maxNPrisms());
+				m_pMesh->addPrism(vertsNew2);
+				assert(m_pMesh->numPrisms() < m_pMesh->maxNPrisms());
       } // Done with all prism pairs for this row.
       // Now one more at the end.
       ii = nDivs - jj - 1;
@@ -110,8 +110,8 @@ void PrismDivider::createNewCells() {
 																localVerts[ii][jj][level - 1],
 																localVerts[ii + 1][jj][level - 1],
 																localVerts[ii][jj + 1][level - 1] };
-			emInt prism = m_pMesh->addPrism(vertsNewLast);
-			assert(prism < m_pMesh->numPrisms() && prism < m_pMesh->maxNPrisms());
+			m_pMesh->addPrism(vertsNewLast);
+			assert(m_pMesh->numPrisms() < m_pMesh->maxNPrisms());
     } // Done with this row (constant j)
   }   // Done with this level
 //	logMessage(MSG_MANAGER, "  final volume: %G\n", newVol);
