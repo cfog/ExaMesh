@@ -48,7 +48,7 @@ void TetDivider::stuffTetsIntoOctahedron(emInt vertsNew[][4]) {
 	m_pMesh->addTet(vertsNew[1]);
 	m_pMesh->addTet(vertsNew[2]);
 	m_pMesh->addTet(vertsNew[3]);
-	assert(m_pMesh->numTets() < m_pMesh->maxNTets());
+	assert(m_pMesh->numTets() <= m_pMesh->maxNTets());
 #ifndef NDEBUG
 	assert(checkOrient3D(vertsNew[0]) != -1);
 	assert(checkOrient3D(vertsNew[1]) != -1);

@@ -33,7 +33,7 @@ void BdryTriDivider::createNewCells() {
 															localVerts[ii][jj + 1][0] };
 
 		m_pMesh->addBdryTri(vertsNewLast);
-		assert(m_pMesh->numBdryTris() < m_pMesh->maxNBdryTris());
+		assert(m_pMesh->numBdryTris() <= m_pMesh->maxNBdryTris());
 	} // Done with this row (constant j)
 }
 

@@ -109,7 +109,7 @@ void PyrDivider::createNewCells() {
 															localVerts[ii + 1][jj][level - 1], localVerts[ii
 																	+ 1][jj + 1][level] };
 				m_pMesh->addPyramid(vertsNew);
-				assert(m_pMesh->numPyramids() < m_pMesh->maxNPyrs());
+				assert(m_pMesh->numPyramids() <= m_pMesh->maxNPyrs());
       }
     }
 

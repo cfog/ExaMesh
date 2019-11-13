@@ -111,7 +111,7 @@ void PrismDivider::createNewCells() {
 																localVerts[ii + 1][jj][level - 1],
 																localVerts[ii][jj + 1][level - 1] };
 			m_pMesh->addPrism(vertsNewLast);
-			assert(m_pMesh->numPrisms() < m_pMesh->maxNPrisms());
+			assert(m_pMesh->numPrisms() <= m_pMesh->maxNPrisms());
     } // Done with this row (constant j)
   }   // Done with this level
 //	logMessage(MSG_MANAGER, "  final volume: %G\n", newVol);

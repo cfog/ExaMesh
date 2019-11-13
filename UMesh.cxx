@@ -61,12 +61,15 @@ void UMesh::init(const emInt nVerts, const emInt nBdryVerts,
 											+ 5 * size_t(nPyramids) + 6 * size_t(nPrisms)
 											+ 8 * size_t(nHexes))
 										* intSize;
+	size_t BCSize = (nBdryTris + nBdryQuads) * intSize;
+
 	// How many bytes to add to fill up the last eight-byte chunk?
-	size_t slack2Size = (((connSize / 8 + 1) * 8) - connSize) % 8;
-	size_t bufferBytes = headerSize + coordSize + connSize + slack1Size
+	size_t slack2Size =
+			((((connSize + BCSize) / 8 + 1) * 8) - (connSize + BCSize)) % 8;
+	size_t bufferBytes = headerSize + coordSize + connSize + BCSize + slack1Size
 												+ slack2Size;
 	assert((headerSize + slack1Size) % 8 == 0);
-	assert((connSize + slack2Size) % 8 == 0);
+	assert((connSize + BCSize + slack2Size) % 8 == 0);
 	assert(bufferBytes % 8 == 0);
 	size_t bufferWords = bufferBytes / 8;
 	// Use words instead of bytes to ensure 8-byte alignment.
@@ -81,7 +84,9 @@ void UMesh::init(const emInt nVerts, const emInt nBdryVerts,
 	m_TriConn = reinterpret_cast<emInt (*)[3]>(m_buffer + headerSize + slack1Size
 																							+ coordSize);
 	m_QuadConn = reinterpret_cast<emInt (*)[4]>(m_TriConn + nBdryTris);
-	m_TetConn = m_QuadConn + nBdryQuads;
+	m_TriBC = reinterpret_cast<emInt*>(m_QuadConn + nBdryQuads);
+	m_QuadBC = m_TriBC + nBdryTris;
+	m_TetConn = reinterpret_cast<emInt (*)[4]>(m_QuadBC + nBdryQuads);
 	m_PyrConn = reinterpret_cast<emInt (*)[5]>(m_TetConn + nTets);
 	m_PrismConn = reinterpret_cast<emInt (*)[6]>(m_PyrConn + nPyramids);
 	m_HexConn = reinterpret_cast<emInt (*)[8]>(m_PrismConn + nPrisms);
@@ -626,8 +631,28 @@ bool UMesh::writeVTKFile(const char fileName[]) {
 	return true;
 }
 
+void UMesh::incrementVertIndices(emInt* conn, emInt size, int inc) {
+	for (emInt ii = 0; ii < size; ii++) {
+		conn[ii] += inc;
+	}
+}
+
 bool UMesh::writeUGridFile(const char fileName[]) {
 	double timeBefore = exaTime();
+
+	// Need to increment all vert indices, because UGRID files are 1-based.
+	emInt size = m_nTris * 3 + m_nQuads * 4;
+	incrementVertIndices(reinterpret_cast<emInt*>(m_TriConn), size, 1);
+	size = m_nTets * 4 + m_nPyrs * 5 + m_nPrisms * 6 + m_nHexes * 8;
+	incrementVertIndices(reinterpret_cast<emInt*>(m_TetConn), size, 1);
+
+	// Also need to swap verts 2 and 4 for pyramids, because UGRID treats
+	// pyramids as prisms with the edge from 2 to 5 collapsed.  Compared
+	// with the ordering the rest of the world uses, this has the effect
+	// of switching verts 2 and 4.
+	for (emInt ii = 0; ii < m_nPyrs; ii++) {
+		std::swap(m_PyrConn[ii][2], m_PyrConn[ii][4]);
+	}
 
 	FILE* outFile = fopen(fileName, "w");
 	if (!outFile) {
@@ -637,6 +662,17 @@ bool UMesh::writeUGridFile(const char fileName[]) {
 
 	fwrite(m_fileImage, m_fileImageSize, 1, outFile);
 	fclose(outFile);
+
+	// Need to undo the increment for future use
+	size = m_nTris * 3 + m_nQuads * 4;
+	incrementVertIndices(reinterpret_cast<emInt*>(m_TriConn), size, -1);
+	size = m_nTets * 4 + m_nPyrs * 5 + m_nPrisms * 6 + m_nHexes * 8;
+	incrementVertIndices(reinterpret_cast<emInt*>(m_TetConn), size, -1);
+
+	// Need to swap verts 2 and 4 back for future use.
+	for (emInt ii = 0; ii < m_nPyrs; ii++) {
+		std::swap(m_PyrConn[ii][2], m_PyrConn[ii][4]);
+	}
 
 	double timeAfter = exaTime();
 	double elapsed = timeAfter - timeBefore;
