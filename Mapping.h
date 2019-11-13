@@ -27,8 +27,63 @@ public:
 	virtual void computeTransformedCoords(const double uvw[3],
 			double xyz[3]) const = 0;
 	enum MappingType {
-		LengthScale, Lagrange, Invalid
+		Uniform, LengthScale, Lagrange, Invalid
 	};
+};
+
+// This family of mappings just does linear / bilinear / trilinear interpolation
+// of coordinates.
+class UniformMapping: public Mapping {
+protected:
+	UniformMapping(const ExaMesh* const EM) :
+			Mapping(EM) {
+	}
+	virtual ~UniformMapping() {
+	}
+};
+
+class UniformTetMapping: public UniformMapping {
+private:
+	double A[3], dU[3], dV[3], dW[3];
+public:
+	UniformTetMapping(const ExaMesh* const EM) :
+			UniformMapping(EM) {
+	}
+	void setupCoordMapping(const emInt verts[]);
+	void computeTransformedCoords(const double uvw[3], double xyz[3]) const;
+};
+
+class UniformPyramidMapping: public UniformMapping {
+private:
+	double A[3], dU[3], dV[3], dUV[3], Apex[3];
+public:
+	UniformPyramidMapping(const ExaMesh* const EM) :
+			UniformMapping(EM) {
+	}
+	void setupCoordMapping(const emInt verts[]);
+	void computeTransformedCoords(const double uvw[3], double xyz[3]) const;
+};
+
+class UniformPrismMapping: public UniformMapping {
+private:
+	double A[3], dU[3], dV[3], dW[3], dUW[3], dVW[3];
+public:
+	UniformPrismMapping(const ExaMesh* const EM) :
+			UniformMapping(EM) {
+	}
+	void setupCoordMapping(const emInt verts[]);
+	void computeTransformedCoords(const double uvw[3], double xyz[3]) const;
+};
+
+class UniformHexMapping: public UniformMapping {
+private:
+	double A[3], dU[3], dV[3], dW[3], dUV[3], dUW[3], dVW[3], dUVW[3];
+public:
+	UniformHexMapping(const ExaMesh* const EM) :
+			UniformMapping(EM) {
+	}
+	void setupCoordMapping(const emInt verts[]);
+	void computeTransformedCoords(const double uvw[3], double xyz[3]) const;
 };
 
 class LengthScaleMapping: public Mapping {

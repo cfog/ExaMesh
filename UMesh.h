@@ -24,6 +24,8 @@ class UMesh: public ExaMesh {
 	double (*m_coords)[3];
 	emInt (*m_TriConn)[3];
 	emInt (*m_QuadConn)[4];
+	emInt *m_TriBC;
+	emInt *m_QuadBC;
 	emInt (*m_TetConn)[4];
 	emInt (*m_PyrConn)[5];
 	emInt (*m_PrismConn)[6];
@@ -170,6 +172,8 @@ public:
 	size_t getFileImageSize() const {
 		return m_fileImageSize;
 	}
+
+	void incrementVertIndices(emInt* conn, emInt size, int inc);
 
 	// Writing with compression reduces file size by a little over a factor of two,
 	// at the expense of making file write slower by two orders of magnitude.

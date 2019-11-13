@@ -12,38 +12,50 @@ void PyrDivider::setupCoordMapping(const emInt verts[]) {
 	for (int ii = 0; ii < 5; ii++) {
 		cellVerts[ii] = verts[ii];
 	}
-
-	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3];
-
-	m_pMesh->getCoords(verts[0], coords0);
-	m_pMesh->getCoords(verts[1], coords1);
-	m_pMesh->getCoords(verts[2], coords2);
-	m_pMesh->getCoords(verts[3], coords3);
-	m_pMesh->getCoords(verts[4], coords4);
-
-	for (int ii = 0; ii < 3; ii++) {
-		xyzOffset[ii] = coords0[ii];
-		uVec[ii] = coords1[ii] - coords0[ii];
-		vVec[ii] = coords3[ii] - coords0[ii];
-		uvVec[ii] = coords2[ii] + coords0[ii] - coords1[ii] - coords3[ii];
-		xyzApex[ii] = coords4[ii];
-	}
+	m_Map->setupCoordMapping(verts);
 }
 
 void PyrDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 		double xyz[3]) {
-	double u = uvw[0];
-	double v = uvw[1];
-	double w = uvw[2];
-	if (u != 0 && u != 1 && w != 0) u /= (1 - w);
-	if (v != 0 && v != 1 && w != 0) v /= (1 - w);
-	double coordsBase[3];
-	for (int ii = 0; ii < 3; ii++) {
-		coordsBase[ii] = xyzOffset[ii] + u * uVec[ii] + v * vVec[ii]
-											+ u * v * uvVec[ii];
-		xyz[ii] = coordsBase[ii] * (1 - w) + xyzApex[ii] * w;
-	}
+	m_Map->computeTransformedCoords(uvw, xyz);
 }
+
+//void PyrDivider::setupCoordMapping(const emInt verts[]) {
+//	for (int ii = 0; ii < 5; ii++) {
+//		cellVerts[ii] = verts[ii];
+//	}
+//
+//	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3];
+//
+//	m_pMesh->getCoords(verts[0], coords0);
+//	m_pMesh->getCoords(verts[1], coords1);
+//	m_pMesh->getCoords(verts[2], coords2);
+//	m_pMesh->getCoords(verts[3], coords3);
+//	m_pMesh->getCoords(verts[4], coords4);
+//
+//	for (int ii = 0; ii < 3; ii++) {
+//		xyzOffset[ii] = coords0[ii];
+//		uVec[ii] = coords1[ii] - coords0[ii];
+//		vVec[ii] = coords3[ii] - coords0[ii];
+//		uvVec[ii] = coords2[ii] + coords0[ii] - coords1[ii] - coords3[ii];
+//		xyzApex[ii] = coords4[ii];
+//	}
+//}
+
+//void PyrDivider::getPhysCoordsFromParamCoords(const double uvw[3],
+//		double xyz[3]) {
+//	double u = uvw[0];
+//	double v = uvw[1];
+//	double w = uvw[2];
+//	if (u != 0 && u != 1 && w != 0) u /= (1 - w);
+//	if (v != 0 && v != 1 && w != 0) v /= (1 - w);
+//	double coordsBase[3];
+//	for (int ii = 0; ii < 3; ii++) {
+//		coordsBase[ii] = xyzOffset[ii] + u * uVec[ii] + v * vVec[ii]
+//											+ u * v * uvVec[ii];
+//		xyz[ii] = coordsBase[ii] * (1 - w) + xyzApex[ii] * w;
+//	}
+//}
 
 
 void PyrDivider::divideInterior() {
@@ -60,7 +72,7 @@ void PyrDivider::divideInterior() {
       for (int ii = 1; ii <= kk - 1; ii++) {
 				u = double(ii) / nDivs;
 				double coords[3];
-				getPhysCoordsFromParamCoords(uvw, coords);
+				m_Map->computeTransformedCoords(uvw, coords);
 				emInt vNew = m_pMesh->addVert(coords);
 				localVerts[ii][jj][kk] = vNew;
       }

@@ -14,9 +14,10 @@
 class PyrDivider: public CellDivider {
 	double xyzOffset[3], uVec[3], vVec[3], uvVec[3], xyzApex[3];
 public:
-	PyrDivider(UMesh *pVolMesh, const int segmentsPerEdge)
+	PyrDivider(UMesh *pInitMesh, const int segmentsPerEdge,
+			const Mapping::MappingType type = Mapping::Uniform)
       :
-			CellDivider(pVolMesh, segmentsPerEdge) {
+			CellDivider(pInitMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
     vertIJK[0][1] = 0;
     vertIJK[0][2] = nDivs;
@@ -105,6 +106,18 @@ public:
 		faceVertIndices[4][0] = 3;
 		faceVertIndices[4][1] = 4;
 		faceVertIndices[4][2] = 0;
+
+		if (type == Mapping::LengthScale) {
+			// TODO: Must fix this
+			m_Map = new UniformPyramidMapping(pInitMesh);
+		}
+		else if (type == Mapping::Lagrange) {
+			// TODO: Must fix this
+			m_Map = new UniformPyramidMapping(pInitMesh);
+		}
+		else {
+			m_Map = new UniformPyramidMapping(pInitMesh);
+		}
   }
 	~PyrDivider() {
 	}

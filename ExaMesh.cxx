@@ -156,8 +156,8 @@ void ExaMesh::setupLengthScales() {
 	} // Done with pyramids
 
 	// Iterate over prisms
-	for (emInt prism = 0; prism < numPyramids(); prism++) {
-		const emInt* const prismVerts = getPyrConn(prism);
+	for (emInt prism = 0; prism < numPrisms(); prism++) {
+		const emInt* const prismVerts = getPrismConn(prism);
 		double norm1034[3], norm2145[3], norm0253[3], norm012[3], norm543[3];
 		double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3],
 				coords5[3];
@@ -208,7 +208,7 @@ void ExaMesh::setupLengthScales() {
 				+ pyrVolume(coords1, coords0, coords3, coords4, middle)
 				+ pyrVolume(coords2, coords1, coords4, coords5, middle)
 				+ pyrVolume(coords0, coords2, coords5, coords3, middle);
-		assert(volume > 0);
+//		assert(volume > 0);
 		for (int ii = 0; ii < 6; ii++) {
 			vertVolume[prismVerts[ii]] += volume;
 			assert(solids[ii] > 0);
@@ -217,11 +217,80 @@ void ExaMesh::setupLengthScales() {
 	} // Done with prisms
 
 	// Iterate over hexahedra
-	assert(numHexes() == 0);
+	for (emInt hex = 0; hex < numHexes(); hex++) {
+		const emInt* const hexVerts = getHexConn(hex);
+		double norm1045[3], norm2156[3], norm3267[3], norm0374[3], norm0123[3],
+				norm7654[3];
+		double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3],
+				coords5[3], coords6[3], coords7[3];
+		getCoords(hexVerts[0], coords0);
+		getCoords(hexVerts[1], coords1);
+		getCoords(hexVerts[2], coords2);
+		getCoords(hexVerts[3], coords3);
+		getCoords(hexVerts[4], coords4);
+		getCoords(hexVerts[5], coords5);
+		getCoords(hexVerts[6], coords7);
+		getCoords(hexVerts[7], coords7);
+		quadUnitNormal(coords1, coords0, coords4, coords5, norm1045);
+		quadUnitNormal(coords2, coords1, coords5, coords6, norm2156);
+		quadUnitNormal(coords3, coords2, coords6, coords7, norm3267);
+		quadUnitNormal(coords0, coords3, coords7, coords4, norm0374);
+		quadUnitNormal(coords0, coords1, coords2, coords3, norm0123);
+		quadUnitNormal(coords7, coords6, coords5, coords4, norm7654);
+
+		double diheds[12];
+		// Dihedrals are in the order: 01, 12, 23, 30, 04, 15, 26, 37, 45, 56, 67, 74
+		diheds[0] = safe_acos(-DOT(norm1045, norm0123));
+		diheds[1] = safe_acos(-DOT(norm2156, norm0123));
+		diheds[2] = safe_acos(-DOT(norm3267, norm0123));
+		diheds[3] = safe_acos(-DOT(norm0374, norm0123));
+		diheds[4] = safe_acos(-DOT(norm1045, norm0374));
+		diheds[5] = safe_acos(-DOT(norm2156, norm1045));
+		diheds[6] = safe_acos(-DOT(norm3267, norm2156));
+		diheds[7] = safe_acos(-DOT(norm0374, norm3267));
+		diheds[8] = safe_acos(-DOT(norm1045, norm7654));
+		diheds[9] = safe_acos(-DOT(norm2156, norm7654));
+		diheds[10] = safe_acos(-DOT(norm3267, norm7654));
+		diheds[11] = safe_acos(-DOT(norm0374, norm7654));
+
+
+		// Solid angles are in the order: 0, 1, 2, 3, 4, 5, 6, 7
+		double solids[6];
+		solids[0] = diheds[3] + diheds[0] + diheds[4] - M_PI;
+		solids[1] = diheds[0] + diheds[1] + diheds[5] - M_PI;
+		solids[2] = diheds[1] + diheds[2] + diheds[6] - M_PI;
+		solids[3] = diheds[2] + diheds[3] + diheds[7] - M_PI;
+		solids[4] = diheds[11] + diheds[8] + diheds[4] - M_PI;
+		solids[5] = diheds[8] + diheds[9] + diheds[5] - M_PI;
+		solids[6] = diheds[9] + diheds[10] + diheds[6] - M_PI;
+		solids[7] = diheds[10] + diheds[11] + diheds[7] - M_PI;
+
+		double middle[] = { (coords0[0] + coords1[0] + coords2[0] + coords3[0]
+													+ coords4[0] + coords5[0] + coords6[0] + coords7[0])
+												/ 8,
+												(coords0[1] + coords1[1] + coords2[1] + coords3[1]
+													+ coords4[1] + coords5[1] + coords6[1] + coords7[1])
+												/ 8,
+												(coords0[2] + coords1[2] + coords2[2] + coords3[2]
+													+ coords4[2] + coords5[2] + coords6[2] + coords7[2])
+												/ 8 };
+		double volume = pyrVolume(coords1, coords0, coords4, coords5, middle)
+				+ pyrVolume(coords2, coords1, coords5, coords6, middle)
+				+ pyrVolume(coords3, coords2, coords6, coords7, middle)
+				+ pyrVolume(coords0, coords3, coords7, coords4, middle)
+				+ pyrVolume(coords0, coords1, coords2, coords3, middle)
+				+ pyrVolume(coords7, coords6, coords5, coords4, middle);
+//		assert(volume > 0);
+		for (int ii = 0; ii < 8; ii++) {
+			vertVolume[hexVerts[ii]] += volume;
+//			assert(solids[ii] > 0);
+			vertSolidAngle[hexVerts[ii]] += solids[ii];
+		}
+	} // Done with hexahedra
 
 	// Now loop over verts computing the length scale
 	for (emInt vv = 0; vv < numVerts(); vv++) {
-		assert(vertVolume[vv] > 0 && vertSolidAngle[vv] > 0);
+//		assert(vertVolume[vv] > 0 && vertSolidAngle[vv] > 0);
 		double volume = vertVolume[vv] * (4 * M_PI) / vertSolidAngle[vv];
 		double radius = cbrt(volume / (4 * M_PI / 3.));
 		m_lenScale[vv] = radius;
@@ -333,27 +402,21 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 		fprintf(stderr, "Total ugrid file size = %lu GB\n", totalFileSize >> 30);
 	}
 	else if (totalFileSize >> 30) {
-		fprintf(stderr, "Total ugrid file size = %.2f G\n",
+		fprintf(stderr, "Total ugrid file size = %.2f GB\n",
 						(totalFileSize >> 20) / 1024.);
 	}
 	else {
 		fprintf(stderr, "Total ugrid file size = %lu MB\n", totalFileSize >> 20);
 	}
 
-	if (totalCells >> 37) {
-		fprintf(stderr, "Total cells = %lu G\n", (totalCells >> 30));
-	}
-	else if (totalCells >> 30) {
-		fprintf(stderr, "Total cells = %.2f G\n", (totalCells >> 20) / 1024.);
-	}
-	else if (totalCells >> 27) {
-		fprintf(stderr, "Total cells = %lu M\n", totalCells >> 20);
+	if (totalCells >> 30) {
+		fprintf(stderr, "Total cells = %.2f B\n", totalCells / 1.e9);
 	}
 	else if (totalCells >> 20) {
-		fprintf(stderr, "Total cells = %.2f M\n", (totalCells >> 10) / 1024.);
+		fprintf(stderr, "Total cells = %.2f M\n", totalCells / 1.e6);
 	}
-	else if (totalCells >> 17) {
-		fprintf(stderr, "Total cells = %lu K\n", totalCells >> 10);
+	else if (totalCells >> 10) {
+		fprintf(stderr, "Total cells = %.2f K\n", totalCells / 1.e3);
 	}
 	else {
 		fprintf(stderr, "Total cells = %lu \n", totalCells);

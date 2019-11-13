@@ -53,8 +53,7 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 	assert(pVM_input->numVertsToCopy() == pVM_output->numVerts());
 
 	// Need to explicitly specify the type of mapping here.
-	TetDivider TD(pVM_output, pVM_input, nDivs,
-								pVM_input->getDefaultMappingType());
+	TetDivider TD(pVM_output, pVM_input, nDivs);
 	for (emInt iT = 0; iT < pVM_input->numTets(); iT++) {
     // Divide all the edges, including storing info about which new verts
     // are on which edges

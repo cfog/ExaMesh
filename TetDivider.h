@@ -16,7 +16,8 @@ class TetDivider: public CellDivider {
 public:
 	TetDivider(UMesh *pVolMesh, const ExaMesh* const pInitMesh,
 			const int segmentsPerEdge,
-			const Mapping::MappingType type = Mapping::LengthScale)
+			const Mapping::MappingType type =
+					Mapping::Uniform)
       :
 			CellDivider(pVolMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
@@ -94,6 +95,9 @@ public:
 		}
 		else if (type == Mapping::Lagrange) {
 			m_Map = new LagrangeCubicTetMapping(pInitMesh);
+		}
+		else {
+			m_Map = new UniformTetMapping(pInitMesh);
 		}
   }
 	~TetDivider() {

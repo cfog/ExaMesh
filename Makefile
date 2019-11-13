@@ -8,13 +8,13 @@ CXXOBJECTS=refine.o
 
 LIBOBJECTS=TetDivider.o PyrDivider.o PrismDivider.o HexDivider.o CellDivider.o \
 BdryTriDivider.o BdryQuadDivider.o refinePart.o ExaMesh.o UMesh.o CubicMesh.o GeomUtils.o \
-LagrangeMapping.o LengthScaleMapping.o \
+LagrangeMapping.o LengthScaleMapping.o UniformMapping.o \
 Part.o partition.o
 
 OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
 DEBUG=-g
 OPT=-O3 -DNDEBUG
-OPT_DEBUG=$(OPT) -g
+OPT_DEBUG=$(DEBUG) -g
 CPPFLAGS=-I/home/cfog/Research/Projects/ExaMesh/src -I/home/cfog/GMGW1/src
 CXX_COMPILE=g++ -Wall -Wextra -fPIC $(OPT_DEBUG) $(CPPFLAGS) $(EXTRAFLAGS) -fopenmp
 CXX_LINK=g++ -fPIC $(EXTRAFLAGS) $(OPT_DEBUG) -fopenmp
