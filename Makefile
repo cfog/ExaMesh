@@ -14,7 +14,7 @@ Part.o partition.o
 OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
 DEBUG=-g
 OPT=-O3 -DNDEBUG
-OPT_DEBUG=$(DEBUG) -g
+OPT_DEBUG=$(OPT) -g
 CPPFLAGS=-I/home/cfog/Research/Projects/ExaMesh/src -I/home/cfog/GMGW1/src
 CXX_COMPILE=g++ -Wall -Wextra -fPIC $(OPT_DEBUG) $(CPPFLAGS) $(EXTRAFLAGS) -fopenmp
 CXX_LINK=g++ -fPIC $(EXTRAFLAGS) $(OPT_DEBUG) -fopenmp
@@ -81,6 +81,7 @@ TetDivider.o: exa-defs.h Part.h UMesh.h CubicMesh.h
 UMesh.o: ExaMesh.h Mapping.h exa-defs.h Part.h UMesh.h CubicMesh.h
 UMesh.o: /home/cfog/GMGW1/src/GMGW_unstr.hxx /home/cfog/GMGW1/src/config.h
 UMesh.o: /home/cfog/GMGW1/src/GMGW_FileWrapper.hxx
+UniformMapping.o: ExaMesh.h Mapping.h exa-defs.h Part.h
 partition.o: ExaMesh.h Mapping.h exa-defs.h Part.h
 refine.o: ExaMesh.h Mapping.h exa-defs.h Part.h CubicMesh.h UMesh.h
 refinePart.o: ExaMesh.h Mapping.h exa-defs.h Part.h HexDivider.h
