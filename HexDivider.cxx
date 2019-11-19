@@ -11,44 +11,56 @@ void HexDivider::setupCoordMapping(const emInt verts[]) {
 	for (int ii = 0; ii < 8; ii++) {
 		cellVerts[ii] = verts[ii];
 	}
-
-	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3], coords5[3],
-			coords6[3], coords7[3];
-
-	m_pMesh->getCoords(verts[0], coords0);
-	m_pMesh->getCoords(verts[1], coords1);
-	m_pMesh->getCoords(verts[2], coords2);
-	m_pMesh->getCoords(verts[3], coords3);
-	m_pMesh->getCoords(verts[4], coords4);
-	m_pMesh->getCoords(verts[5], coords5);
-	m_pMesh->getCoords(verts[6], coords6);
-	m_pMesh->getCoords(verts[7], coords7);
-	for (int ii = 0; ii < 3; ii++) {
-		xyzOffsetBot[ii] = coords0[ii];
-		uVecBot[ii] = coords1[ii] - coords0[ii];
-		vVecBot[ii] = coords3[ii] - coords0[ii];
-		uvVecBot[ii] = coords2[ii] + coords0[ii] - coords1[ii] - coords3[ii];
-		xyzOffsetTop[ii] = coords4[ii];
-		uVecTop[ii] = coords5[ii] - coords4[ii];
-		vVecTop[ii] = coords7[ii] - coords4[ii];
-		uvVecTop[ii] = coords6[ii] + coords4[ii] - coords5[ii] - coords7[ii];
-	}
+	m_Map->setupCoordMapping(verts);
 }
 
 void HexDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 		double xyz[3]) {
-	const double& u = uvw[0];
-	const double& v = uvw[1];
-	const double& w = uvw[2];
-	double coordsBot[3], coordsTop[3];
-	for (int ii = 0; ii < 3; ii++) {
-		coordsBot[ii] = xyzOffsetBot[ii] + u * uVecBot[ii] + v * vVecBot[ii]
-										+ u * v * uvVecBot[ii];
-		coordsTop[ii] = xyzOffsetTop[ii] + u * uVecTop[ii] + v * vVecTop[ii]
-										+ u * v * uvVecTop[ii];
-		xyz[ii] = coordsBot[ii] * (1 - w) + coordsTop[ii] * w;
-	}
+	m_Map->computeTransformedCoords(uvw, xyz);
 }
+
+//void HexDivider::setupCoordMapping(const emInt verts[]) {
+//	for (int ii = 0; ii < 8; ii++) {
+//		cellVerts[ii] = verts[ii];
+//	}
+//
+//	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3], coords5[3],
+//			coords6[3], coords7[3];
+//
+//	m_pMesh->getCoords(verts[0], coords0);
+//	m_pMesh->getCoords(verts[1], coords1);
+//	m_pMesh->getCoords(verts[2], coords2);
+//	m_pMesh->getCoords(verts[3], coords3);
+//	m_pMesh->getCoords(verts[4], coords4);
+//	m_pMesh->getCoords(verts[5], coords5);
+//	m_pMesh->getCoords(verts[6], coords6);
+//	m_pMesh->getCoords(verts[7], coords7);
+//	for (int ii = 0; ii < 3; ii++) {
+//		xyzOffsetBot[ii] = coords0[ii];
+//		uVecBot[ii] = coords1[ii] - coords0[ii];
+//		vVecBot[ii] = coords3[ii] - coords0[ii];
+//		uvVecBot[ii] = coords2[ii] + coords0[ii] - coords1[ii] - coords3[ii];
+//		xyzOffsetTop[ii] = coords4[ii];
+//		uVecTop[ii] = coords5[ii] - coords4[ii];
+//		vVecTop[ii] = coords7[ii] - coords4[ii];
+//		uvVecTop[ii] = coords6[ii] + coords4[ii] - coords5[ii] - coords7[ii];
+//	}
+//}
+//
+//void HexDivider::getPhysCoordsFromParamCoords(const double uvw[3],
+//		double xyz[3]) {
+//	const double& u = uvw[0];
+//	const double& v = uvw[1];
+//	const double& w = uvw[2];
+//	double coordsBot[3], coordsTop[3];
+//	for (int ii = 0; ii < 3; ii++) {
+//		coordsBot[ii] = xyzOffsetBot[ii] + u * uVecBot[ii] + v * vVecBot[ii]
+//										+ u * v * uvVecBot[ii];
+//		coordsTop[ii] = xyzOffsetTop[ii] + u * uVecTop[ii] + v * vVecTop[ii]
+//										+ u * v * uvVecTop[ii];
+//		xyz[ii] = coordsBot[ii] * (1 - w) + coordsTop[ii] * w;
+//	}
+//}
 
 void HexDivider::divideInterior() {
   // Number of verts added:

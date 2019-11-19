@@ -55,7 +55,7 @@ public:
 
 class UniformPyramidMapping: public UniformMapping {
 private:
-	double A[3], dU[3], dV[3], dUV[3], Apex[3];
+	double A[3], dU[3], dV[3], dUV[3], dW[3], Apex[3];
 public:
 	UniformPyramidMapping(const ExaMesh* const EM) :
 			UniformMapping(EM) {
@@ -155,32 +155,55 @@ public:
 
 class LagrangeCubicMapping: public LagrangeMapping {
 protected:
-	double C[3], Cu[3], Cv[3], Cw[3], Cuu[3], Cuv[3], Cuw[3], Cvv[3], Cvw[3],
-			Cww[3], Cuuu[3], Cuuv[3], Cuvv[3], Cuuw[3], Cuww[3], Cuvw[3], Cvvv[3],
-			Cvvw[3], Cvww[3], Cwww[3];
 	LagrangeCubicMapping(const ExaMesh* const EM, const emInt nDOFs) :
 			LagrangeMapping(EM, nDOFs) {
 	}
 public:
-	virtual void computeTransformedCoords(const double uvw[3],
-			double xyz[3]) const;
 private:
 	virtual void setModalValues() = 0;
 };
 
 class LagrangeCubicTetMapping: public LagrangeCubicMapping {
+	double C[3], Cu[3], Cv[3], Cw[3], Cuu[3], Cuv[3], Cuw[3], Cvv[3], Cvw[3],
+			Cww[3], Cuuu[3], Cuuv[3], Cuvv[3], Cuuw[3], Cuww[3], Cuvw[3], Cvvv[3],
+			Cvvw[3], Cvww[3], Cwww[3];
 public:
 	LagrangeCubicTetMapping(const ExaMesh* const EM) :
 			LagrangeCubicMapping(EM, 20) {
 	}
 	virtual ~LagrangeCubicTetMapping() {
 	}
+	virtual void computeTransformedCoords(const double uvw[3],
+			double xyz[3]) const;
+
 	// Public for testing purposes
 	virtual double computeBasisFunction(const int whichFunc,
 			const double uvw[3]) const;
 	void setModalValues();
 };
 
+class LagrangeCubicPyramidMapping: public LagrangeCubicMapping {
+	double C[3], Cu[3], Cv[3], Cw[3], Cuu[3], Cuv[3], Cuw[3], Cvv[3], Cvw[3],
+			Cww[3], Cuuu[3], Cuuv[3], Cuvv[3], Cuuw[3], Cuww[3], Cuvw[3], Cvvv[3],
+			Cvvw[3], Cvww[3], Cwww[3];
+	double CuvOverw[3], Cu2vOverw[3], Cuv2Overw[3], Cu3vOverw[3], Cu2v2Overw[3],
+			Cuv3Overw[3];
+	double Cu2v2Overw2[3], Cu3v2Overw2[3], Cu2v3Overw2[3], Cu3v3Overw3[3];
+	double Apex[3];
+public:
+	LagrangeCubicPyramidMapping(const ExaMesh* const EM) :
+			LagrangeCubicMapping(EM, 30) {
+	}
+	virtual ~LagrangeCubicPyramidMapping() {
+	}
+	// Public for testing purposes
+	virtual double computeBasisFunction(const int whichFunc,
+			const double uvw[3]) const;
+	void setModalValues();
+	virtual void computeTransformedCoords(const double uvw[3],
+			double xyz[3]) const;
+
+};
 
 
 #endif /* SRC_MAPPING_H_ */

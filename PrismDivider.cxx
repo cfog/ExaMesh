@@ -11,37 +11,50 @@ void PrismDivider::setupCoordMapping(const emInt verts[]) {
 	for (int ii = 0; ii < 6; ii++) {
 		cellVerts[ii] = verts[ii];
 	}
-
-	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3], coords5[3];
-
-	m_pMesh->getCoords(verts[0], coords0);
-	m_pMesh->getCoords(verts[1], coords1);
-	m_pMesh->getCoords(verts[2], coords2);
-	m_pMesh->getCoords(verts[3], coords3);
-	m_pMesh->getCoords(verts[4], coords4);
-	m_pMesh->getCoords(verts[5], coords5);
-	for (int ii = 0; ii < 3; ii++) {
-		xyzOffsetBot[ii] = coords0[ii];
-		uVecBot[ii] = coords1[ii] - coords0[ii];
-		vVecBot[ii] = coords2[ii] - coords0[ii];
-		xyzOffsetTop[ii] = coords3[ii];
-		uVecTop[ii] = coords4[ii] - coords3[ii];
-		vVecTop[ii] = coords5[ii] - coords3[ii];
-	}
+	m_Map->setupCoordMapping(verts);
 }
 
 void PrismDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 		double xyz[3]) {
-	const double& u = uvw[0];
-	const double& v = uvw[1];
-	const double& w = uvw[2];
-	double coordsBot[3], coordsTop[3];
-	for (int ii = 0; ii < 3; ii++) {
-		coordsBot[ii] = xyzOffsetBot[ii] + u * uVecBot[ii] + v * vVecBot[ii];
-		coordsTop[ii] = xyzOffsetTop[ii] + u * uVecTop[ii] + v * vVecTop[ii];
-		xyz[ii] = coordsBot[ii] * (1 - w) + coordsTop[ii] * w;
-	}
+	m_Map->computeTransformedCoords(uvw, xyz);
 }
+
+//
+//void PrismDivider::setupCoordMapping(const emInt verts[]) {
+//	for (int ii = 0; ii < 6; ii++) {
+//		cellVerts[ii] = verts[ii];
+//	}
+//
+//	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3], coords5[3];
+//
+//	m_pMesh->getCoords(verts[0], coords0);
+//	m_pMesh->getCoords(verts[1], coords1);
+//	m_pMesh->getCoords(verts[2], coords2);
+//	m_pMesh->getCoords(verts[3], coords3);
+//	m_pMesh->getCoords(verts[4], coords4);
+//	m_pMesh->getCoords(verts[5], coords5);
+//	for (int ii = 0; ii < 3; ii++) {
+//		xyzOffsetBot[ii] = coords0[ii];
+//		uVecBot[ii] = coords1[ii] - coords0[ii];
+//		vVecBot[ii] = coords2[ii] - coords0[ii];
+//		xyzOffsetTop[ii] = coords3[ii];
+//		uVecTop[ii] = coords4[ii] - coords3[ii];
+//		vVecTop[ii] = coords5[ii] - coords3[ii];
+//	}
+//}
+//
+//void PrismDivider::getPhysCoordsFromParamCoords(const double uvw[3],
+//		double xyz[3]) {
+//	const double& u = uvw[0];
+//	const double& v = uvw[1];
+//	const double& w = uvw[2];
+//	double coordsBot[3], coordsTop[3];
+//	for (int ii = 0; ii < 3; ii++) {
+//		coordsBot[ii] = xyzOffsetBot[ii] + u * uVecBot[ii] + v * vVecBot[ii];
+//		coordsTop[ii] = xyzOffsetTop[ii] + u * uVecTop[ii] + v * vVecTop[ii];
+//		xyz[ii] = coordsBot[ii] * (1 - w) + coordsTop[ii] * w;
+//	}
+//}
 
 void PrismDivider::divideInterior() {
   // Number of verts added:

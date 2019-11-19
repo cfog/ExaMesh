@@ -869,4 +869,75 @@ BOOST_AUTO_TEST_SUITE(LagrangeCubicMappingTest)
 		BOOST_CHECK_CLOSE(LCTMxyz[1], funcxyz[1], 1.e-8);
 		BOOST_CHECK_CLOSE(LCTMxyz[2], funcxyz[2], 1.e-8);
 	}
+
+
+	BOOST_AUTO_TEST_CASE(CubicPyramid) {
+		CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
+		LagrangeCubicPyramidMapping LCPM(&CM);
+		// Test for known cubic functions:
+		// x = u^3 + 2 u^2 v + 4 u v^2 - 30 u v w + 5 u^2 + 6 u - 3 u v + 3
+		// y = v^3 + 2 v^2 w + 4 v w^2 - 54 u v w + 5 v^2 + 6 v - 4 v w + 7
+		// z = w^3 + 2 w^2 u + 4 w u^2 - 72 u v w + 5 w^2 + 6 w - 5 w u+ 10
+
+		// So the nodal values are just these functions evaluated at nodes, where for the
+		// canonical pyramid, we have:
+		double uvw[][3] = {
+				{ -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 }, { -1, 1, 0 },
+												{ 0, 0, 1 }, // Corner nodes
+				{ -1 / 3., -1, 0 },
+				{ 1 / 3., -1, 0 }, // Nodes between 0 and 1
+				{ 1, -1 / 3., 0 },
+				{ 1, 1 / 3., 0 }, // Nodes between 1 and 2
+				{ 1 / 3., 1, 0 },
+				{ -1 / 3., 1, 0 }, // Nodes between 2 and 3
+				{ -1, 1 / 3., 0 },
+				{ -1, -1 / 3., 0 }, // Nodes between 3 and 0
+				{ -2 / 3., -2 / 3., 1 / 3. },
+				{ -1 / 3., -1 / 3., 2 / 3. }, // Nodes between 0 and 4
+				{ 2 / 3., -2 / 3., 1 / 3. },
+				{ 1 / 3., -1 / 3., 2 / 3. }, // Nodes between 1 and 4
+												{ 2 / 3., 2 / 3., 1 / 3. }, { 1 / 3., 1 / 3., 2 / 3. }, // Nodes between 2 and 4
+				{ -2 / 3., 2 / 3., 1 / 3. },
+				{ -1 / 3., 1 / 3., 2 / 3. }, // Nodes between 3 and 4
+				{ -1 / 3., -1 / 3., 0 }, { 1 / 3., -1 / 3., 0 }, { 1 / 3., 1 / 3., 0 },
+				{ -1 / 3., 1 / 3., 0 }, // Nodes on the base
+				{ 0, -2 / 3., 1 / 3. }, // Node on 014
+				{ 2 / 3., 0, 1 / 3. }, // Node on 124
+				{ 0, 2 / 3., 1 / 3. }, // Node on 234
+				{ -2 / 3., 0, 1 / 3. }, // Node on 304
+				{ 0, 0, 1 / 3. } }; // Node in the interior
+
+		double uvwToMap[30][3];
+
+		double xyz[30][3] = { 0 };
+
+		// Now the nodal values, by simple functional evaluation.
+		for (int ii = 0; ii < 30; ii++) {
+			double w = uvw[ii][2];
+			uvwToMap[ii][0] = (uvw[ii][0] + (1 - w)) / 2;
+			uvwToMap[ii][1] = (uvw[ii][1] + (1 - w)) / 2;
+			uvwToMap[ii][2] = w;
+			cubicXYZ(uvw[ii], xyz[ii]);
+		}
+		LCPM.setNodalValues(xyz);
+		LCPM.setModalValues();
+
+		double testUVW[] = { 1. / M_PI, 1. / M_E, 0.5 * (1 - 1. / M_PI - 1. / M_E) };
+		double LCPMxyz[3], funcxyz[3];
+		cubicXYZ(testUVW, funcxyz);
+		testUVW[0] = (testUVW[0] + (1 - testUVW[2])) / 2;
+		testUVW[1] = (testUVW[1] + (1 - testUVW[2])) / 2;
+		LCPM.computeTransformedCoords(testUVW, LCPMxyz);
+		BOOST_CHECK_CLOSE(LCPMxyz[0], funcxyz[0], 1.e-8);
+		BOOST_CHECK_CLOSE(LCPMxyz[1], funcxyz[1], 1.e-8);
+		BOOST_CHECK_CLOSE(LCPMxyz[2], funcxyz[2], 1.e-8);
+
+		for (int ii = 0; ii < 30; ii++) {
+			LCPM.computeTransformedCoords(uvwToMap[ii], LCPMxyz);
+//			printf("%d\n", ii);
+			BOOST_CHECK_CLOSE(LCPMxyz[0], xyz[ii][0], 1.e-8);
+			BOOST_CHECK_CLOSE(LCPMxyz[1], xyz[ii][1], 1.e-8);
+			BOOST_CHECK_CLOSE(LCPMxyz[2], xyz[ii][2], 1.e-8);
+		}
+	}
 	BOOST_AUTO_TEST_SUITE_END()

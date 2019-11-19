@@ -16,9 +16,10 @@ class HexDivider: public CellDivider {
 	double xyzOffsetTop[3], uVecTop[3], vVecTop[3], uvVecTop[3];
 
 public:
-	HexDivider(UMesh *pVolMesh, const int segmentsPerEdge)
+	HexDivider(UMesh *pInitMesh, const int segmentsPerEdge,
+			const Mapping::MappingType type = Mapping::Uniform)
       :
-			CellDivider(pVolMesh, segmentsPerEdge) {
+			CellDivider(pInitMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
     vertIJK[0][1] = 0;
     vertIJK[0][2] = nDivs;
@@ -152,6 +153,18 @@ public:
 		faceVertIndices[5][1] = 7;
 		faceVertIndices[5][2] = 4;
 		faceVertIndices[5][3] = 0;
+
+		if (type == Mapping::LengthScale) {
+			// TODO: Must fix this
+			m_Map = new UniformHexMapping(pInitMesh);
+		}
+		else if (type == Mapping::Lagrange) {
+			// TODO: Must fix this
+			m_Map = new UniformHexMapping(pInitMesh);
+		}
+		else {
+			m_Map = new UniformHexMapping(pInitMesh);
+		}
   }
 	~HexDivider() {
 	}

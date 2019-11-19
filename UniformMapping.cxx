@@ -40,10 +40,12 @@ void UniformPyramidMapping::setupCoordMapping(const emInt verts[]) {
 	m_pMesh->getCoords(verts[3], coords3);
 	m_pMesh->getCoords(verts[4], coords4);
 	for (int ii = 0; ii < 3; ii++) {
-		A[ii] = coords0[ii];
-		dU[ii] = coords1[ii] - coords0[ii];
-		dV[ii] = coords3[ii] - coords0[ii];
-		dUV[ii] = coords2[ii] + coords0[ii] - coords1[ii] - coords3[ii];
+		A[ii] = 0.25 * (coords0[ii] + coords1[ii] + coords2[ii] + coords3[ii]);
+		dU[ii] = 0.25 * (-coords0[ii] + coords1[ii] + coords2[ii] - coords3[ii]);
+		dV[ii] = 0.25 * (-coords0[ii] - coords1[ii] + coords2[ii] + coords3[ii]);
+		dUV[ii] = 0.25 * (-coords0[ii] + coords1[ii] - coords2[ii] + coords3[ii]);
+		dW[ii] = coords4[ii]
+				- 0.25 * (coords0[ii] + coords1[ii] + coords2[ii] + coords3[ii]);
 		Apex[ii] = coords4[ii];
 	}
 }
@@ -53,13 +55,16 @@ void UniformPyramidMapping::computeTransformedCoords(const double uvw[3],
 	double u = uvw[0];
 	double v = uvw[1];
 	const double& w = uvw[2];
-	if (w != 1) {
-		u /= (1 - w);
-		v /= (1 - w);
+	if (w == 1) {
+		xyz[0] = Apex[0];
+		xyz[1] = Apex[1];
+		xyz[2] = Apex[2];
 	}
+	u = 2 * u - (1 - w);
+	v = 2 * v - (1 - w);
 	for (int ii = 0; ii < 3; ii++) {
-		xyz[ii] = (A[ii] + u * dU[ii] + v * dV[ii] + u * v * dUV[ii]) * (1 - w)
-				+ Apex[ii] * w;
+		xyz[ii] = (A[ii] + u * dU[ii] + v * dV[ii] + u * v * dUV[ii] / (w - 1))
+				+ dW[ii] * w;
 	}
 }
 

@@ -15,9 +15,10 @@ class PrismDivider: public CellDivider {
 	double xyzOffsetBot[3], uVecBot[3], vVecBot[3];
 	double xyzOffsetTop[3], uVecTop[3], vVecTop[3];
 public:
-	PrismDivider(UMesh *pVolMesh, const int segmentsPerEdge)
+	PrismDivider(UMesh *pInitMesh, const int segmentsPerEdge,
+			const Mapping::MappingType type = Mapping::Uniform)
 :
-			CellDivider(pVolMesh, segmentsPerEdge) {
+			CellDivider(pInitMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
     vertIJK[0][1] = 0;
     vertIJK[0][2] = nDivs;
@@ -119,6 +120,18 @@ public:
 		faceVertIndices[4][0] = 5;
 		faceVertIndices[4][1] = 4;
 		faceVertIndices[4][2] = 3;
+
+		if (type == Mapping::LengthScale) {
+			// TODO: Must fix this
+			m_Map = new UniformPrismMapping(pInitMesh);
+		}
+		else if (type == Mapping::Lagrange) {
+			// TODO: Must fix this
+			m_Map = new UniformPrismMapping(pInitMesh);
+		}
+		else {
+			m_Map = new UniformPrismMapping(pInitMesh);
+		}
   }
 	~PrismDivider() {
 	}

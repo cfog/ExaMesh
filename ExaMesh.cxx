@@ -255,7 +255,7 @@ void ExaMesh::setupLengthScales() {
 
 
 		// Solid angles are in the order: 0, 1, 2, 3, 4, 5, 6, 7
-		double solids[6];
+		double solids[8];
 		solids[0] = diheds[3] + diheds[0] + diheds[4] - M_PI;
 		solids[1] = diheds[0] + diheds[1] + diheds[5] - M_PI;
 		solids[2] = diheds[1] + diheds[2] + diheds[6] - M_PI;
