@@ -112,8 +112,7 @@ public:
 			m_Map = new UniformPyramidMapping(pInitMesh);
 		}
 		else if (type == Mapping::Lagrange) {
-			// TODO: Must fix this
-			m_Map = new UniformPyramidMapping(pInitMesh);
+			m_Map = new LagrangeCubicPyramidMapping(pInitMesh);
 		}
 		else {
 			m_Map = new UniformPyramidMapping(pInitMesh);

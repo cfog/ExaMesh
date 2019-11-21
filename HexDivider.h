@@ -159,8 +159,7 @@ public:
 			m_Map = new UniformHexMapping(pInitMesh);
 		}
 		else if (type == Mapping::Lagrange) {
-			// TODO: Must fix this
-			m_Map = new UniformHexMapping(pInitMesh);
+			m_Map = new LagrangeCubicHexMapping(pInitMesh);
 		}
 		else {
 			m_Map = new UniformHexMapping(pInitMesh);

@@ -126,8 +126,7 @@ public:
 			m_Map = new UniformPrismMapping(pInitMesh);
 		}
 		else if (type == Mapping::Lagrange) {
-			// TODO: Must fix this
-			m_Map = new UniformPrismMapping(pInitMesh);
+			m_Map = new LagrangeCubicPrismMapping(pInitMesh);
 		}
 		else {
 			m_Map = new UniformPrismMapping(pInitMesh);
