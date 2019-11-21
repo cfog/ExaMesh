@@ -9,6 +9,7 @@ CXXOBJECTS=refine.o
 LIBOBJECTS=TetDivider.o PyrDivider.o PrismDivider.o HexDivider.o CellDivider.o \
 BdryTriDivider.o BdryQuadDivider.o refinePart.o ExaMesh.o UMesh.o CubicMesh.o GeomUtils.o \
 LagrangeMapping.o LengthScaleMapping.o UniformMapping.o \
+LagrangeCubicTet.o LagrangeCubicPyr.o LagrangeCubicPrism.o LagrangeCubicHex.o \
 Part.o partition.o
 
 OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
