@@ -56,6 +56,11 @@ clean:
 depend:
 	makedepend $(CPPFLAGS) -Y *.cxx 2> /dev/null
 
+cover:
+	lcov --capture --directory . --output coverage/lcov.raw.info
+	lcov --remove coverage/lcov.raw.info "/usr*" "*GMGW1*" -o coverage/lcov.info
+	genhtml --demangle-cpp --output-directory coverage coverage/lcov.info
+	firefox coverage/index.html
 
 # DO NOT DELETE
 
