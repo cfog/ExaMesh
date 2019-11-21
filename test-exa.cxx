@@ -645,7 +645,7 @@ BOOST_AUTO_TEST_CASE(MixedN5) {
 BOOST_AUTO_TEST_SUITE(MappingTests)
 
 	BOOST_AUTO_TEST_CASE(TetMapping) {
-		printf("Testing tet mappings.\n");
+		printf("Testing tet length-scale mapping.\n");
 		UMesh VM(4, 4, 4, 0, 1, 0, 0, 0);
 		double vert0[] = { 1, 1, 1 };
 		double vert1[] = { 2, 2, 2 };
@@ -814,18 +814,15 @@ BOOST_AUTO_TEST_SUITE(LagrangeCubicMappingTest)
 							- 4 * v * w
 							+ 7;
 		xyz[2] = w * w * w + 2 * w * w * u + 4 * w * u * u - 72 * u * v * w
-				+ 5 * w * w + 6 * w
+				+ 5 * w * w + 7 * w
 							- 5 * w * u
-							+ 10;
+							+ 10.5;
 	}
 
 	BOOST_AUTO_TEST_CASE(CubicTet) {
+		printf("Testing cubic tet mapping\n");
 		CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
 		LagrangeCubicTetMapping LCTM(&CM);
-		// Test for known cubic functions:
-		// x = u^3 + 2 u^2 v + 4 u v^2 - 30 u v w + 5 u^2 + 6 u - 3 u v + 3
-		// y = v^3 + 2 v^2 w + 4 v w^2 - 54 u v w + 5 v^2 + 6 v - 4 v w + 7
-		// z = w^3 + 2 w^2 u + 4 w u^2 - 72 u v w + 5 w^2 + 6 w - 5 w u+ 10
 
 		// So the nodal values are just these functions evaluated at nodes, where for the
 		// canonical tet, we have:
@@ -853,14 +850,6 @@ BOOST_AUTO_TEST_SUITE(LagrangeCubicMappingTest)
 		LCTM.setNodalValues(xyz);
 		LCTM.setModalValues();
 
-		for (int iFunc = 0; iFunc < 20; iFunc++) {
-			for (int iNode = 0; iNode < 20; iNode++) {
-				double value = LCTM.computeBasisFunction(iFunc, uvw[iNode]);
-//				printf("%d %d\n", iFunc, iNode);
-				BOOST_CHECK_CLOSE(1 + value, 1 + (iFunc == iNode ? 1 : 0), 1.e-8);
-			}
-		}
-
 		double testUVW[] = { 1. / M_PI, 1. / M_E, 0.5 * (1 - 1. / M_PI - 1. / M_E) };
 		double LCTMxyz[3], funcxyz[3];
 		LCTM.computeTransformedCoords(testUVW, LCTMxyz);
@@ -868,16 +857,22 @@ BOOST_AUTO_TEST_SUITE(LagrangeCubicMappingTest)
 		BOOST_CHECK_CLOSE(LCTMxyz[0], funcxyz[0], 1.e-8);
 		BOOST_CHECK_CLOSE(LCTMxyz[1], funcxyz[1], 1.e-8);
 		BOOST_CHECK_CLOSE(LCTMxyz[2], funcxyz[2], 1.e-8);
+
+		for (int ii = 0; ii < 20; ii++) {
+			LCTM.computeTransformedCoords(uvw[ii], LCTMxyz);
+//			printf("%d\n", ii);
+			BOOST_CHECK_CLOSE(LCTMxyz[0], xyz[ii][0], 1.e-8);
+			BOOST_CHECK_CLOSE(LCTMxyz[1], xyz[ii][1], 1.e-8);
+			BOOST_CHECK_CLOSE(LCTMxyz[2], xyz[ii][2], 1.e-8);
+		}
+
 	}
 
 
 	BOOST_AUTO_TEST_CASE(CubicPyramid) {
+		printf("Testing cubic pyramid mapping\n");
 		CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
 		LagrangeCubicPyramidMapping LCPM(&CM);
-		// Test for known cubic functions:
-		// x = u^3 + 2 u^2 v + 4 u v^2 - 30 u v w + 5 u^2 + 6 u - 3 u v + 3
-		// y = v^3 + 2 v^2 w + 4 v w^2 - 54 u v w + 5 v^2 + 6 v - 4 v w + 7
-		// z = w^3 + 2 w^2 u + 4 w u^2 - 72 u v w + 5 w^2 + 6 w - 5 w u+ 10
 
 		// So the nodal values are just these functions evaluated at nodes, where for the
 		// canonical pyramid, we have:
@@ -938,6 +933,183 @@ BOOST_AUTO_TEST_SUITE(LagrangeCubicMappingTest)
 			BOOST_CHECK_CLOSE(LCPMxyz[0], xyz[ii][0], 1.e-8);
 			BOOST_CHECK_CLOSE(LCPMxyz[1], xyz[ii][1], 1.e-8);
 			BOOST_CHECK_CLOSE(LCPMxyz[2], xyz[ii][2], 1.e-8);
+		}
+	}
+
+	BOOST_AUTO_TEST_CASE(CubicPrism) {
+		printf("Testing cubic prism mapping\n");
+		CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
+		LagrangeCubicPrismMapping LCPM(&CM);
+
+		// So the nodal values are just these functions evaluated at nodes, where for the
+		// canonical prism, we have:
+		double uvw[][3] = {
+				{ 0, 0, 0 }, // 0
+				{ 1, 0, 0 }, // 1
+				{ 0, 1, 0 }, // 2
+				{ 0, 0, 1 }, // 3
+				{ 1, 0, 1 }, // 4
+				{ 0, 1, 1 }, // 5
+				{ 1. / 3, 0, 0 }, // 6
+				{ 2. / 3, 0, 0 }, // 7
+				{ 2. / 3, 1. / 3, 0 }, // 8
+				{ 1. / 3, 2. / 3, 0 }, // 9
+				{ 0, 2. / 3, 0 }, // 10
+				{ 0, 1. / 3, 0 }, // 11
+				{ 0, 0, 1. / 3 }, // 12
+				{ 0, 0, 2. / 3 }, // 13
+				{ 1, 0, 1. / 3 }, // 14
+				{ 1, 0, 2. / 3 }, // 15
+				{ 0, 1, 1. / 3 }, // 16
+				{ 0, 1, 2. / 3 }, // 17
+				{ 1. / 3, 0, 1 }, // 18
+				{ 2. / 3, 0, 1 }, // 19
+				{ 2. / 3, 1. / 3, 1 }, // 20
+				{ 1. / 3, 2. / 3, 1 }, // 21
+				{ 0, 2. / 3, 1 }, // 22
+				{ 0, 1. / 3, 1 }, // 23
+				{ 1. / 3, 1. / 3, 0 }, // 24
+				{ 1. / 3, 0, 1. / 3 }, // 25
+				{ 2. / 3, 0, 1. / 3 }, // 26
+				{ 2. / 3, 0, 2. / 3 }, // 27
+				{ 1. / 3, 0, 2. / 3 }, // 28
+				{ 2. / 3, 1. / 3, 1. / 3 }, // 29
+				{ 1. / 3, 2. / 3, 1. / 3 }, // 30
+				{ 1. / 3, 2. / 3, 2. / 3 }, // 31
+				{ 2. / 3, 1. / 3, 2. / 3 }, // 32
+				{ 0, 2. / 3, 1. / 3 }, // 33
+				{ 0, 1. / 3, 1. / 3 }, // 34
+				{ 0, 1. / 3, 2. / 3 }, // 35
+				{ 0, 2. / 3, 2. / 3 }, // 36
+				{ 1. / 3, 1. / 3, 1 }, // 37
+				{ 1. / 3, 1. / 3, 1. / 3 }, // 38
+				{ 1. / 3, 1. / 3, 2. / 3 } // 39
+				};
+
+		double xyz[40][3] = { 0 };
+
+		// Now the nodal values, by simple functional evaluation.
+		for (int ii = 0; ii < 40; ii++) {
+			cubicXYZ(uvw[ii], xyz[ii]);
+		}
+		LCPM.setNodalValues(xyz);
+		LCPM.setModalValues();
+
+		double testUVW[] = { 1. / M_PI, 1. / M_E, 0.5 * (1 - 1. / M_PI - 1. / M_E) };
+		double LCPMxyz[3], funcxyz[3];
+		cubicXYZ(testUVW, funcxyz);
+		LCPM.computeTransformedCoords(testUVW, LCPMxyz);
+		BOOST_CHECK_CLOSE(LCPMxyz[0], funcxyz[0], 1.e-8);
+		BOOST_CHECK_CLOSE(LCPMxyz[1], funcxyz[1], 1.e-8);
+		BOOST_CHECK_CLOSE(LCPMxyz[2], funcxyz[2], 1.e-8);
+
+		for (int ii = 0; ii < 40; ii++) {
+			LCPM.computeTransformedCoords(uvw[ii], LCPMxyz);
+//			printf("%d\n", ii);
+			BOOST_CHECK_CLOSE(LCPMxyz[0], xyz[ii][0], 1.e-8);
+			BOOST_CHECK_CLOSE(LCPMxyz[1], xyz[ii][1], 1.e-8);
+			BOOST_CHECK_CLOSE(LCPMxyz[2], xyz[ii][2], 1.e-8);
+		}
+	}
+
+	BOOST_AUTO_TEST_CASE(CubicHex) {
+		printf("Testing cubic hex mapping\n");
+		CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
+		LagrangeCubicHexMapping LCHM(&CM);
+
+		// So the nodal values are just these functions evaluated at nodes, where for the
+		// canonical pyramid, we have:
+		double uvw[][3] = {
+				// Bottom layer
+				{ 0, 0, 0 }, // 0
+				{ 1, 0, 0 }, // 1
+				{ 1, 1, 0 }, // 2
+				{ 0, 1, 0 }, // 3
+				{ 0, 0, 1 }, // 4
+				{ 1, 0, 1 }, // 5
+				{ 1, 1, 1 }, // 6
+				{ 0, 1, 1 }, // 7
+				{ 1. / 3, 0, 0 }, // 8
+				{ 2. / 3, 0, 0 }, // 9
+				{ 1, 1. / 3, 0 }, // 10
+				{ 1, 2. / 3, 0 }, // 11
+				{ 2. / 3, 1, 0 }, // 12
+				{ 1. / 3, 1, 0 }, // 13
+				{ 0, 2. / 3, 0 }, // 14
+				{ 0, 1. / 3, 0 }, // 15
+				{ 0, 0, 1. / 3 }, // 16
+				{ 0, 0, 2. / 3 }, // 17
+				{ 1, 0, 1. / 3 }, // 18
+				{ 1, 0, 2. / 3 }, // 19
+				{ 1, 1, 1. / 3 }, // 20
+				{ 1, 1, 2. / 3 }, // 21
+				{ 0, 1, 1. / 3 }, // 22
+				{ 0, 1, 2. / 3 }, // 23
+				{ 1. / 3, 0, 1 }, // 24
+				{ 2. / 3, 0, 1 }, // 25
+				{ 1, 1. / 3, 1 }, // 26
+				{ 1, 2. / 3, 1 }, // 27
+				{ 2. / 3, 1, 1 }, // 28
+				{ 1. / 3, 1, 1 }, // 29
+				{ 0, 2. / 3, 1 }, // 30
+				{ 0, 1. / 3, 1 }, // 31
+				{ 1. / 3, 1. / 3, 0 }, // 32
+				{ 2. / 3, 1. / 3, 0 }, // 33
+				{ 2. / 3, 2. / 3, 0 }, // 34
+				{ 1. / 3, 2. / 3, 0 }, // 35
+				{ 1. / 3, 0, 1. / 3 }, // 36
+				{ 2. / 3, 0, 1. / 3 }, // 37
+				{ 2. / 3, 0, 2. / 3 }, // 38
+				{ 1. / 3, 0, 2. / 3 }, // 39
+				{ 1, 1. / 3, 1. / 3 }, // 40
+				{ 1, 2. / 3, 1. / 3 }, // 41
+				{ 1, 2. / 3, 2. / 3 }, // 42
+				{ 1, 1. / 3, 2. / 3 }, // 43
+				{ 2. / 3, 1, 1. / 3 }, // 44
+				{ 1. / 3, 1, 1. / 3 }, // 45
+				{ 1. / 3, 1, 2. / 3 }, // 46
+				{ 2. / 3, 1, 2. / 3 }, // 47
+				{ 0, 2. / 3, 1. / 3 }, // 48
+				{ 0, 1. / 3, 1. / 3 }, // 49
+				{ 0, 1. / 3, 2. / 3 }, // 50
+				{ 0, 2. / 3, 2. / 3 }, // 51
+				{ 1. / 3, 1. / 3, 1 }, // 52
+				{ 2. / 3, 1. / 3, 1 }, // 53
+				{ 2. / 3, 2. / 3, 1 }, // 54
+				{ 1. / 3, 2. / 3, 1 }, // 55
+				{ 1. / 3, 1. / 3, 1. / 3 }, // 56
+				{ 2. / 3, 1. / 3, 1. / 3 }, // 57
+				{ 2. / 3, 2. / 3, 1. / 3 }, // 58
+				{ 1. / 3, 2. / 3, 1. / 3 }, // 59
+				{ 1. / 3, 1. / 3, 2. / 3 }, // 60
+				{ 2. / 3, 1. / 3, 2. / 3 }, // 61
+				{ 2. / 3, 2. / 3, 2. / 3 }, // 62
+				{ 1. / 3, 2. / 3, 2. / 3 } // 63
+				};
+
+		double xyz[64][3] = { 0 };
+
+		// Now the nodal values, by simple functional evaluation.
+		for (int ii = 0; ii < 64; ii++) {
+			cubicXYZ(uvw[ii], xyz[ii]);
+		}
+		LCHM.setNodalValues(xyz);
+		LCHM.setModalValues();
+
+		double testUVW[] = { 1. / M_PI, 1. / M_E, 0.5 * (1 - 1. / M_PI - 1. / M_E) };
+		double LCHMxyz[3], funcxyz[3];
+		cubicXYZ(testUVW, funcxyz);
+		LCHM.computeTransformedCoords(testUVW, LCHMxyz);
+		BOOST_CHECK_CLOSE(LCHMxyz[0], funcxyz[0], 1.e-8);
+		BOOST_CHECK_CLOSE(LCHMxyz[1], funcxyz[1], 1.e-8);
+		BOOST_CHECK_CLOSE(LCHMxyz[2], funcxyz[2], 1.e-8);
+
+		for (int ii = 0; ii < 64; ii++) {
+			LCHM.computeTransformedCoords(uvw[ii], LCHMxyz);
+//			printf("%d\n", ii);
+			BOOST_CHECK_CLOSE(LCHMxyz[0], xyz[ii][0], 1.e-8);
+			BOOST_CHECK_CLOSE(LCHMxyz[1], xyz[ii][1], 1.e-8);
+			BOOST_CHECK_CLOSE(LCHMxyz[2], xyz[ii][2], 1.e-8);
 		}
 	}
 	BOOST_AUTO_TEST_SUITE_END()

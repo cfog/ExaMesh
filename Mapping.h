@@ -138,8 +138,6 @@ public:
 
 class LagrangeMapping: public Mapping {
 	int m_numValues;
-	virtual double computeBasisFunction(const int whichFunc,
-			const double uvw[3]) const = 0;
 	virtual void setModalValues() = 0;
 protected:
 	double (*m_nodalValues)[3];
@@ -150,7 +148,7 @@ public:
 	// setNodalValues is public for test purposes only.
 	void setNodalValues(double inputValues[][3]);
 	virtual void computeTransformedCoords(const double uvw[3],
-			double xyz[3]) const;
+			double xyz[3]) const = 0;
 };
 
 class LagrangeCubicMapping: public LagrangeMapping {
@@ -177,8 +175,6 @@ public:
 			double xyz[3]) const;
 
 	// Public for testing purposes
-	virtual double computeBasisFunction(const int whichFunc,
-			const double uvw[3]) const;
 	void setModalValues();
 };
 
@@ -197,13 +193,55 @@ public:
 	virtual ~LagrangeCubicPyramidMapping() {
 	}
 	// Public for testing purposes
-	virtual double computeBasisFunction(const int whichFunc,
-			const double uvw[3]) const;
 	void setModalValues();
 	virtual void computeTransformedCoords(const double uvw[3],
 			double xyz[3]) const;
 
 };
 
+class LagrangeCubicPrismMapping: public LagrangeCubicMapping {
+	double C0[3], Cu0[3], Cv0[3], Cuu0[3], Cuv0[3], Cvv0[3], Cuuu0[3], Cuuv0[3],
+			Cuvv0[3], Cvvv0[3];
+	double C1[3], Cu1[3], Cv1[3], Cuu1[3], Cuv1[3], Cvv1[3], Cuuu1[3], Cuuv1[3],
+			Cuvv1[3], Cvvv1[3];
+	double C2[3], Cu2[3], Cv2[3], Cuu2[3], Cuv2[3], Cvv2[3], Cuuu2[3], Cuuv2[3],
+			Cuvv2[3], Cvvv2[3];
+	double C3[3], Cu3[3], Cv3[3], Cuu3[3], Cuv3[3], Cvv3[3], Cuuu3[3], Cuuv3[3],
+			Cuvv3[3], Cvvv3[3];
+public:
+	LagrangeCubicPrismMapping(const ExaMesh* const EM) :
+			LagrangeCubicMapping(EM, 40) {
+	}
+	virtual ~LagrangeCubicPrismMapping() {
+	}
+	// Public for testing purposes
+	void setModalValues();
+	virtual void computeTransformedCoords(const double uvw[3],
+			double xyz[3]) const;
+
+};
+
+class LagrangeCubicHexMapping: public LagrangeCubicMapping {
+	double C[3], Cu[3], Cv[3], Cw[3], Cu2[3], Cuv[3], Cv2[3], Cvw[3], Cw2[3],
+			Cuw[3], Cu3[3], Cv3[3], Cw3[3], Cu2v[3], Cuv2[3], Cv2w[3], Cvw2[3],
+			Cu2w[3], Cuw2[3], Cuvw[3], Cu3v[3], Cu3w[3], Cuv3[3], Cv3w[3], Cuw3[3],
+			Cvw3[3], Cu2v2[3], Cu2w2[3], Cv2w2[3], Cu2vw[3], Cuv2w[3], Cuvw2[3],
+			Cu3vw[3], Cuv3w[3], Cuvw3[3], Cu3v2[3], Cu3w2[3], Cu2v3[3], Cv3w2[3],
+			Cu2w3[3], Cv2w3[3], Cu2v2w[3], Cu2vw2[3], Cuv2w2[3], Cu3v3[3], Cu3w3[3],
+			Cv3w3[3], Cu3v2w[3], Cu3vw2[3], Cu2v3w[3], Cuv3w2[3], Cu2vw3[3],
+			Cuv2w3[3], Cu2v2w2[3], Cu3v2w2[3], Cu2v3w2[3], Cu2v2w3[3], Cu3v3w[3],
+			Cu3vw3[3], Cuv3w3[3], Cu3v3w2[3], Cu3v2w3[3], Cu2v3w3[3], Cu3v3w3[3];
+public:
+	LagrangeCubicHexMapping(const ExaMesh* const EM) :
+			LagrangeCubicMapping(EM, 64) {
+	}
+	virtual ~LagrangeCubicHexMapping() {
+	}
+	// Public for testing purposes
+	void setModalValues();
+	virtual void computeTransformedCoords(const double uvw[3],
+			double xyz[3]) const;
+
+};
 
 #endif /* SRC_MAPPING_H_ */
