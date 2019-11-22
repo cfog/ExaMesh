@@ -641,7 +641,6 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	// Now, finally, the part bdry connectivity.
 	// TODO: Currently, there's nothing in the data structure that marks which
 	// are part bdry faces.
-#warning Need to extract the face nodes from the cells
 	for (auto tri : partBdryTris) {
 		emInt cellInd = tri.volElement;
 		emInt conn[10];
@@ -729,10 +728,126 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 			}
 			case PYRA_30: {
 				emInt *elemConn = m_Pyr30Conn[cellInd];
+				if (tri.corners[0] == elemConn[0]) {
+					assert(tri.corners[1] == elemConn[1]);
+					assert(tri.corners[2] == elemConn[4]);
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[4];
+					// Between 0 and 1
+					conn[3] = elemConn[5];
+					conn[4] = elemConn[6];
+					// Between 1 and 4
+					conn[5] = elemConn[15];
+					conn[6] = elemConn[16];
+					// Between 4 and 0
+					conn[7] = elemConn[14];
+					conn[8] = elemConn[13];
+					// On face
+					conn[9] = elemConn[25];
+				}
+				else if (tri.corners[0] == elemConn[1]) {
+					assert(tri.corners[1] == elemConn[2]);
+					assert(tri.corners[2] == elemConn[4]);
+					conn[0] = elemConn[1];
+					conn[1] = elemConn[2];
+					conn[2] = elemConn[4];
+					// Between 1 and 2
+					conn[3] = elemConn[7];
+					conn[4] = elemConn[8];
+					// Between 2 and 4
+					conn[5] = elemConn[17];
+					conn[6] = elemConn[18];
+					// Between 4 and 1
+					conn[7] = elemConn[16];
+					conn[8] = elemConn[15];
+					// On face
+					conn[9] = elemConn[26];
+				}
+				else if (tri.corners[0] == elemConn[2]) {
+					assert(tri.corners[1] == elemConn[3]);
+					assert(tri.corners[2] == elemConn[4]);
+					conn[0] = elemConn[2];
+					conn[1] = elemConn[3];
+					conn[2] = elemConn[4];
+					// Between 2 and 3
+					conn[3] = elemConn[9];
+					conn[4] = elemConn[10];
+					// Between 3 and 4
+					conn[5] = elemConn[19];
+					conn[6] = elemConn[20];
+					// Between 4 and 1
+					conn[7] = elemConn[18];
+					conn[8] = elemConn[17];
+					// On face
+					conn[9] = elemConn[27];
+				}
+				else if (tri.corners[0] == elemConn[3]) {
+					assert(tri.corners[1] == elemConn[0]);
+					assert(tri.corners[2] == elemConn[4]);
+					conn[0] = elemConn[3];
+					conn[1] = elemConn[0];
+					conn[2] = elemConn[4];
+					// Between 3 and 0
+					conn[3] = elemConn[13];
+					conn[4] = elemConn[14];
+					// Between 0 and 4
+					conn[5] = elemConn[17];
+					conn[6] = elemConn[18];
+					// Between 4 and 3
+					conn[7] = elemConn[20];
+					conn[8] = elemConn[19];
+					// On face
+					conn[9] = elemConn[28];
+				}
+				else {
+					// Should never get here
+					assert(0);
+				}
 				break;
 			}
 			case PENTA_40: {
 				emInt *elemConn = m_Prism40Conn[cellInd];
+				if (tri.corners[0] == elemConn[0]) {
+					assert(tri.corners[1] == elemConn[1]);
+					assert(tri.corners[2] == elemConn[2]);
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[2];
+					// Between 0 and 1
+					conn[3] = elemConn[6];
+					conn[4] = elemConn[7];
+					// Between 1 and 2
+					conn[5] = elemConn[8];
+					conn[6] = elemConn[9];
+					// Between 2 and 0
+					conn[7] = elemConn[10];
+					conn[8] = elemConn[11];
+					// On face
+					conn[9] = elemConn[24];
+				}
+				else if (tri.corners[0] == elemConn[3]) {
+					assert(tri.corners[1] == elemConn[4]);
+					assert(tri.corners[2] == elemConn[5]);
+					conn[0] = elemConn[3];
+					conn[1] = elemConn[4];
+					conn[2] = elemConn[5];
+					// Between 3 and 4
+					conn[3] = elemConn[18];
+					conn[4] = elemConn[19];
+					// Between 4 and 5
+					conn[5] = elemConn[20];
+					conn[6] = elemConn[21];
+					// Between 5 and 3
+					conn[7] = elemConn[22];
+					conn[8] = elemConn[23];
+					// On face
+					conn[9] = elemConn[37];
+				}
+				else {
+					// Should never get here
+					assert(0);
+				}
 				break;
 			}
 			default: {
@@ -746,9 +861,320 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	}
 
 	for (auto quad : partBdryQuads) {
-		emInt conn[] = { newIndices[quad.corners[0]], newIndices[quad.corners[1]],
-											newIndices[quad.corners[2]], newIndices[quad.corners[3]] };
-		UCM->addBdryQuad(conn);
+		emInt cellInd = quad.volElement;
+		emInt conn[16];
+		switch (quad.volElementType) {
+			case PYRA_30: {
+				// Only one quad here, so it had better be the right one.
+				emInt *elemConn = m_Pyr30Conn[cellInd];
+				assert(quad.corners[0] == elemConn[0]);
+				assert(quad.corners[1] == elemConn[1]);
+				assert(quad.corners[2] == elemConn[2]);
+				assert(quad.corners[3] == elemConn[3]);
+
+				conn[0] = elemConn[0];
+				conn[1] = elemConn[1];
+				conn[2] = elemConn[2];
+				conn[3] = elemConn[3];
+				// Between 0 and 1
+				conn[4] = elemConn[5];
+				conn[5] = elemConn[6];
+				// Between 1 and 2
+				conn[6] = elemConn[7];
+				conn[7] = elemConn[8];
+				// Between 2 and 3
+				conn[8] = elemConn[9];
+				conn[9] = elemConn[10];
+				// Between 3 and 0
+				conn[10] = elemConn[11];
+				conn[11] = elemConn[12];
+				// On face
+				conn[12] = elemConn[21];
+				conn[13] = elemConn[22];
+				conn[14] = elemConn[23];
+				conn[15] = elemConn[24];
+				break;
+			}
+			case PENTA_40: {
+				emInt *elemConn = m_Prism40Conn[cellInd];
+
+				// Three possible quads: 0143 1254 2035
+				if (quad.corners[0] == elemConn[0]) {
+					// 0143
+					assert(quad.corners[1] == elemConn[1]);
+					assert(quad.corners[2] == elemConn[4]);
+					assert(quad.corners[3] == elemConn[3]);
+
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[4];
+					conn[3] = elemConn[3];
+					// Between 0 and 1
+					conn[4] = elemConn[6];
+					conn[5] = elemConn[7];
+					// Between 1 and 4
+					conn[6] = elemConn[14];
+					conn[7] = elemConn[15];
+					// Between 4 and 3
+					conn[8] = elemConn[19];
+					conn[9] = elemConn[18];
+					// Between 3 and 0
+					conn[10] = elemConn[13];
+					conn[11] = elemConn[12];
+					// On face
+					conn[12] = elemConn[25];
+					conn[13] = elemConn[26];
+					conn[14] = elemConn[27];
+					conn[15] = elemConn[28];
+				}
+				else if (quad.corners[0] == elemConn[1]) {
+					// 1254
+					assert(quad.corners[1] == elemConn[2]);
+					assert(quad.corners[2] == elemConn[5]);
+					assert(quad.corners[3] == elemConn[4]);
+
+					conn[0] = elemConn[1];
+					conn[1] = elemConn[2];
+					conn[2] = elemConn[5];
+					conn[3] = elemConn[4];
+					// Between 1 and 2
+					conn[4] = elemConn[8];
+					conn[5] = elemConn[9];
+					// Between 2 and 5
+					conn[6] = elemConn[16];
+					conn[7] = elemConn[17];
+					// Between 5 and 4
+					conn[8] = elemConn[21];
+					conn[9] = elemConn[20];
+					// Between 4 and 1
+					conn[10] = elemConn[15];
+					conn[11] = elemConn[14];
+					// On face
+					conn[12] = elemConn[29];
+					conn[13] = elemConn[30];
+					conn[14] = elemConn[31];
+					conn[15] = elemConn[32];
+				}
+				else if (quad.corners[0] == elemConn[2]) {
+					// 2035
+					assert(quad.corners[1] == elemConn[0]);
+					assert(quad.corners[2] == elemConn[3]);
+					assert(quad.corners[3] == elemConn[5]);
+
+					conn[0] = elemConn[2];
+					conn[1] = elemConn[0];
+					conn[2] = elemConn[3];
+					conn[3] = elemConn[5];
+					// Between 2 and 0
+					conn[4] = elemConn[10];
+					conn[5] = elemConn[11];
+					// Between 0 and 3
+					conn[6] = elemConn[12];
+					conn[7] = elemConn[13];
+					// Between 3 and 5
+					conn[8] = elemConn[23];
+					conn[9] = elemConn[22];
+					// Between 5 and 0
+					conn[10] = elemConn[17];
+					conn[11] = elemConn[16];
+					// On face
+					conn[12] = elemConn[33];
+					conn[13] = elemConn[34];
+					conn[14] = elemConn[35];
+					conn[15] = elemConn[36];
+				}
+				else {
+					// Should never get here
+					assert(0);
+				}
+				break;
+			}
+			case HEXA_64: {
+				emInt *elemConn = m_Hex64Conn[cellInd];
+
+				// Six quads: 0154 1265 2376 3047 0123 4567
+				if (quad.corners[2] == elemConn[2]) {
+					// Bottom: 0123
+					assert(quad.corners[0] == elemConn[0]);
+					assert(quad.corners[1] == elemConn[1]);
+					assert(quad.corners[3] == elemConn[3]);
+
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[2];
+					conn[3] = elemConn[3];
+					// Between 0 and 1
+					conn[4] = elemConn[8];
+					conn[5] = elemConn[9];
+					// Between 1 and 2
+					conn[6] = elemConn[10];
+					conn[7] = elemConn[11];
+					// Between 2 and 3
+					conn[8] = elemConn[12];
+					conn[9] = elemConn[13];
+					// Between 3 and 0
+					conn[10] = elemConn[14];
+					conn[11] = elemConn[15];
+					// On face
+					conn[12] = elemConn[32];
+					conn[13] = elemConn[33];
+					conn[14] = elemConn[34];
+					conn[15] = elemConn[35];
+				}
+				else if (quad.corners[0] == elemConn[4]) {
+					// Top: 4567
+					assert(quad.corners[1] == elemConn[5]);
+					assert(quad.corners[2] == elemConn[6]);
+					assert(quad.corners[3] == elemConn[7]);
+
+					conn[0] = elemConn[4];
+					conn[1] = elemConn[5];
+					conn[2] = elemConn[6];
+					conn[3] = elemConn[7];
+					// Between 4 and 5
+					conn[4] = elemConn[24];
+					conn[5] = elemConn[25];
+					// Between 5 and 6
+					conn[6] = elemConn[26];
+					conn[7] = elemConn[27];
+					// Between 6 and 7
+					conn[8] = elemConn[28];
+					conn[9] = elemConn[29];
+					// Between 7 and 4
+					conn[10] = elemConn[30];
+					conn[11] = elemConn[31];
+					// On face
+					conn[12] = elemConn[52];
+					conn[13] = elemConn[53];
+					conn[14] = elemConn[54];
+					conn[15] = elemConn[55];
+				}
+				else if (quad.corners[0] == elemConn[0]) {
+					// Side: 0154
+					assert(quad.corners[1] == elemConn[1]);
+					assert(quad.corners[2] == elemConn[5]);
+					assert(quad.corners[3] == elemConn[4]);
+
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[5];
+					conn[3] = elemConn[4];
+					// Between 0 and 1
+					conn[4] = elemConn[8];
+					conn[5] = elemConn[9];
+					// Between 1 and 5
+					conn[6] = elemConn[18];
+					conn[7] = elemConn[19];
+					// Between 5 and 4
+					conn[8] = elemConn[25];
+					conn[9] = elemConn[24];
+					// Between 4 and 1
+					conn[10] = elemConn[17];
+					conn[11] = elemConn[16];
+					// On face
+					conn[12] = elemConn[36];
+					conn[13] = elemConn[37];
+					conn[14] = elemConn[38];
+					conn[15] = elemConn[39];
+				}
+				else if (quad.corners[0] == elemConn[1]) {
+					// Side: 1254
+					assert(quad.corners[1] == elemConn[2]);
+					assert(quad.corners[2] == elemConn[6]);
+					assert(quad.corners[3] == elemConn[5]);
+
+					conn[0] = elemConn[1];
+					conn[1] = elemConn[2];
+					conn[2] = elemConn[6];
+					conn[3] = elemConn[5];
+					// Between 1 and 2
+					conn[4] = elemConn[10];
+					conn[5] = elemConn[11];
+					// Between 2 and 6
+					conn[6] = elemConn[20];
+					conn[7] = elemConn[21];
+					// Between 6 and 5
+					conn[8] = elemConn[27];
+					conn[9] = elemConn[26];
+					// Between 5 and 1
+					conn[10] = elemConn[19];
+					conn[11] = elemConn[18];
+					// On face
+					conn[12] = elemConn[40];
+					conn[13] = elemConn[41];
+					conn[14] = elemConn[42];
+					conn[15] = elemConn[43];
+				}
+				else if (quad.corners[0] == elemConn[2]) {
+					// Side: 2376
+					assert(quad.corners[1] == elemConn[3]);
+					assert(quad.corners[2] == elemConn[7]);
+					assert(quad.corners[3] == elemConn[6]);
+
+					conn[0] = elemConn[2];
+					conn[1] = elemConn[3];
+					conn[2] = elemConn[7];
+					conn[3] = elemConn[6];
+					// Between 2 and 3
+					conn[4] = elemConn[12];
+					conn[5] = elemConn[13];
+					// Between 3 and 7
+					conn[6] = elemConn[22];
+					conn[7] = elemConn[23];
+					// Between 7 and 6
+					conn[8] = elemConn[29];
+					conn[9] = elemConn[28];
+					// Between 6 and 2
+					conn[10] = elemConn[21];
+					conn[11] = elemConn[20];
+					// On face
+					conn[12] = elemConn[44];
+					conn[13] = elemConn[45];
+					conn[14] = elemConn[46];
+					conn[15] = elemConn[47];
+				}
+				else if (quad.corners[0] == elemConn[3]) {
+					// Side: 3047
+					assert(quad.corners[1] == elemConn[0]);
+					assert(quad.corners[2] == elemConn[4]);
+					assert(quad.corners[3] == elemConn[7]);
+
+					conn[0] = elemConn[3];
+					conn[1] = elemConn[0];
+					conn[2] = elemConn[4];
+					conn[3] = elemConn[7];
+					// Between 3 and 0
+					conn[4] = elemConn[14];
+					conn[5] = elemConn[15];
+					// Between 0 and 4
+					conn[6] = elemConn[16];
+					conn[7] = elemConn[17];
+					// Between 4 and 7
+					conn[8] = elemConn[31];
+					conn[9] = elemConn[30];
+					// Between 7 and 3
+					conn[10] = elemConn[23];
+					conn[11] = elemConn[22];
+					// On face
+					conn[12] = elemConn[48];
+					conn[13] = elemConn[49];
+					conn[14] = elemConn[50];
+					conn[15] = elemConn[51];
+				}
+				else {
+					// Should never get here
+					assert(0);
+				}
+
+				break;
+			}
+			default:
+				// Should never get here.
+				assert(0);
+		}
+		emInt newConn[10];
+		remapIndices(10, newIndices, conn, newConn);
+		UCM->addBdryQuad(newConn);
 	}
 
 	return UCM;

@@ -230,13 +230,13 @@ void LagrangeCubicPyramidMapping::computeTransformedCoords(const double uvw[3],
 	double u = uvw[0];
 	double v = uvw[1];
 	const double& w = uvw[2];
+	assert(u >= 0 && v >= 0 && w >= 0 && w <= 1);
 
 	// Now we need to re-map u and v.  The rest of examesh assumes that 0 <= u,v, <= (1-w),
 	// whereas this routine uses basis functions that assume -(1-w) <= u,v <= (1-w), so
 	// we need to recompute u and v.
 	u = 2 * u - (1 - w);
 	v = 2 * v - (1 - w);
-	assert(u >= 0 && v >= 0 && w >= 0 && w <= 1);
 	assert(fabs(u) <= (1-w));
 	assert(fabs(v) <= (1-w));
 

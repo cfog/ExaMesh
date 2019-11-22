@@ -917,7 +917,7 @@ BOOST_AUTO_TEST_SUITE(LagrangeCubicMappingTest)
 		LCPM.setNodalValues(xyz);
 		LCPM.setModalValues();
 
-		double testUVW[] = { 1. / M_PI, 1. / M_E, 0.5 * (1 - 1. / M_PI - 1. / M_E) };
+		double testUVW[] = { 1. / M_PI, 1. / M_E, 2 * (1 - 1. / M_PI - 1. / M_E) };
 		double LCPMxyz[3], funcxyz[3];
 		cubicXYZ(testUVW, funcxyz);
 		testUVW[0] = (testUVW[0] + (1 - testUVW[2])) / 2;

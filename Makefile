@@ -24,6 +24,7 @@ MESHIOLIB=-L/home/cfog/GMGW1/src -Wl,-rpath=/home/cfog/GMGW1/src -lMeshIO
 EXAMESHLIB=-L$(THISDIR) -lexamesh -Wl,-rpath=$(THISDIR)
 CGNSLIB=-lcgns -lhdf5_serial -lsz
 LDFLAGS=$(EXAMESHLIB) $(MESHIOLIB) $(CGNSLIB)
+LIBRARY=libexamesh.so
 
 .cxx.o:
 	echo Compiling $*.cxx
@@ -35,19 +36,19 @@ LDFLAGS=$(EXAMESHLIB) $(MESHIOLIB) $(CGNSLIB)
 all default: $(OBJECTS) library test-exa refine
 	./test-exa
 
-library: $(LIBOBJECTS)
+library $(LIBRARY) : $(LIBOBJECTS)
 	-$(CXX_COMPILE) -shared -o libexamesh.so $(EXTRAFLAGS) $(LIBOBJECTS)
 
-refine: $(CXXOBJECTS) library
+refine: $(CXXOBJECTS) $(LIBRARY)
 	echo Linking refine
 	-$(CXX_LINK) -o refine $(CXXOBJECTS) $(LDFLAGS) 
 	echo " "
 
-test-exa.o: test-exa.cxx
+test-exa.o: test-exa.cxx 
 	echo Compiling $*.cxx
 	$(CXX_COMPILE) -DBOOST_TEST_DYN_LINK -Wall -g -c test-exa.cxx 
 
-test-exa: test-exa.o libexamesh.so
+test-exa: test-exa.o $(LIBRARY)
 	$(CXX_LINK) -o test-exa test-exa.o $(LDFLAGS) -lboost_unit_test_framework
 
 clean:
@@ -75,6 +76,10 @@ ExaMesh.o: ExaMesh.h Mapping.h exa-defs.h Part.h GeomUtils.h UMesh.h
 ExaMesh.o: CubicMesh.h
 HexDivider.o: HexDivider.h CellDivider.h ExaMesh.h Mapping.h exa-defs.h
 HexDivider.o: Part.h UMesh.h CubicMesh.h
+LagrangeCubicHex.o: Mapping.h exa-defs.h
+LagrangeCubicPrism.o: Mapping.h exa-defs.h
+LagrangeCubicPyr.o: Mapping.h exa-defs.h
+LagrangeCubicTet.o: Mapping.h exa-defs.h
 LagrangeMapping.o: ExaMesh.h Mapping.h exa-defs.h Part.h
 LengthScaleMapping.o: ExaMesh.h Mapping.h exa-defs.h Part.h
 Part.o: exa-defs.h Part.h
