@@ -569,6 +569,12 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		if (isCornerNode[ii]) nVertNodes++;
 	}
 
+//	emInt nBdryVerts = std::count(isBdryVert.begin(), isBdryVert.end(), true);
+//	emInt nVertNodes = std::count(isCornerNode.begin(), isCornerNode.end(), true);
+//	emInt nNodes = std::count(isVertUsed.begin(), isVertUsed.end(), true);
+//	printf("%d %d\n", nBdryVerts, nBdryVerts2);
+//	assert(nBdryVerts == nBdryVerts2);
+
 	// Now set up the data structures for the new coarse UMesh
 	auto UCM = std::make_unique<CubicMesh>(nNodes, nBdryVerts,
 																					nTris + nPartBdryTris,
@@ -579,7 +585,8 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	// Store the vertices, while keeping a mapping from the full list of verts
 	// to the restricted list so the connectivity can be copied properly.
 	std::vector<emInt> newIndices(numVerts(), EMINT_MAX);
-	for (emInt ii = 0; ii < numVerts(); ii++) {
+	emInt nVerts = numVerts();
+	for (emInt ii = 0; ii < nVerts; ii++) {
 		if (isVertUsed[ii]) {
 			double coords[3];
 			getCoords(ii, coords);

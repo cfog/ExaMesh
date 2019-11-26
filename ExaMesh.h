@@ -103,6 +103,7 @@ public:
 	virtual void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
 			double& zmax) const = 0;
+	void prettyPrintCellCount(size_t cells, const char* prefix) const;
 
 protected:
 	void addCellToPartitionData(const emInt* verts, emInt nPts, emInt ii,

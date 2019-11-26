@@ -334,6 +334,23 @@ void ExaMesh::printMeshSizeStats() {
 				<< " total cells " << endl;
 }
 
+void ExaMesh::prettyPrintCellCount(size_t cells, const char* prefix) const {
+	if (cells == 0) return;
+	fprintf(stderr, "%s = ", prefix);
+	if (cells >> 30) {
+		fprintf(stderr, "%.2f B\n", cells / 1.e9);
+	}
+	else if (cells >> 20) {
+		fprintf(stderr, "%.2f M\n", cells / 1.e6);
+	}
+	else if (cells >> 10) {
+		fprintf(stderr, "%.2f K\n", cells / 1.e3);
+	}
+	else {
+		fprintf(stderr, "%lu \n", cells);
+	}
+}
+
 void ExaMesh::refineForParallel(const emInt numDivs,
 		const emInt maxCellsPerPart) const {
 	// Find size of output mesh
@@ -356,29 +373,32 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 	double totalRefineTime = 0;
 	double totalExtractTime = 0;
 	size_t totalCells = 0;
+	size_t totalTets = 0, totalPyrs = 0, totalPrisms = 0, totalHexes = 0;
 	size_t totalFileSize = 0;
 	struct RefineStats RS;
 	double totalTime = partitionTime;
 	emInt ii;
-//#pragma omp parallel for schedule(dynamic) reduction(+: totalRefineTime, totalCells) num_threads(4)
+//#pragma omp parallel for schedule(dynamic) reduction(+: totalRefineTime, totalExtractTime, totalTets, totalPyrs, totalPrisms, totalHexes, totalCells) num_threads(8)
 	for (ii = 0; ii < nParts; ii++) {
 		start = exaTime();
 //		char filename[100];
 //		sprintf(filename, "/tmp/submesh%03d.vtk", ii);
 //		writeVTKFile(filename);
-		printf(
-				"Part %3d: cells %5d-%5d.  (%6.3f,%6.3f,%6.3f) (%6.3f,%6.3f,%6.3f)\n",
-				ii, parts[ii].getFirst(), parts[ii].getLast(), parts[ii].getXmin(),
-				parts[ii].getYmin(), parts[ii].getZmin(), parts[ii].getXmax(),
-				parts[ii].getYmax(), parts[ii].getZmax());
+		printf("Part %3d: cells %5d-%5d.\n", ii, parts[ii].getFirst(),
+						parts[ii].getLast());
 		std::unique_ptr<UMesh> pUM = createFineUMesh(numDivs, parts[ii], vecCPD,
 																									RS);
 		totalRefineTime += RS.refineTime;
 		totalExtractTime += RS.extractTime;
 		totalCells += RS.cells;
+		totalTets += pUM->numTets();
+		totalPyrs += pUM->numPyramids();
+		totalPrisms += pUM->numPrisms();
+		totalHexes += pUM->numHexes();
 		totalFileSize += pUM->getFileImageSize();
 		totalTime += exaTime() - start;
-		fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", RS.refineTime);
+		fprintf(stderr, "\nCPU time for refinement = %5.2F seconds\n",
+						RS.refineTime);
 		fprintf(stderr, "                          %5.2F million cells / minute\n",
 						(RS.cells / 1000000.) / (RS.refineTime / 60));
 
@@ -409,18 +429,11 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 		fprintf(stderr, "Total ugrid file size = %lu MB\n", totalFileSize >> 20);
 	}
 
-	if (totalCells >> 30) {
-		fprintf(stderr, "Total cells = %.2f B\n", totalCells / 1.e9);
-	}
-	else if (totalCells >> 20) {
-		fprintf(stderr, "Total cells = %.2f M\n", totalCells / 1.e6);
-	}
-	else if (totalCells >> 10) {
-		fprintf(stderr, "Total cells = %.2f K\n", totalCells / 1.e3);
-	}
-	else {
-		fprintf(stderr, "Total cells = %lu \n", totalCells);
-	}
+	prettyPrintCellCount(totalCells, "Total cells");
+	prettyPrintCellCount(totalTets, "Total tets");
+	prettyPrintCellCount(totalPyrs, "Total pyrs");
+	prettyPrintCellCount(totalPrisms, "Total prisms");
+	prettyPrintCellCount(totalHexes, "Total hexes");
 }
 
 //void ExaMesh::buildFaceCellConnectivity() {

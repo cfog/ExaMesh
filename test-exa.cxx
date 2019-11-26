@@ -593,6 +593,8 @@ BOOST_AUTO_TEST_CASE(MixedN3) {
 	checkExpectedSize(UMOut);
 	bool result = UMOut.writeVTKFile("/tmp/test-exa.vtk");
 	BOOST_CHECK(result);
+	result = UMOut.writeUGridFile("/tmp/test-exa.b8.ugrid");
+	BOOST_CHECK(result);
 }
 
 BOOST_AUTO_TEST_CASE(MixedN5) {
