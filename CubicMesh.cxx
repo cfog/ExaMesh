@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <memory>
+#include <stdlib.h>
 
 #include <cgnslib.h>
 
@@ -329,7 +330,7 @@ void CubicMesh::reorderCubicMesh() {
 	// Clone and re-order the coordinates.  This is an out-of-place
 	// re-ordering, but I'm about to go nuts on memory anyway, so who cares
 	// about the overhead?
-	fprintf(stderr, "Permuting coordinates: x");
+	fprintf(stderr, "Permuting coordinate storage order: x");
 	double *cloneCoords = new double[m_nVerts];
 	std::copy(m_xcoords, m_xcoords + m_nVerts, cloneCoords);
 	for (emInt ii = 0; ii < m_nVerts; ii++) {
@@ -380,7 +381,7 @@ CubicMesh::~CubicMesh() {
 	delete[] m_Hex64Conn;
 }
 
-static void remapIndices(const emInt nPts, const std::vector<emInt>& newIndices,
+static void remapIndices(const emInt nPts, const emInt newIndices[],
 		const emInt* conn, emInt* newConn) {
 	for (emInt jj = 0; jj < nPts; jj++) {
 		newConn[jj] = newIndices[conn[jj]];
@@ -389,6 +390,9 @@ static void remapIndices(const emInt nPts, const std::vector<emInt>& newIndices,
 
 std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		std::vector<CellPartData>& vecCPD) const {
+	CALLGRIND_TOGGLE_COLLECT
+	;
+
 	// Count the number of tris, quads, tets, pyrs, prisms and hexes.
 	const emInt first = P.getFirst();
 	const emInt last = P.getLast();
@@ -399,9 +403,10 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	emInt nTris(0), nQuads(0), nTets(0), nPyrs(0), nPrisms(0), nHexes(0);
 	const emInt *conn;
 
-	std::vector<bool> isVertUsed(numVerts(), false);
-	std::vector<bool> isBdryVert(numVerts(), false);
-	std::vector<bool> isCornerNode(numVerts(), false);
+//	std::vector<bool> isVertUsed(numVerts(), false);
+	bool *isVertUsed = reinterpret_cast<bool*>(calloc(numVerts(), sizeof(bool)));
+	exa_set<emInt> bdryVerts;
+	exa_set<emInt> cornerNodes;
 
 	for (emInt ii = first; ii < last; ii++) {
 		emInt type = vecCPD[ii].getCellType();
@@ -422,12 +427,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				addUniquely(partBdryTris, TFV013);
 				addUniquely(partBdryTris, TFV123);
 				addUniquely(partBdryTris, TFV203);
+//				vertsUsed.insert(conn, conn + 20);
 				for (int jj = 0; jj < 20; jj++) {
 					isVertUsed[conn[jj]] = true;
 				}
-				for (int jj = 0; jj < 4; jj++) {
-					isCornerNode[conn[jj]] = true;
-				}
+				cornerNodes.insert(conn, conn + 4);
 				break;
 			}
 			case PYRA_30: {
@@ -443,12 +447,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				addUniquely(partBdryTris, TFV124);
 				addUniquely(partBdryTris, TFV234);
 				addUniquely(partBdryTris, TFV304);
+//				vertsUsed.insert(conn, conn + 30);
 				for (int jj = 0; jj < 30; jj++) {
 					isVertUsed[conn[jj]] = true;
 				}
-				for (int jj = 0; jj < 5; jj++) {
-					isCornerNode[conn[jj]] = true;
-				}
+				cornerNodes.insert(conn, conn + 5);
 				break;
 			}
 			case PENTA_40: {
@@ -467,12 +470,12 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				addUniquely(partBdryQuads, QFV2035);
 				addUniquely(partBdryTris, TFV012);
 				addUniquely(partBdryTris, TFV345);
+//				vertsUsed.insert(conn, conn + 40);
+
 				for (int jj = 0; jj < 40; jj++) {
 					isVertUsed[conn[jj]] = true;
 				}
-				for (int jj = 0; jj < 6; jj++) {
-					isCornerNode[conn[jj]] = true;
-				}
+				cornerNodes.insert(conn, conn + 6);
 				break;
 			}
 			case HEXA_64: {
@@ -490,12 +493,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				addUniquely(partBdryQuads, QFV3047);
 				addUniquely(partBdryQuads, QFV0123);
 				addUniquely(partBdryQuads, QFV4567);
+//				vertsUsed.insert(conn, conn + 64);
 				for (int jj = 0; jj < 64; jj++) {
 					isVertUsed[conn[jj]] = true;
 				}
-				for (int jj = 0; jj < 8; jj++) {
-					isCornerNode[conn[jj]] = true;
-				}
+				cornerNodes.insert(conn, conn + 8);
 				break;
 			}
 		} // end switch
@@ -517,9 +519,9 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 			// bdry face from slipping through.
 			if (iter != partBdryTris.end()) {
 				partBdryTris.erase(iter);
-				isBdryVert[conn[0]] = true;
-				isBdryVert[conn[1]] = true;
-				isBdryVert[conn[2]] = true;
+				bdryVerts.insert(conn[0]);
+				bdryVerts.insert(conn[1]);
+				bdryVerts.insert(conn[2]);
 				realBdryTris.push_back(ii);
 				nTris++;
 			}
@@ -537,10 +539,10 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 			// bdry face from slipping through.
 			if (iter != partBdryQuads.end()) {
 				partBdryQuads.erase(iter);
-				isBdryVert[conn[0]] = true;
-				isBdryVert[conn[1]] = true;
-				isBdryVert[conn[2]] = true;
-				isBdryVert[conn[3]] = true;
+				bdryVerts.insert(conn[0]);
+				bdryVerts.insert(conn[1]);
+				bdryVerts.insert(conn[2]);
+				bdryVerts.insert(conn[3]);
 				realBdryQuads.push_back(ii);
 				nQuads++;
 			}
@@ -551,29 +553,24 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	emInt nPartBdryQuads = partBdryQuads.size();
 
 	for (auto tri : partBdryTris) {
-		isBdryVert[tri.corners[0]] = true;
-		isBdryVert[tri.corners[1]] = true;
-		isBdryVert[tri.corners[2]] = true;
+		bdryVerts.insert(tri.corners[0]);
+		bdryVerts.insert(tri.corners[1]);
+		bdryVerts.insert(tri.corners[2]);
 	}
 	for (auto quad : partBdryQuads) {
-		isBdryVert[quad.corners[0]] = true;
-		isBdryVert[quad.corners[1]] = true;
-		isBdryVert[quad.corners[2]] = true;
-		isBdryVert[quad.corners[3]] = true;
+		bdryVerts.insert(quad.corners[0]);
+		bdryVerts.insert(quad.corners[1]);
+		bdryVerts.insert(quad.corners[2]);
+		bdryVerts.insert(quad.corners[3]);
 	}
 	emInt nBdryVerts = 0, nNodes = 0;
 	emInt nVertNodes = 0;
-	for (emInt ii = 0; ii < numVerts(); ii++) {
-		if (isBdryVert[ii]) nBdryVerts++;
+	emInt nVerts = numVerts();
+	for (emInt ii = 0; ii < nVerts; ii++) {
 		if (isVertUsed[ii]) nNodes++;
-		if (isCornerNode[ii]) nVertNodes++;
 	}
-
-//	emInt nBdryVerts = std::count(isBdryVert.begin(), isBdryVert.end(), true);
-//	emInt nVertNodes = std::count(isCornerNode.begin(), isCornerNode.end(), true);
-//	emInt nNodes = std::count(isVertUsed.begin(), isVertUsed.end(), true);
-//	printf("%d %d\n", nBdryVerts, nBdryVerts2);
-//	assert(nBdryVerts == nBdryVerts2);
+	nBdryVerts = bdryVerts.size();
+	nVertNodes = cornerNodes.size();
 
 	// Now set up the data structures for the new coarse UMesh
 	auto UCM = std::make_unique<CubicMesh>(nNodes, nBdryVerts,
@@ -584,8 +581,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 
 	// Store the vertices, while keeping a mapping from the full list of verts
 	// to the restricted list so the connectivity can be copied properly.
-	std::vector<emInt> newIndices(numVerts(), EMINT_MAX);
-	emInt nVerts = numVerts();
+	emInt *newIndices = new emInt[nVerts];
 	for (emInt ii = 0; ii < nVerts; ii++) {
 		if (isVertUsed[ii]) {
 			double coords[3];
@@ -596,6 +592,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 			UCM->setLengthScale(newIndices[ii], getLengthScale(ii));
 		}
 	}
+	free(isVertUsed);
 
 	// Now copy connectivity.
 	emInt newConn[64];
@@ -1183,7 +1180,9 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		remapIndices(10, newIndices, conn, newConn);
 		UCM->addBdryQuad(newConn);
 	}
-
+	delete[] newIndices;
+	CALLGRIND_TOGGLE_COLLECT
+	;
 	return UCM;
 }
 

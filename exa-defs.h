@@ -35,6 +35,13 @@
 
 #endif
 
+#undef PROFILE
+#ifdef PROFILE
+#include <valgrind/callgrind.h>
+#else
+#define CALLGRIND_TOGGLE_COLLECT
+#endif
+
 #define MAX_DIVS 50
 #define FILE_NAME_LEN 1024
 

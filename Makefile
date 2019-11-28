@@ -14,8 +14,8 @@ Part.o partition.o
 
 OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
 DEBUG=-g
-OPT=-O3 -DNDEBUG
-OPT_DEBUG=$(OPT) -g
+OPT=-O3 -DNDEBUG -g
+OPT_DEBUG=$(OPT) 
 CPPFLAGS=-I/home/cfog/Research/Projects/ExaMesh/src -I/home/cfog/GMGW1/src
 CXX_COMPILE=g++ -Wall -Wextra -fPIC $(OPT_DEBUG) $(CPPFLAGS) $(EXTRAFLAGS) -fopenmp
 CXX_LINK=g++ -fPIC $(EXTRAFLAGS) $(OPT_DEBUG) -fopenmp
