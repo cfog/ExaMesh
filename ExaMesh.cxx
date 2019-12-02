@@ -1,3 +1,21 @@
+//  Copyright 2019 by Carl Ollivier-Gooch.  The University of British
+//  Columbia disclaims all copyright interest in the software ExaMesh.//
+//
+//  This file is part of ExaMesh.
+//
+//  ExaMesh is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Lesser General Public License as
+//  published by the Free Software Foundation, either version 3 of
+//  the License, or (at your option) any later version.
+//
+//  ExaMesh is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Lesser General Public License for more details.
+//
+//  You should have received a copy of the GNU Lesser General Public
+//  License along with ExaMesh.  If not, see <https://www.gnu.org/licenses/>.
+
 /*
  * ExaMesh.cxx
  *
@@ -336,18 +354,18 @@ void ExaMesh::printMeshSizeStats() {
 
 void ExaMesh::prettyPrintCellCount(size_t cells, const char* prefix) const {
 	if (cells == 0) return;
-	fprintf(stderr, "%s = ", prefix);
+	printf("%s = ", prefix);
 	if (cells >> 30) {
-		fprintf(stderr, "%.2f B\n", cells / 1.e9);
+		printf("%.2f B\n", cells / 1.e9);
 	}
 	else if (cells >> 20) {
-		fprintf(stderr, "%.2f M\n", cells / 1.e6);
+		printf("%.2f M\n", cells / 1.e6);
 	}
 	else if (cells >> 10) {
-		fprintf(stderr, "%.2f K\n", cells / 1.e3);
+		printf("%.2f K\n", cells / 1.e3);
 	}
 	else {
-		fprintf(stderr, "%lu \n", cells);
+		printf("%lu \n", cells);
 	}
 }
 
@@ -397,36 +415,36 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 		totalHexes += pUM->numHexes();
 		totalFileSize += pUM->getFileImageSize();
 		totalTime += exaTime() - start;
-		fprintf(stderr, "\nCPU time for refinement = %5.2F seconds\n",
+		printf("\nCPU time for refinement = %5.2F seconds\n",
 						RS.refineTime);
-		fprintf(stderr, "                          %5.2F million cells / minute\n",
+		printf("                          %5.2F million cells / minute\n",
 						(RS.cells / 1000000.) / (RS.refineTime / 60));
 
 //		char filename[100];
 //		sprintf(filename, "/tmp/fine-submesh%03d.vtk", ii);
 //		pUM->writeVTKFile(filename);
 	}
-	fprintf(stderr, "\nDone parallel refinement with %d parts.\n", nParts);
-	fprintf(stderr, "Time for partitioning:           %10.3F seconds\n",
+	printf("\nDone parallel refinement with %d parts.\n", nParts);
+	printf("Time for partitioning:           %10.3F seconds\n",
 					partitionTime);
-	fprintf(stderr, "Time for coarse mesh extraction: %10.3F seconds\n",
+	printf("Time for coarse mesh extraction: %10.3F seconds\n",
 					totalExtractTime);
-	fprintf(stderr, "Time for refinement:             %10.3F seconds\n",
+	printf("Time for refinement:             %10.3F seconds\n",
 					totalRefineTime);
-	fprintf(stderr, "Rate (refinement only):  %5.2F million cells / minute\n",
+	printf("Rate (refinement only):  %5.2F million cells / minute\n",
 					(totalCells / 1000000.) / (totalRefineTime / 60));
-	fprintf(stderr, "Rate (overall):          %5.2F million cells / minute\n",
+	printf("Rate (overall):          %5.2F million cells / minute\n",
 					(totalCells / 1000000.) / (totalTime / 60));
 
 	if (totalFileSize >> 37) {
-		fprintf(stderr, "Total ugrid file size = %lu GB\n", totalFileSize >> 30);
+		printf("Total ugrid file size = %lu GB\n", totalFileSize >> 30);
 	}
 	else if (totalFileSize >> 30) {
-		fprintf(stderr, "Total ugrid file size = %.2f GB\n",
+		printf("Total ugrid file size = %.2f GB\n",
 						(totalFileSize >> 20) / 1024.);
 	}
 	else {
-		fprintf(stderr, "Total ugrid file size = %lu MB\n", totalFileSize >> 20);
+		printf("Total ugrid file size = %lu MB\n", totalFileSize >> 20);
 	}
 
 	prettyPrintCellCount(totalCells, "Total cells");

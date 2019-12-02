@@ -1,3 +1,21 @@
+//  Copyright 2019 by Carl Ollivier-Gooch.  The University of British
+//  Columbia disclaims all copyright interest in the software ExaMesh.//
+//
+//  This file is part of ExaMesh.
+//
+//  ExaMesh is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Lesser General Public License as
+//  published by the Free Software Foundation, either version 3 of
+//  the License, or (at your option) any later version.
+//
+//  ExaMesh is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Lesser General Public License for more details.
+//
+//  You should have received a copy of the GNU Lesser General Public
+//  License along with ExaMesh.  If not, see <https://www.gnu.org/licenses/>.
+
 /*
  * UMesh.cxx
  *
@@ -92,6 +110,28 @@ void UMesh::init(const emInt nVerts, const emInt nBdryVerts,
 	m_HexConn = reinterpret_cast<emInt (*)[8]>(m_PrismConn + nPrisms);
 	m_fileImage = m_buffer + slack1Size;
 	m_fileImageSize = bufferBytes - slack1Size - slack2Size;
+
+//	printf("Diagnostics for UMesh data struct:\n");
+//	printf("Buffer size, in bytes:     %lu\n", bufferBytes);
+//	printf("File image size, in bytes: %lu\n", m_fileImageSize);
+//	printf("Num verts: %10u\n", nVerts);
+//	printf("Num tris:  %10u\n", nBdryTris);
+//	printf("Num quads: %10u\n", nBdryQuads);
+//	printf("Num tets:  %10u\n", nTets);
+//	printf("Num pyrs:  %10u\n", nPyramids);
+//	printf("Num prisms: %8u\n", nPrisms);
+//	printf("Num hexes: %10u\n", nHexes);
+//	printf(
+//			"Coord offset: %10lu\n",
+//			reinterpret_cast<char*>(m_coords) - reinterpret_cast<char*>(m_header));
+//	printf(
+//			"Tri conn offset: %10lu\n",
+//			reinterpret_cast<char*>(m_TriConn) - reinterpret_cast<char*>(m_header));
+//	printf("Tri BC offset: %10lu\n",
+//					reinterpret_cast<char*>(m_TriBC) - reinterpret_cast<char*>(m_header));
+//	printf(
+//			"Tet conn offset: %10lu\n",
+//			reinterpret_cast<char*>(m_TetConn) - reinterpret_cast<char*>(m_header));
 
 	m_lenScale = new double[m_nVerts];
 }
