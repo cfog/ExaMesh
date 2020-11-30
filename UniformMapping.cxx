@@ -111,8 +111,8 @@ void UniformPrismMapping::computeTransformedCoords(const double uvw[3],
 	const double& v = uvw[1];
 	const double& w = uvw[2];
 	for (int ii = 0; ii < 3; ii++) {
-		xyz[ii] = A[ii] + u * dU[ii] + v * dV[ii] + w * dW[ii] + u * w * dUW[ii]
-							+ v * w * dVW[ii];
+		xyz[ii] = A[ii] + u * dU[ii] + v * dV[ii]
+			+ w * (dW[ii] + u * dUW[ii]	+ v * dVW[ii]);
 	}
 }
 
