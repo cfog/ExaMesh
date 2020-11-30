@@ -216,21 +216,37 @@ emInt UMesh::addPyramid(const emInt verts[5]) {
 }
 
 emInt UMesh::addPrism(const emInt verts[6]) {
+#ifndef OLD_ADD_ELEMENT
+	emInt thisPrismInd = m_header[ePrism]++;
+	emInt *thisConn = m_PrismConn[thisPrismInd];
+	assert(memoryCheck(thisConn, 6 * sizeof(emInt)));
+	std::copy(verts, verts + 6, thisConn);
+	return thisPrismInd;
+#else
 	assert(memoryCheck(m_PrismConn[m_header[ePrism]], 6 * sizeof(emInt)));
 	for (int ii = 0; ii < 6; ii++) {
 		assert(verts[ii] < m_header[eVert]);
 		m_PrismConn[m_header[ePrism]][ii] = verts[ii];
 	}
 	return (m_header[ePrism]++);
+#endif
 }
 
 emInt UMesh::addHex(const emInt verts[8]) {
+#ifndef OLD_ADD_ELEMENT
+	emInt thisHexInd = m_header[eHex]++;
+	emInt *thisConn = m_HexConn[thisHexInd];
+	assert(memoryCheck(thisConn, 8 * sizeof(emInt)));
+	std::copy(verts, verts + 8, thisConn);
+	return thisHexInd;
+#else
 	assert(memoryCheck(m_HexConn[m_header[eHex]], 8 * sizeof(emInt)));
 	for (int ii = 0; ii < 8; ii++) {
 		assert(verts[ii] < m_header[eVert]);
 		m_HexConn[m_header[eHex]][ii] = verts[ii];
 	}
 	return (m_header[eHex]++);
+#endif
 }
 
 UMesh::~UMesh() {

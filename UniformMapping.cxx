@@ -164,8 +164,12 @@ void UniformHexMapping::computeTransformedCoords(const double uvw[3],
 	const double& v = uvw[1];
 	const double& w = uvw[2];
 	for (int ii = 0; ii < 3; ii++) {
-		xyz[ii] = A[ii] + u * dU[ii] + v * dV[ii] + w * dW[ii] + u * v * dUV[ii]
-							+ u * w * dUW[ii] + v * w * dVW[ii] + u * v * w * dUVW[ii];
+		// Original, naive implementation of polynomial evaluation
+//		xyz[ii] = A[ii] + u * dU[ii] + v * dV[ii] + w * dW[ii] + u * v * dUV[ii]
+//							+ u * w * dUW[ii] + v * w * dVW[ii] + u * v * w * dUVW[ii];
+		// Faster version that has only one multiply-add per term.
+		xyz[ii] = A[ii] + u * (dU[ii] + v * dUV[ii] + w * (dUW[ii] + v * dUVW[ii]))
+								 + v * dV[ii] + w * (dW[ii] + v * dVW[ii]);
 	}
 }
 

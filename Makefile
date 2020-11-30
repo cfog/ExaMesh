@@ -34,11 +34,11 @@ OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
 DEBUG=-g
 OPT=-O3 -DNDEBUG -g
 OPT_DEBUG=$(OPT) 
-CPPFLAGS=-I/home/cfog/Research/Projects/ExaMesh/src -I/home/cfog/GMGW1/src
+CPPFLAGS=-I/home/cfog/Research/Projects/ExaMesh/src -I/home/cfog/Research/External/GMGW/src
 CXX_COMPILE=g++ -Wall -Wextra -fPIC $(OPT_DEBUG) $(CPPFLAGS) $(EXTRAFLAGS) -fopenmp
 CXX_LINK=g++ -fPIC $(EXTRAFLAGS) $(OPT_DEBUG) -fopenmp
 THISDIR=/home/cfog/Research/Projects/ExaMesh/src
-MESHIOLIB=-L/home/cfog/GMGW1/src -Wl,-rpath=/home/cfog/GMGW1/src -lMeshIO
+MESHIOLIB=-L/home/cfog/Research/External/GMGW/src -Wl,-rpath=/home/cfog/Research/External/GMGW/src -lMeshIO
 EXAMESHLIB=-L$(THISDIR) -lexamesh -Wl,-rpath=$(THISDIR)
 CGNSLIB=-lcgns -lhdf5_serial -lsz
 LDFLAGS=$(EXAMESHLIB) $(MESHIOLIB) $(CGNSLIB)
@@ -108,8 +108,9 @@ PyrDivider.o: exa-defs.h Part.h UMesh.h CubicMesh.h
 TetDivider.o: GeomUtils.h TetDivider.h CellDivider.h ExaMesh.h Mapping.h
 TetDivider.o: exa-defs.h Part.h UMesh.h CubicMesh.h
 UMesh.o: ExaMesh.h Mapping.h exa-defs.h Part.h UMesh.h CubicMesh.h
-UMesh.o: /home/cfog/GMGW1/src/GMGW_unstr.hxx /home/cfog/GMGW1/src/config.h
-UMesh.o: /home/cfog/GMGW1/src/GMGW_FileWrapper.hxx
+UMesh.o: /home/cfog/Research/External/GMGW/src/GMGW_unstr.hxx
+UMesh.o: /home/cfog/Research/External/GMGW/src/config.h
+UMesh.o: /home/cfog/Research/External/GMGW/src/GMGW_FileWrapper.hxx
 UniformMapping.o: ExaMesh.h Mapping.h exa-defs.h Part.h
 partition.o: ExaMesh.h Mapping.h exa-defs.h Part.h
 refine.o: ExaMesh.h Mapping.h exa-defs.h Part.h CubicMesh.h UMesh.h
