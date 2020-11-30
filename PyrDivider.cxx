@@ -170,7 +170,7 @@ void PyrDivider::createNewCells() {
 				emInt tet =
 #endif
 				m_pMesh->addTet(vertsNew);
-				assert(tet < m_pMesh->numTets() && tet < m_pMesh->maxNTets());
+				assert(m_pMesh->numTets() <= m_pMesh->maxNTets());
 				assert(checkOrient3D(vertsNew) == 1);
       }
     }

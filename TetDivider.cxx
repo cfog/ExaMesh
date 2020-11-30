@@ -112,7 +112,7 @@ void TetDivider::createNewCells() {
 				emInt tet =
 #endif
 				m_pMesh->addTet(verts);
-				assert(tet < m_pMesh->maxNTets());
+				assert(m_pMesh->numTets() <= m_pMesh->maxNTets());
 				assert(checkOrient3D(verts) == 1);
 			}
 		}
@@ -136,7 +136,7 @@ void TetDivider::createNewCells() {
 				emInt tet =
 #endif
 				m_pMesh->addTet(verts);
-				assert(tet < m_pMesh->maxNTets());
+				assert(m_pMesh->numTets() <= m_pMesh->maxNTets());
 				assert(checkOrient3D(verts) == 1);
 			}
 		}

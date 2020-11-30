@@ -41,8 +41,7 @@ void BdryQuadDivider::createNewCells() {
 #endif
 			m_pMesh->addBdryQuad(vertsNew1);
 			assert(
-					bdryQuad < m_pMesh->numBdryQuads() && bdryQuad
-							< m_pMesh->maxNBdryQuads());
+					m_pMesh->numBdryQuads() <= m_pMesh->maxNBdryQuads());
 		} // Done with all quads for this row.
 	} // Done with this row (constant j)
 }

@@ -133,7 +133,7 @@ void HexDivider::createNewCells() {
 				emInt hex =
 #endif
 				m_pMesh->addHex(vertsNew);
-				assert(hex < m_pMesh->maxNHexes() && hex < m_pMesh->numHexes());
+				assert(m_pMesh->maxNHexes() <= m_pMesh->numHexes());
       }
     } // Done with this row (constant j)
   }   // Done with this level
