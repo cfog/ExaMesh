@@ -25,10 +25,10 @@
 
 #include <string.h>
 #include <locale.h>
-#include <ExaMesh.h>
 #include <unistd.h>
 #include <time.h>
 
+#include "ExaMesh.h"
 #include "HexDivider.h"
 #include "PrismDivider.h"
 #include "PyrDivider.h"

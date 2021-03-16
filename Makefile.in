@@ -1,0 +1,81 @@
+#  Copyright 2019 by Carl Ollivier-Gooch.  The University of British
+#  Columbia disclaims all copyright interest in the software ExaMesh.//
+#
+#  This file is part of ExaMesh.
+#
+#  ExaMesh is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Lesser General Public License as
+#  published by the Free Software Foundation, either version 3 of
+#  the License, or (at your option) any later version.
+#
+#  ExaMesh is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public
+#  License along with ExaMesh.  If not, see <https://www.gnu.org/licenses/>.
+
+.SILENT:
+
+.SUFFIXES: .cxx
+
+.PHONY: library
+
+CXXOBJECTS=refine.o 
+
+LIBOBJECTS=TetDivider.o PyrDivider.o PrismDivider.o HexDivider.o CellDivider.o \
+BdryTriDivider.o BdryQuadDivider.o refinePart.o ExaMesh.o UMesh.o CubicMesh.o GeomUtils.o \
+LagrangeMapping.o LengthScaleMapping.o UniformMapping.o \
+LagrangeCubicTet.o LagrangeCubicPyr.o LagrangeCubicPrism.o LagrangeCubicHex.o \
+Part.o partition.o
+
+OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
+DEBUG=-g
+OPT=-O3 -DNDEBUG -g
+OPT_DEBUG=$(OPT) 
+CXX_COMPILE=@CXX@ @OPENMP_CXXFLAGS@ -Wall -Wextra -fPIC $(OPT_DEBUG) @CPPFLAGS@ $(EXTRAFLAGS)
+CXX_LINK=g++ -fPIC $(EXTRAFLAGS) $(OPT_DEBUG)
+THISDIR=/home/cfog/Research/Projects/ExaMesh/src
+MESHIOLIB=-L/home/cfog/Research/External/GMGW/src -Wl,-rpath=/home/cfog/Research/External/GMGW/src -lMeshIO
+EXAMESHLIB=-L$(THISDIR) -lexamesh -Wl,-rpath=$(THISDIR)
+LDFLAGS=@LDFLAGS@ @OPENMP_CXXFLAGS@
+LIBRARY=libexamesh.so
+
+.cxx.o:
+	echo Compiling $*.cxx
+	-rm -f $*.o
+	-$(CXX_COMPILE) -c $*.cxx || \
+	(echo Compile of $*.cxx failed!	Command was: ; \
+	echo $(CXX_COMPILE) -c $*.cxx)
+
+all default: $(OBJECTS) library test-exa refine
+	./test-exa
+
+library $(LIBRARY) : $(LIBOBJECTS)
+	-$(CXX_COMPILE) -shared -o libexamesh.so $(EXTRAFLAGS) $(LIBOBJECTS)
+
+refine: $(CXXOBJECTS) $(LIBRARY)
+	echo Linking refine
+	-$(CXX_LINK) -o refine $(CXXOBJECTS) $(LDFLAGS) $(EXAMESHLIB) @LIBS@
+	echo " "
+
+test-exa.o:  test-exa.cxx 
+	echo Compiling $*.cxx
+	$(CXX_COMPILE) -DBOOST_TEST_DYN_LINK -Wall -g -c test-exa.cxx 
+
+test-exa: test-exa.o $(LIBRARY)
+	$(CXX_LINK) -o test-exa test-exa.o $(LDFLAGS) -lboost_unit_test_framework $(EXAMESHLIB) @LIBS@
+
+clean:
+	rm -f *.o refine test-exa libexamesh.so *.gcda *.gcno
+
+depend:
+	makedepend $(CPPFLAGS) -Y *.cxx 2> /dev/null
+
+cover:
+	lcov --capture --directory . --output coverage/lcov.raw.info
+	lcov --remove coverage/lcov.raw.info "/usr*" "*GMGW1*" -o coverage/lcov.info
+	genhtml --demangle-cpp --output-directory coverage coverage/lcov.info
+	firefox coverage/index.html
+

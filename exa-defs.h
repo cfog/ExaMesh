@@ -30,6 +30,8 @@
 #include <stdint.h>
 #include <limits.h>
 
+#include "exa_config.h"
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -65,6 +67,21 @@
 
 typedef uint32_t emInt;
 #define EMINT_MAX UINT_MAX
+
+#if (HAVE_CGNS == 0)
+#define TRI_3 5
+#define QUAD_4 7
+#define TETRA_4 10
+#define PYRA_5 12
+#define PENTA_6 14
+#define HEXA_8 17
+#define TRI_10 26
+#define QUAD_16 28
+#define TETRA_20 30
+#define PYRA_30 33
+#define PENTA_40 36
+#define HEXA_64 39
+#endif
 
 // Some vector operators
 

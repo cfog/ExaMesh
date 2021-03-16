@@ -24,7 +24,7 @@
  */
 
 #include <assert.h>
-#include <ExaMesh.h>
+#include "ExaMesh.h"
 
 #include "Mapping.h"
 

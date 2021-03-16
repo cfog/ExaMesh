@@ -23,7 +23,7 @@
  *      Author: cfog
  */
 
-#include <ExaMesh.h>
+#include "ExaMesh.h"
 #include <algorithm>
 
 #include "Mapping.h"

@@ -28,12 +28,16 @@
 #include <memory>
 #include <stdlib.h>
 
+#include "exa_config.h"
+
+#if (HAVE_CGNS == 1)
 #include <cgnslib.h>
+
+#define CHECK_STATUS if (status != CG_OK) cg_error_exit()
+#endif
 
 #include "CubicMesh.h"
 #include "UMesh.h"
-
-#define CHECK_STATUS if (status != CG_OK) cg_error_exit()
 
 CubicMesh::CubicMesh(const emInt nVerts, const emInt nBdryVerts,
 		const emInt nBdryTris, const emInt nBdryQuads, const emInt nTets,
@@ -60,6 +64,7 @@ void CubicMesh::decrementVertIndices(emInt connSize, emInt* const connect) {
 	}
 }
 
+#if (HAVE_CGNS == 1)
 void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 	int status;
 	int index_file;
@@ -278,6 +283,7 @@ CubicMesh::CubicMesh(const char CGNSfilename[]) {
 	reorderCubicMesh();
 //	buildFaceCellConnectivity();
 }
+#endif
 
 void CubicMesh::renumberNodes(emInt thisSize, emInt* aliasConn,
 		emInt* newNodeInd) {
@@ -1307,5 +1313,4 @@ void CubicMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 														xmax, ymax, zmax);
 	}
 }
-
 

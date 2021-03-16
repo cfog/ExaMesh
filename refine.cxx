@@ -23,10 +23,10 @@
  *      Author: cfog
  */
 
-#include <ExaMesh.h>
 #include <unistd.h>
 #include <cstdio>
 
+#include "ExaMesh.h"
 #include "CubicMesh.h"
 #include "UMesh.h"
 
@@ -78,6 +78,7 @@ int main(int argc, char* const argv[]) {
 	}
 
 	if (isInputCGNS) {
+#if (HAVE_CGNS == 1)
 		CubicMesh CMorig(cgnsFileName);
 		if (isParallel) {
 			CMorig.refineForParallel(nDivs, maxCellsPerPart);
@@ -96,6 +97,10 @@ int main(int argc, char* const argv[]) {
 //			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
 //			UMrefined.writeVTKFile("/tmp/junk.vtk");
 		}
+#else
+		fprintf(stderr, "Not compiled with CGNS; curved meshes not supported.\n");
+		exit(1);
+#endif
 	}
 	else {
 		UMesh UMorig(inFileBaseName, type, infix);

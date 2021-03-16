@@ -23,7 +23,6 @@
  *      Author: cfog
  */
 
-#include <ExaMesh.h>
 #include <iostream>
 #include <cmath>
 
@@ -32,13 +31,25 @@
 #include <set>
 #include <vector>
 
+#if (HAVE_CGNS == 1)
 #include <cgnslib.h>
+#endif
+
 #include <string.h>
 
+#include "ExaMesh.h"
 #include "exa-defs.h"
 #include "UMesh.h"
 
-#include "GMGW_unstr.hxx"
+#ifndef BDRY_TRI
+#define BDRY_TRI 5
+#define BDRY_QUAD 9
+#define TET 10
+#define PYRAMID 14
+#define PRISM 13
+#define HEX 12
+#endif
+
 #include "GMGW_FileWrapper.hxx"
 
 using std::cout;
@@ -134,6 +145,9 @@ void UMesh::init(const emInt nVerts, const emInt nBdryVerts,
 //			reinterpret_cast<char*>(m_TetConn) - reinterpret_cast<char*>(m_header));
 
 	m_lenScale = new double[m_nVerts];
+	for (emInt ii = 0; ii < m_nVerts; ii++) {
+		m_lenScale[ii] = 0;
+	}
 }
 
 UMesh::UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,

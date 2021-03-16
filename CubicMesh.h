@@ -28,6 +28,7 @@
 
 #include <assert.h>
 
+#include "exa_config.h"
 #include "ExaMesh.h"
 
 // This data structure is organized to read and write easily to/from CGNS files.
@@ -55,7 +56,9 @@ public:
 	CubicMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
+#if (HAVE_CGNS == 1)
 	CubicMesh(const char CGNSFileName[]);
+#endif
 	virtual ~CubicMesh();
 
 	// Will eventually want to create a fine CubicMesh from a coarse CubicMesh
@@ -167,7 +170,5 @@ public:
 		m_nVertNodes = nVertNodes;
 	}
 };
-
-
 
 #endif /* SRC_CUBICMESH_H_ */

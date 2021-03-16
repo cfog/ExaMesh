@@ -26,7 +26,9 @@
 #include <deque>
 #include <vector>
 
+#if (HAVE_CGNS == 1)
 #include "cgnslib.h"
+#endif
 
 #include "ExaMesh.h"
 #include "Part.h"

@@ -23,7 +23,7 @@
  *      Author: cfog
  */
 
-#include <ExaMesh.h>
+#include "ExaMesh.h"
 #include "GeomUtils.h"
 #include "CellDivider.h"
 
