@@ -87,7 +87,7 @@ else
    AC_CHECK_LIB([cgns], [cg_set_file_type],,,[$with_CGNS_path])
    CPPFLAGS=$CPPFLAGS_tmp
 fi
-CPPFLAGS+=$CGNS_INCLUDES
+CPPFLAGS+=" $CGNS_INCLUDES"
 
 AC_SUBST(HAVE_LIBCGNS)
 
