@@ -85,7 +85,12 @@ bool partitionCells(const ExaMesh* const pEM, const emInt nPartsToMake,
 	std::deque<Part> partsToSplit;
 
 	Part P(0, vecCPD.size(), nPartsToMake, xmin, xmax, ymin, ymax, zmin, zmax);
-	partsToSplit.push_back(P);
+	if (nPartsToMake > 1) {
+		partsToSplit.push_back(P);
+	}
+	else {
+		parts.push_back(P);
+	}
 
 	// Grab a part from the deque to split.
 	while (!partsToSplit.empty()) {

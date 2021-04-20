@@ -31,15 +31,15 @@
 #include <set>
 #include <vector>
 
-#if (HAVE_CGNS == 1)
-#include <cgnslib.h>
-#endif
-
 #include <string.h>
 
 #include "ExaMesh.h"
 #include "exa-defs.h"
 #include "UMesh.h"
+
+#if (HAVE_CGNS == 1)
+#include <cgnslib.h>
+#endif
 
 #ifndef BDRY_TRI
 #define BDRY_TRI 5
@@ -848,7 +848,7 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 				QuadFaceVerts QFV0154(conn[0], conn[1], conn[5], conn[4]);
 				QuadFaceVerts QFV1265(conn[1], conn[2], conn[6], conn[5]);
 				QuadFaceVerts QFV2376(conn[2], conn[3], conn[7], conn[6]);
-				QuadFaceVerts QFV3047(conn[3], conn[0], conn[6], conn[7]);
+				QuadFaceVerts QFV3047(conn[3], conn[0], conn[4], conn[7]);
 				QuadFaceVerts QFV0123(conn[0], conn[1], conn[2], conn[3]);
 				QuadFaceVerts QFV4567(conn[4], conn[5], conn[6], conn[7]);
 				addUniquely(partBdryQuads, QFV0154);

@@ -772,9 +772,9 @@ BOOST_AUTO_TEST_SUITE(MappingTests)
 		uvw[1] = 1. / 6;
 		uvw[2] = 5. / 12;
 		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], 1.476794722573, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], 1.373834680205, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], 2.158765461277, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[0], 1.5745947924241497, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], 1.4122999796448497, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], 2.4182016298381059, 1.e-8);
 #endif
 
 		emInt verts2[] = { 3, 1, 2, 0 };
@@ -812,9 +812,9 @@ BOOST_AUTO_TEST_SUITE(MappingTests)
 		uvw[1] = 1. / 6;
 		uvw[2] = 1. / 6;
 		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], 1.4840038217734239, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], 1.3976408636485027, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], 2.1612681674806158, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[0], 1.5331084593558231, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[1], 1.495850138813301, 1.e-8);
+		BOOST_CHECK_CLOSE(xyz[2], 2.063058892315818, 1.e-8);
 #endif
 	}
 

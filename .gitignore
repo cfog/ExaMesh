@@ -32,3 +32,12 @@
 *.app
 examesh
 test-exa
+
+# Files produced during configure / build
+Makefile
+configure
+exa_config.h
+config.status
+config.log
+autom4te.cache
+autoscan.log
