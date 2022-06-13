@@ -82,7 +82,6 @@ static double pyrVolume(const double coords0[], const double coords1[],
 	return DOT(normal, vecE) / 0.75;
 }
 
-// TODO  Transplant into a new ExaMesh.cxx
 void ExaMesh::setupLengthScales() {
 	if (!m_lenScale) {
 		m_lenScale = new double[numVerts()];
@@ -123,9 +122,7 @@ void ExaMesh::setupLengthScales() {
 		double volume = tetVolume(coordsA, coordsB, coordsC, coordsD);
 		assert(volume > 0);
 		for (int ii = 0; ii < 4; ii++) {
-			// Using the absolute value here is a bit of a hack.  It bails us
-			// out if there's a cell with reversed connectivity.
-			vertVolume[tetVerts[ii]] += fabs(volume);
+			vertVolume[tetVerts[ii]] += volume;
 			assert(solids[ii] > 0);
 			vertSolidAngle[tetVerts[ii]] += solids[ii];
 		}
@@ -142,10 +139,10 @@ void ExaMesh::setupLengthScales() {
 		getCoords(pyrVerts[3], coords3);
 		getCoords(pyrVerts[4], coords4);
 		quadUnitNormal(coords0, coords1, coords2, coords3, norm0123);
-		triUnitNormal(coords1, coords0, coords4, norm014);
-		triUnitNormal(coords2, coords1, coords4, norm124);
-		triUnitNormal(coords3, coords2, coords4, norm234);
-		triUnitNormal(coords0, coords3, coords4, norm304);
+		triUnitNormal(coords0, coords1, coords4, norm014);
+		triUnitNormal(coords1, coords2, coords4, norm124);
+		triUnitNormal(coords2, coords3, coords4, norm234);
+		triUnitNormal(coords3, coords0, coords4, norm304);
 
 		double diheds[8];
 		// Dihedrals are in the order: 01, 04, 12, 14, 23, 24, 30, 34
@@ -169,9 +166,7 @@ void ExaMesh::setupLengthScales() {
 		double volume = pyrVolume(coords0, coords1, coords2, coords3, coords4);
 		assert(volume > 0);
 		for (int ii = 0; ii < 5; ii++) {
-			// Using the absolute value here is a bit of a hack.  It bails us
-			// out if there's a cell with reversed connectivity.
-			vertVolume[pyrVerts[ii]] += fabs(volume);
+			vertVolume[pyrVerts[ii]] += volume;
 			assert(solids[ii] > 0);
 			vertSolidAngle[pyrVerts[ii]] += solids[ii];
 		}
@@ -232,9 +227,7 @@ void ExaMesh::setupLengthScales() {
 				+ pyrVolume(coords0, coords2, coords5, coords3, middle);
 //		assert(volume > 0);
 		for (int ii = 0; ii < 6; ii++) {
-			// Using the absolute value here is a bit of a hack.  It bails us
-			// out if there's a cell with reversed connectivity.
-			vertVolume[prismVerts[ii]] += fabs(volume);
+			vertVolume[prismVerts[ii]] += volume;
 			assert(solids[ii] > 0);
 			vertSolidAngle[prismVerts[ii]] += solids[ii];
 		}
@@ -253,7 +246,7 @@ void ExaMesh::setupLengthScales() {
 		getCoords(hexVerts[3], coords3);
 		getCoords(hexVerts[4], coords4);
 		getCoords(hexVerts[5], coords5);
-		getCoords(hexVerts[6], coords6);
+		getCoords(hexVerts[6], coords7);
 		getCoords(hexVerts[7], coords7);
 		quadUnitNormal(coords1, coords0, coords4, coords5, norm1045);
 		quadUnitNormal(coords2, coords1, coords5, coords6, norm2156);
@@ -306,17 +299,15 @@ void ExaMesh::setupLengthScales() {
 				+ pyrVolume(coords7, coords6, coords5, coords4, middle);
 //		assert(volume > 0);
 		for (int ii = 0; ii < 8; ii++) {
-			// Using the absolute value here is a bit of a hack.  It bails us
-			// out if there's a cell with reversed connectivity.
-			vertVolume[hexVerts[ii]] += fabs(volume);
-			assert(solids[ii] > 0);
+			vertVolume[hexVerts[ii]] += volume;
+//			assert(solids[ii] > 0);
 			vertSolidAngle[hexVerts[ii]] += solids[ii];
 		}
 	} // Done with hexahedra
 
 	// Now loop over verts computing the length scale
 	for (emInt vv = 0; vv < numVerts(); vv++) {
-		assert(vertVolume[vv] > 0 && vertSolidAngle[vv] > 0);
+//		assert(vertVolume[vv] > 0 && vertSolidAngle[vv] > 0);
 		double volume = vertVolume[vv] * (4 * M_PI) / vertSolidAngle[vv];
 		double radius = cbrt(volume / (4 * M_PI / 3.));
 		m_lenScale[vv] = radius;

@@ -77,6 +77,7 @@ void PrismDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 void PrismDivider::divideInterior() {
   // Number of verts added:
   //    Tets:      (nD-1)(nD-2)(nD-3)/6
+	if (nDivs < 3) return;
 	double uvw[3];
 	double &u = uvw[0];
 	double& v = uvw[1];
@@ -91,6 +92,9 @@ void PrismDivider::divideInterior() {
 				getPhysCoordsFromParamCoords(uvw, coordsNew);
 				emInt vNew = m_pMesh->addVert(coordsNew);
 				localVerts[ii][jj][kk] = vNew;
+				m_uvw[ii][jj][nDivs - kk][0] = u;
+				m_uvw[ii][jj][nDivs - kk][1] = v;
+				m_uvw[ii][jj][nDivs - kk][2] = w;
       }
     } // Done looping over all interior verts for the triangle.
   }   // Done looping over all levels for the prism.

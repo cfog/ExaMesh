@@ -26,7 +26,7 @@
 #include "ExaMesh.h"
 #include "Mapping.h"
 
-void UniformTetMapping::setupCoordMapping(const emInt verts[]) {
+void Q1TetMapping::setupCoordMapping(const emInt verts[]) {
 	double coords0[3], coords1[3], coords2[3], coords3[3];
 	m_pMesh->getCoords(verts[0], coords0);
 	m_pMesh->getCoords(verts[1], coords1);
@@ -40,7 +40,7 @@ void UniformTetMapping::setupCoordMapping(const emInt verts[]) {
 	}
 }
 
-void UniformTetMapping::computeTransformedCoords(const double uvw[3],
+void Q1TetMapping::computeTransformedCoords(const double uvw[3],
 		double xyz[3]) const {
 	const double& u = uvw[0];
 	const double& v = uvw[1];
@@ -50,7 +50,7 @@ void UniformTetMapping::computeTransformedCoords(const double uvw[3],
 	}
 }
 
-void UniformPyramidMapping::setupCoordMapping(const emInt verts[]) {
+void Q1PyramidMapping::setupCoordMapping(const emInt verts[]) {
 	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3];
 	m_pMesh->getCoords(verts[0], coords0);
 	m_pMesh->getCoords(verts[1], coords1);
@@ -68,7 +68,7 @@ void UniformPyramidMapping::setupCoordMapping(const emInt verts[]) {
 	}
 }
 
-void UniformPyramidMapping::computeTransformedCoords(const double uvw[3],
+void Q1PyramidMapping::computeTransformedCoords(const double uvw[3],
 		double xyz[3]) const {
 	double u = uvw[0];
 	double v = uvw[1];
@@ -86,7 +86,7 @@ void UniformPyramidMapping::computeTransformedCoords(const double uvw[3],
 	}
 }
 
-void UniformPrismMapping::setupCoordMapping(const emInt verts[]) {
+void Q1PrismMapping::setupCoordMapping(const emInt verts[]) {
 	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3], coords5[3];
 	m_pMesh->getCoords(verts[0], coords0);
 	m_pMesh->getCoords(verts[1], coords1);
@@ -105,7 +105,7 @@ void UniformPrismMapping::setupCoordMapping(const emInt verts[]) {
 	}
 }
 
-void UniformPrismMapping::computeTransformedCoords(const double uvw[3],
+void Q1PrismMapping::computeTransformedCoords(const double uvw[3],
 		double xyz[3]) const {
 	const double& u = uvw[0];
 	const double& v = uvw[1];
@@ -116,7 +116,7 @@ void UniformPrismMapping::computeTransformedCoords(const double uvw[3],
 	}
 }
 
-void UniformHexMapping::setupCoordMapping(const emInt verts[]) {
+void Q1HexMapping::setupCoordMapping(const emInt verts[]) {
 	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3], coords5[3],
 			coords6[3], coords7[3];
 	m_pMesh->getCoords(verts[0], coords0);
@@ -158,18 +158,18 @@ void UniformHexMapping::setupCoordMapping(const emInt verts[]) {
 	}
 }
 
-void UniformHexMapping::computeTransformedCoords(const double uvw[3],
+void Q1HexMapping::computeTransformedCoords(const double uvw[3],
 		double xyz[3]) const {
 	const double& u = uvw[0];
 	const double& v = uvw[1];
 	const double& w = uvw[2];
 	for (int ii = 0; ii < 3; ii++) {
 		// Original, naive implementation of polynomial evaluation
-//		xyz[ii] = A[ii] + u * dU[ii] + v * dV[ii] + w * dW[ii] + u * v * dUV[ii]
-//							+ u * w * dUW[ii] + v * w * dVW[ii] + u * v * w * dUVW[ii];
+		xyz[ii] = A[ii] + u * dU[ii] + v * dV[ii] + w * dW[ii] + u * v * dUV[ii]
+							+ u * w * dUW[ii] + v * w * dVW[ii] + u * v * w * dUVW[ii];
 		// Faster version that has only one multiply-add per term.
-		xyz[ii] = A[ii] + u * (dU[ii] + v * dUV[ii] + w * (dUW[ii] + v * dUVW[ii]))
-								 + v * dV[ii] + w * (dW[ii] + v * dVW[ii]);
+//		xyz[ii] = A[ii] + u * (dU[ii] + v * dUV[ii] + w * (dUW[ii] + v * dUVW[ii]))
+//								 + v * dV[ii] + w * (dW[ii] + v * dVW[ii]);
 	}
 }
 

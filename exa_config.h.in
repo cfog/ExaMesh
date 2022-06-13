@@ -1,5 +1,12 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_VERSION
+#undef PACKAGE_STRING
+#undef PACKAGE_URL
+#undef PACKAGE_TARNAME
+
 /* "Have CGNS headers" */
 #undef HAVE_CGNS
 

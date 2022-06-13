@@ -41,6 +41,7 @@ void TetDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 void TetDivider::divideInterior() {
 	// Number of verts added:
 	//    Tets:      (nD-1)(nD-2)(nD-3)/6
+	if (nDivs <= 3) return;
 	double uvw[3];
 	double& u = uvw[0];
 	double& v = uvw[1];
@@ -56,6 +57,9 @@ void TetDivider::divideInterior() {
 				m_Map->computeTransformedCoords(uvw, coords);
 				emInt vNew = m_pMesh->addVert(coords);
 				localVerts[ii + 1][jj + 1][nDivs - (kk + 1)] = vNew;
+				m_uvw[ii+1][jj+1][nDivs - (kk+1)][0] = u;
+				m_uvw[ii+1][jj+1][nDivs - (kk+1)][1] = v;
+				m_uvw[ii+1][jj+1][nDivs - (kk+1)][2] = w;
 			}
 		}
 	} // Done looping to create all verts inside the tet.
@@ -108,9 +112,6 @@ void TetDivider::createNewCells() {
 				emInt vert3 = localVerts[ii][jj][level - 1];
 				emInt verts[] = { vert0, vert1, vert2, vert3 };
 
-#ifndef NDEBUG
-				emInt tet =
-#endif
 				m_pMesh->addTet(verts);
 				assert(m_pMesh->numTets() <= m_pMesh->maxNTets());
 				assert(checkOrient3D(verts) == 1);
@@ -132,9 +133,6 @@ void TetDivider::createNewCells() {
 				//							"Tet: (%d, %d, %d), (%d, %d,
 				//%d), (%d, %d, %d), (%d, %d, %d)\n", 							ii, jj, level - 1, ii - 1, jj + 1,
 				//level - 1, ii, jj + 1, 							level - 1, ii, jj + 1, level);
-#ifndef NDEBUG
-				emInt tet =
-#endif
 				m_pMesh->addTet(verts);
 				assert(m_pMesh->numTets() <= m_pMesh->maxNTets());
 				assert(checkOrient3D(verts) == 1);

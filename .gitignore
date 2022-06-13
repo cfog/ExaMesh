@@ -41,3 +41,5 @@ config.status
 config.log
 autom4te.cache
 autoscan.log
+*.gcda
+*.gcno

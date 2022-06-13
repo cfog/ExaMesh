@@ -79,6 +79,7 @@ void PyrDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 void PyrDivider::divideInterior() {
   // Number of verts added:
 	//    Pyrs:      (nD-1)(nD-2)(2 nD-3)/6
+	if (nDivs < 3) return;
 	double uvw[3];
 	double &u = uvw[0];
 	double &v = uvw[1];
@@ -93,6 +94,9 @@ void PyrDivider::divideInterior() {
 				m_Map->computeTransformedCoords(uvw, coords);
 				emInt vNew = m_pMesh->addVert(coords);
 				localVerts[ii][jj][kk] = vNew;
+				m_uvw[ii+1][jj+1][nDivs - (kk+1)][0] = u;
+				m_uvw[ii+1][jj+1][nDivs - (kk+1)][1] = v;
+				m_uvw[ii+1][jj+1][nDivs - (kk+1)][2] = w;
       }
     }
   } // Done looping to create all verts inside the tet.
@@ -166,9 +170,6 @@ void PyrDivider::createNewCells() {
 															localVerts[ii][jj + 1][level],
 															localVerts[ii - 1][jj][level - 1],
 															localVerts[ii][jj][level - 1] };
-#ifndef NDEBUG
-				emInt tet =
-#endif
 				m_pMesh->addTet(vertsNew);
 				assert(m_pMesh->numTets() <= m_pMesh->maxNTets());
 				assert(checkOrient3D(vertsNew) == 1);

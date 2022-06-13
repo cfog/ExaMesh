@@ -157,7 +157,7 @@ public:
 	}
 
 	std::unique_ptr<CubicMesh> extractCoarseMesh(Part& P,
-			std::vector<CellPartData>& vecCPD) const;
+			std::vector<CellPartData>& vecCPD, const int numDivs) const;
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;

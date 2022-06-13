@@ -33,12 +33,11 @@ Part.o partition.o
 OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
 DEBUG=-g
 OPT=-O3 -DNDEBUG -g
-OPT_DEBUG=$(OPT) 
+OPT_DEBUG=$(DEBUG) 
 CXX_COMPILE=@CXX@ @OPENMP_CXXFLAGS@ -Wall -Wextra -fPIC $(OPT_DEBUG) @CPPFLAGS@ $(EXTRAFLAGS)
 CXX_LINK=g++ -fPIC $(EXTRAFLAGS) $(OPT_DEBUG)
-THISDIR=/home/cfog/Research/Projects/ExaMesh/src
-MESHIOLIB=-L/home/cfog/Research/External/GMGW/src -Wl,-rpath=/home/cfog/Research/External/GMGW/src -lMeshIO
-EXAMESHLIB=-L$(THISDIR) -lexamesh -Wl,-rpath=$(THISDIR)
+THISDIR=`pwd`
+EXAMESHLIB=-L$(THISDIR) -Wl,-rpath=$(THISDIR) -lexamesh
 LDFLAGS=@LDFLAGS@ @OPENMP_CXXFLAGS@
 LIBRARY=libexamesh.so
 
@@ -46,7 +45,7 @@ LIBRARY=libexamesh.so
 	echo Compiling $*.cxx
 	-rm -f $*.o
 	-$(CXX_COMPILE) -c $*.cxx || \
-	(echo Compile of $*.cxx failed!	Command was: ; \
+	(echo "Compile of $*.cxx failed!  Command was: " ; \
 	echo $(CXX_COMPILE) -c $*.cxx)
 
 all default: $(OBJECTS) library test-exa refine
@@ -55,7 +54,7 @@ all default: $(OBJECTS) library test-exa refine
 library $(LIBRARY) : $(LIBOBJECTS)
 	-$(CXX_COMPILE) -shared -o libexamesh.so $(EXTRAFLAGS) $(LIBOBJECTS)
 
-refine: $(CXXOBJECTS) $(LIBRARY)
+refine: refine.o $(LIBRARY)
 	echo Linking refine
 	-$(CXX_LINK) -o refine $(CXXOBJECTS) $(LDFLAGS) $(EXAMESHLIB) @LIBS@
 	echo " "
@@ -74,6 +73,7 @@ depend:
 	makedepend $(CPPFLAGS) -Y *.cxx 2> /dev/null
 
 cover:
+	mkdir coverage
 	lcov --capture --directory . --output coverage/lcov.raw.info
 	lcov --remove coverage/lcov.raw.info "/usr*" "*GMGW1*" -o coverage/lcov.info
 	genhtml --demangle-cpp --output-directory coverage coverage/lcov.info

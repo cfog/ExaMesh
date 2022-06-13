@@ -29,6 +29,7 @@
 #include <cmath>
 #include <stdint.h>
 #include <limits.h>
+#include <assert.h>
 
 #include "exa_config.h"
 
@@ -62,7 +63,7 @@
 #define CALLGRIND_TOGGLE_COLLECT
 #endif
 
-#define MAX_DIVS 50
+#define MAX_DIVS 8
 #define FILE_NAME_LEN 1024
 
 typedef uint32_t emInt;
@@ -136,43 +137,150 @@ public:
 };
 
 struct EdgeVerts {
-	emInt verts[MAX_DIVS + 1];
+	emInt m_verts[MAX_DIVS + 1];
+	double m_param_t[MAX_DIVS + 1];
 	double m_totalDihed;
 };
 
-struct TriFaceVerts {
-	emInt corners[3], sorted[3];
-	volatile emInt (*intVerts)[MAX_DIVS - 2];
-//	emInt intVerts[MAX_DIVS - 2][MAX_DIVS - 2];
-	emInt volElement, volElementType;
-	TriFaceVerts() :
-			intVerts(nullptr), volElement(EMINT_MAX), volElementType(0) {
+class FaceVerts {
+protected:
+	emInt m_corners[4], m_sorted[4];
+	double m_cornerUVW[4][3];
+	int m_nCorners, m_nDivs;
+	emInt m_intVerts[MAX_DIVS - 1][MAX_DIVS - 1];
+	double m_param_st[MAX_DIVS + 1][MAX_DIVS + 1][2];
+	double m_param_uvw[MAX_DIVS + 1][MAX_DIVS + 1][3];
+	emInt m_volElem, m_volElemType;
+	bool m_bothSidesDone;
+public:
+	FaceVerts(const int nDivs, const emInt NC = 0) :
+		m_nCorners(NC), m_nDivs(nDivs), m_volElem(EMINT_MAX), m_volElemType(0),
+		m_bothSidesDone(false) {
+		assert(NC == 3 || NC == 4);
 	}
-	TriFaceVerts(const emInt v0, const emInt v1, const emInt v2,
-			const emInt type = 0, const emInt elemInd = EMINT_MAX);
-	~TriFaceVerts() {
+	virtual ~FaceVerts() {}
+	bool isValidIJ(const int ii, const int jj) const {
+		bool retVal = (ii >= 0) && (jj >= 0);
+		if (m_nCorners == 3) {
+			retVal = retVal && ((ii + jj) <= m_nDivs);
+		}
+		else {
+			assert(m_nCorners == 4);
+			retVal = retVal && (ii <= m_nDivs) && (jj <= m_nDivs);
+		}
+		return retVal;
 	}
-	void allocVertMemory() {
-		intVerts = new emInt[MAX_DIVS - 2][MAX_DIVS - 2];
+	bool isValidParam(const double param) const {
+		// This isn't comprehensive, in that not all faces
+		// can have this full parameter range.  But the more
+		// accurate test requires significantly more information.
+		return (param >= 0 && param <= 1);
 	}
-	void freeVertMemory() const {
-		// TODO  It's really stinky to do this to avoid a double free....
-		if (intVerts) delete[] intVerts;
-//		intVerts = nullptr;
+	virtual void setupSorted() = 0;
+	emInt getSorted(const int ii) const {
+		return m_sorted[ii];
 	}
-	void setupSorted();
+	void setIntVertInd(const int ii, const int jj, const emInt vert) {
+		assert(isValidIJ(ii, jj));
+		m_intVerts[ii][jj] = vert;
+	}
+	emInt getIntVertInd(const int ii, const int jj) const
+	{
+		assert(isValidIJ(ii, jj));
+		return m_intVerts[ii][jj];
+	}
+	void setVertSTParams(const int ii, const int jj, const double st[2]){
+		assert(isValidIJ(ii, jj));
+		assert(isValidParam(st[0]));
+		assert(isValidParam(st[1]));
+		m_param_st[ii][jj][0] = st[0];
+		m_param_st[ii][jj][1] = st[1];
+	}
+	void getVertSTParams(const int ii, const int jj, double st[2]) const {
+		assert(isValidIJ(ii, jj));
+		st[0] = m_param_st[ii][jj][0];
+		st[1] = m_param_st[ii][jj][1];
+		assert(isValidParam(st[0]));
+		assert(isValidParam(st[1]));
+	}
+	void setVertUVWParams(const int ii, const int jj, const double uvw[3]){
+		assert(isValidIJ(ii, jj));
+		assert(isValidParam(uvw[0]));
+		assert(isValidParam(uvw[1]));
+		assert(isValidParam(uvw[2]));
+		m_param_uvw[ii][jj][0] = uvw[0];
+		m_param_uvw[ii][jj][1] = uvw[1];
+		m_param_uvw[ii][jj][2] = uvw[2];
+	}
+	void getVertUVWParams(const int ii, const int jj, double uvw[3]) const {
+		assert(isValidIJ(ii, jj));
+		uvw[0] = m_param_uvw[ii][jj][0];
+		uvw[1] = m_param_uvw[ii][jj][1];
+		uvw[2] = m_param_uvw[ii][jj][2];
+		assert(isValidParam(uvw[0]));
+		assert(isValidParam(uvw[1]));
+		assert(isValidParam(uvw[2]));
+	}
+	void setCorners(const emInt cA, const emInt cB, const emInt cC,
+			const emInt cD = EMINT_MAX) {
+		m_corners[0] = cA;
+		m_corners[1] = cB;
+		m_corners[2] = cC;
+		m_corners[3] = cD;
+		setupSorted();
+	}
+	emInt getCorner(const int ii) const {
+		assert(ii >= 0 && ii < m_nCorners);
+		return m_corners[ii];
+	}
+	virtual void computeParaCoords(const int ii, const int jj,
+			double &s, double &t) const = 0;
+	emInt getVolElement() const {
+		return m_volElem;
+	}
+
+	emInt getVolElementType() const {
+		return m_volElemType;
+	}
 };
 
-struct QuadFaceVerts {
-	emInt corners[4], sorted[4];
-	emInt intVerts[MAX_DIVS - 1][MAX_DIVS - 1];
-	emInt volElement, volElementType;
-	QuadFaceVerts() :
-			volElement(EMINT_MAX), volElementType(0) {
-	}
-	QuadFaceVerts(const emInt v0, const emInt v1, const emInt v2, const emInt v3,
+class TriFaceVerts : public FaceVerts {
+//	emInt m_corners[3], m_sorted[3];
+//	volatile emInt (*m_intVerts)[MAX_DIVS - 2];
+//	double (*m_intParam_st)[MAX_DIVS-2];
+//	emInt volElement, volElementType;
+public:
+	TriFaceVerts(const int nDivs) : FaceVerts(nDivs, 3) {}
+	TriFaceVerts(const int nDivs, emInt v0, const emInt v1, const emInt v2,
 			const emInt type = 0, const emInt elemInd = EMINT_MAX);
-	void setupSorted();
+	virtual ~TriFaceVerts() {}
+//	void allocVertMemory() {
+//		m_intVerts = new emInt[MAX_DIVS - 2][MAX_DIVS - 2];
+//	}
+//	void freeVertMemory() const {
+//		if (m_intVerts) delete[] m_intVerts;
+//	}
+	virtual void computeParaCoords(const int ii, const int jj,
+			double &s, double &t) const;
+	virtual void setupSorted();
+	friend bool operator<(const TriFaceVerts& a, const TriFaceVerts& b);
+	friend bool operator==(const TriFaceVerts& a, const TriFaceVerts& b);
+};
+
+struct QuadFaceVerts : public FaceVerts {
+//	emInt m_corners[4], m_sorted[4];
+//	emInt m_intVerts[MAX_DIVS - 1][MAX_DIVS - 1];
+//	emInt volElement, volElementType;
+public:
+	QuadFaceVerts(const int nDivs) : FaceVerts(nDivs, 4) {}
+	QuadFaceVerts(const int nDivs, const emInt v0, const emInt v1, const emInt v2, const emInt v3,
+			const emInt type = 0, const emInt elemInd = EMINT_MAX);
+	virtual ~QuadFaceVerts() {}
+	virtual void computeParaCoords(const int ii, const int jj,
+			double &s, double &t) const;
+	virtual void setupSorted();
+	friend bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b);
+	friend bool operator==(const QuadFaceVerts& a, const QuadFaceVerts& b);
 };
 
 namespace std {
@@ -181,9 +289,9 @@ namespace std {
 		typedef std::size_t result_type;
 		result_type operator()(const argument_type& TFV) const noexcept
 		{
-			const result_type h0 = TFV.sorted[0];
-			const result_type h1 = TFV.sorted[1];
-			const result_type h2 = TFV.sorted[2];
+			const result_type h0 = TFV.getSorted(0);
+			const result_type h1 = TFV.getSorted(1);
+			const result_type h2 = TFV.getSorted(2);
 			return (h0 ^ (h1 << 1)) ^ (h2 << 2);
 		}
 	};
@@ -193,10 +301,10 @@ namespace std {
 		typedef std::size_t result_type;
 		result_type operator()(const argument_type& QFV) const noexcept
 		{
-			const result_type h0 = QFV.sorted[0];
-			const result_type h1 = QFV.sorted[1];
-			const result_type h2 = QFV.sorted[2];
-			const result_type h3 = QFV.sorted[3];
+			const result_type h0 = QFV.getSorted(0);
+			const result_type h1 = QFV.getSorted(1);
+			const result_type h2 = QFV.getSorted(2);
+			const result_type h3 = QFV.getSorted(3);
 			return h0 ^ (h1 << 1) ^ (h2 << 2) ^ (h3 << 3);
 		}
 	};

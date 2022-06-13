@@ -36,28 +36,28 @@
 #include "BdryTriDivider.h"
 #include "BdryQuadDivider.h"
 
-emInt subdividePartMesh(const ExaMesh * const pVM_input,
-		UMesh * const pVM_output, const int nDivs) {
+emInt subdividePartMesh(const ExaMesh *const pVM_input, UMesh *const pVM_output,
+		const int nDivs) {
 	assert(nDivs >= 1);
-  // Assumption:  the mesh is already ordered in a way that seems sensible
-  // to the caller, both cells and vertices.  As a result, we can create new
-  // verts and cells on the fly, with the expectation that the new ones will
-  // remain about as well-ordered as the old ones.
+	// Assumption:  the mesh is already ordered in a way that seems sensible
+	// to the caller, both cells and vertices.  As a result, we can create new
+	// verts and cells on the fly, with the expectation that the new ones will
+	// remain about as well-ordered as the old ones.
 
-  // Base of the tet is tri 012.
-  //   Pt 0 is at indices (i,j,k) = (0,0,nDivs).
-  //   Pt 1 is at indices (i,j,k) = (nDivs,0,nDivs).
-  //   Pt 2 is at indices (i,j,k) = (0,nDivs,nDivs).
-  //   Pt 3 is at indices (i,j,k) = (0,0,0).
-  // Other created points are laid into this framework.
-  // The i,j,k system isn't topologically right-handed.  It's set up so that k
-  // corresponds to layers in the divided tet, with each layer having
-  // progressively more points / tris.  Nevertheless, the tets produces should
-  // be geometrically right-handed.
+	// Base of the tet is tri 012.
+	//   Pt 0 is at indices (i,j,k) = (0,0,nDivs).
+	//   Pt 1 is at indices (i,j,k) = (nDivs,0,nDivs).
+	//   Pt 2 is at indices (i,j,k) = (0,nDivs,nDivs).
+	//   Pt 3 is at indices (i,j,k) = (0,0,0).
+	// Other created points are laid into this framework.
+	// The i,j,k system isn't topologically right-handed.  It's set up so that k
+	// corresponds to layers in the divided tet, with each layer having
+	// progressively more points / tris.  Nevertheless, the tets produces should
+	// be geometrically right-handed.
 
-  // TODO: Potentially, identify in advance how many times each edge is used,
-  // so that when all of them have appeared, the edge can be removed from the
-  // map.
+	// TODO: Potentially, identify in advance how many times each edge is used,
+	// so that when all of them have appeared, the edge can be removed from the
+	// map.
 	exa_map<Edge, EdgeVerts> vertsOnEdges;
 	exa_set<TriFaceVerts> vertsOnTris;
 	exa_set<QuadFaceVerts> vertsOnQuads;
@@ -67,116 +67,94 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 		double coords[3];
 		pVM_input->getCoords(iV, coords);
 		pVM_output->addVert(coords);
+//		double len = pVM_input->getLengthScale(iV);
+//		printf("Vert: %4d  Coords: (%8f %8f %8f)  Len: %8f\n", iV, coords[0],
+//				coords[1], coords[2], len);
 	}
 	assert(pVM_input->numVertsToCopy() == pVM_output->numVerts());
 
 	// Need to explicitly specify the type of mapping here.
 	TetDivider TD(pVM_output, pVM_input, nDivs);
 	for (emInt iT = 0; iT < pVM_input->numTets(); iT++) {
-    // Divide all the edges, including storing info about which new verts
-    // are on which edges
-		const emInt* const thisTet = pVM_input->getTetConn(iT);
+		// Divide all the edges, including storing info about which new verts
+		// are on which edges
+		const emInt *const thisTet = pVM_input->getTetConn(iT);
 		TD.setupCoordMapping(thisTet);
-		TD.divideEdges(vertsOnEdges);
-
-    // Divide all the faces, including storing info about which new verts
-    // are on which faces
-		TD.divideFaces(vertsOnTris, vertsOnQuads);
-
-    // Divide the cell
-    if (nDivs > 3) {
-			TD.divideInterior();
-    } // Done with internal division
+		TD.createDivisionVerts(vertsOnEdges, vertsOnTris,
+				vertsOnQuads);
 
 		// And now the moment of truth:  create a flock of new tets.
-    TD.createNewCells();
-		if ((iT + 1) % 100000 == 0) fprintf(
-				stderr, "Refined %'12d tets.  Tree sizes: %'12lu %'12lu %'12lu\r",
-				iT + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
-  } // Done looping over all tets
+		TD.createNewCells();
+		if ((iT + 1) % 100000 == 0)
+			fprintf(
+			stderr, "Refined %'12d tets.  Tree sizes: %'12lu %'12lu %'12lu\r",
+					iT + 1, vertsOnEdges.size(), vertsOnTris.size(),
+					vertsOnQuads.size());
+	} // Done looping over all tets
 #ifndef NDEBUG
 	fprintf(stderr, "\nDone with tets\n");
 #endif
 
-	PyrDivider PD(pVM_output, nDivs);
+	PyrDivider PD(pVM_output, pVM_input, nDivs);
 	for (emInt iP = 0; iP < pVM_input->numPyramids(); iP++) {
-    // Divide all the edges, including storing info about which new verts
-    // are on which edges
-		const emInt* const thisPyr = pVM_input->getPyrConn(iP);
+		// Divide all the edges, including storing info about which new verts
+		// are on which edges
+		const emInt *const thisPyr = pVM_input->getPyrConn(iP);
 		PD.setupCoordMapping(thisPyr);
 
-		PD.divideEdges(vertsOnEdges);
-
-    // Divide all the faces, including storing info about which new verts
-    // are on which faces
-		PD.divideFaces(vertsOnTris, vertsOnQuads);
-
-    // Divide the cell
-    if (nDivs >= 3) {
-			PD.divideInterior();
-    } // Done with internal division
+		PD.createDivisionVerts(vertsOnEdges, vertsOnTris,
+				vertsOnQuads);
 
 		// And now the moment of truth:  create a flock of new pyramids.
-    PD.createNewCells();
-		if ((iP + 1) % 100000 == 0) fprintf(
-				stderr, "Refined %'12d pyrs.  Tree sizes: %'12lu %'12lu %'12lu\r",
-				iP + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
-  } // Done looping over all pyramids
+		PD.createNewCells();
+		if ((iP + 1) % 100000 == 0)
+			fprintf(
+			stderr, "Refined %'12d pyrs.  Tree sizes: %'12lu %'12lu %'12lu\r",
+					iP + 1, vertsOnEdges.size(), vertsOnTris.size(),
+					vertsOnQuads.size());
+	} // Done looping over all pyramids
 #ifndef NDEBUG
 	fprintf(stderr, "\nDone with pyramids\n");
 #endif
 
-	PrismDivider PrismD(pVM_output, nDivs);
+	PrismDivider PrismD(pVM_output, pVM_input, nDivs);
 	for (emInt iP = 0; iP < pVM_input->numPrisms(); iP++) {
-    // Divide all the edges, including storing info about which new verts
-    // are on which edges
-		const emInt* const thisPrism = pVM_input->getPrismConn(iP);
+		// Divide all the edges, including storing info about which new verts
+		// are on which edges
+		const emInt *const thisPrism = pVM_input->getPrismConn(iP);
 		PrismD.setupCoordMapping(thisPrism);
-
-		PrismD.divideEdges(vertsOnEdges);
-
-    // Divide all the faces, including storing info about which new verts
-    // are on which faces
-		PrismD.divideFaces(vertsOnTris, vertsOnQuads);
-
-    // Divide the cell
-    if (nDivs >= 3) {
-			PrismD.divideInterior();
-    } // Done with internal division
+		PrismD.createDivisionVerts(vertsOnEdges, vertsOnTris,
+				vertsOnQuads);
 
 		// And now the moment of truth:  create a flock of new prisms.
-    PrismD.createNewCells();
-		if ((iP + 1) % 100000 == 0) fprintf(
-				stderr, "Refined %'12d prisms.  Tree sizes: %'12lu %'12lu %'12lu\r",
-				iP + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
+		PrismD.createNewCells();
+		if ((iP + 1) % 100000 == 0)
+			fprintf(
+			stderr, "Refined %'12d prisms.  Tree sizes: %'12lu %'12lu %'12lu\r",
+					iP + 1, vertsOnEdges.size(), vertsOnTris.size(),
+					vertsOnQuads.size());
 	} // Done looping over all prisms
 #ifndef NDEBUG
 	fprintf(stderr, "\nDone with prisms\n");
 #endif
 
-	HexDivider HD(pVM_output, nDivs);
+	HexDivider HD(pVM_output, pVM_input, nDivs);
 	for (emInt iH = 0; iH < pVM_input->numHexes(); iH++) {
-    // Divide all the edges, including storing info about which new verts
-    // are on which edges
-		const emInt* const thisHex = pVM_input->getHexConn(iH);
+		// Divide all the edges, including storing info about which new verts
+		// are on which edges
+		const emInt *const thisHex = pVM_input->getHexConn(iH);
 		HD.setupCoordMapping(thisHex);
 
-		HD.divideEdges(vertsOnEdges);
-
-    // Divide all the faces, including storing info about which new verts
-    // are on which faces
-		HD.divideFaces(vertsOnTris, vertsOnQuads);
-
-    // Divide the cell
-    if (nDivs >= 2) {
-			HD.divideInterior();
-    } // Done with internal division
+		HD.createDivisionVerts(vertsOnEdges, vertsOnTris,
+				vertsOnQuads);
 
 		// And now the moment of truth:  create a flock of new hexes.
-    HD.createNewCells();
-		if ((iH + 1) % 100000 == 0) fprintf(
-				stderr, "Refined %'12d hexes.  Tree sizes: %'12lu %'12lu %'12lu\r",
-				iH + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
+		HD.createNewCells();
+		if ((iH + 1) % 100000 == 0)
+			fprintf(
+			stderr, "Refined %'12d hexes.  Tree sizes: %'12lu %'12lu %'12lu\r",
+					iH + 1, vertsOnEdges.size(), vertsOnTris.size(),
+					vertsOnQuads.size());
 	} // Done looping over all hexes
 #ifndef NDEBUG
 	fprintf(stderr, "\nDone with hexes\n");
@@ -184,7 +162,7 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 
 	BdryTriDivider BTD(pVM_output, nDivs);
 	for (emInt iBT = 0; iBT < pVM_input->numBdryTris(); iBT++) {
-		const emInt* const thisBdryTri = pVM_input->getBdryTriConn(iBT);
+		const emInt *const thisBdryTri = pVM_input->getBdryTriConn(iBT);
 		BTD.setupCoordMapping(thisBdryTri);
 		// Shouldn't need to divide anything at all here, but these function
 		// copy the vertices into the CellDivider internal data structure.
@@ -192,9 +170,12 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 		BTD.divideFaces(vertsOnTris, vertsOnQuads);
 
 		BTD.createNewCells();
-		if ((iBT + 1) % 100000 == 0) fprintf(
-				stderr, "Refined %'12d bdry tris.  Tree sizes: %'12lu %'12lu %'12lu\r",
-				iBT + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
+		if ((iBT + 1) % 100000 == 0)
+			fprintf(
+			stderr,
+					"Refined %'12d bdry tris.  Tree sizes: %'12lu %'12lu %'12lu\r",
+					iBT + 1, vertsOnEdges.size(), vertsOnTris.size(),
+					vertsOnQuads.size());
 	}
 #ifndef NDEBUG
 	fprintf(stderr, "\nDone with bdry tris\n");
@@ -202,7 +183,7 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 
 	BdryQuadDivider BQD(pVM_output, nDivs);
 	for (emInt iBQ = 0; iBQ < pVM_input->numBdryQuads(); iBQ++) {
-		const emInt* const thisBdryQuad = pVM_input->getBdryQuadConn(iBQ);
+		const emInt *const thisBdryQuad = pVM_input->getBdryQuadConn(iBQ);
 		BQD.setupCoordMapping(thisBdryQuad);
 
 		// Shouldn't need to divide anything at all here, but this function
@@ -211,9 +192,12 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 		BQD.divideFaces(vertsOnTris, vertsOnQuads);
 
 		BQD.createNewCells();
-		if ((iBQ + 1) % 100000 == 0) fprintf(
-				stderr, "Refined %'12d bdry quads.  Tree sizes: %'12lu %'12lu %'12lu\r",
-				iBQ + 1, vertsOnEdges.size(), vertsOnTris.size(), vertsOnQuads.size());
+		if ((iBQ + 1) % 100000 == 0)
+			fprintf(
+			stderr,
+					"Refined %'12d bdry quads.  Tree sizes: %'12lu %'12lu %'12lu\r",
+					iBQ + 1, vertsOnEdges.size(), vertsOnTris.size(),
+					vertsOnQuads.size());
 	}
 #ifndef NDEBUG
 	fprintf(stderr, "\nDone with bdry quads\n");
@@ -231,8 +215,8 @@ emInt subdividePartMesh(const ExaMesh * const pVM_input,
 	return pVM_output->numCells();
 }
 
-bool computeMeshSize(const struct MeshSize& MSIn, const emInt nDivs,
-		struct MeshSize& MSOut) {
+bool computeMeshSize(const struct MeshSize &MSIn, const emInt nDivs,
+		struct MeshSize &MSOut) {
 	// It's relatively easy to compute some of these quantities:
 	const emInt surfFactor = nDivs * nDivs;
 	const emInt volFactor = surfFactor * nDivs;
@@ -259,40 +243,31 @@ bool computeMeshSize(const struct MeshSize& MSIn, const emInt nDivs,
 	// Use signed 64-bit ints for these calculations.  It's possible someone will ask for
 	// something that blows out 32-bit unsigned ints, and will need to be stopped.
 	ssize_t inputTriCount = (MSIn.nBdryTris + MSIn.nTets * 4 + MSIn.nPyrs * 4
-														+ MSIn.nPrisms * 2)
-													/ 2;
+			+ MSIn.nPrisms * 2) / 2;
 	ssize_t inputQuadCount = (MSIn.nBdryQuads + MSIn.nPyrs + MSIn.nPrisms * 3
-														+ MSIn.nHexes * 6)
-														/ 2;
+			+ MSIn.nHexes * 6) / 2;
 	ssize_t inputFaceCount = inputTriCount + inputQuadCount;
 
-	ssize_t inputCellCount = MSIn.nTets + MSIn.nPyrs + MSIn.nPrisms + MSIn.nHexes;
+	ssize_t inputCellCount = MSIn.nTets + MSIn.nPyrs + MSIn.nPrisms
+			+ MSIn.nHexes;
 	ssize_t inputBdryEdgeCount = (MSIn.nBdryTris * 3 + MSIn.nBdryQuads * 4) / 2;
 	// Upcast the first arg explicitly, and the rest should follow.
 	int inputGenus = (ssize_t(MSIn.nBdryVerts) - inputBdryEdgeCount
-			+ MSIn.nBdryTris
-										+ MSIn.nBdryQuads
-										- 2)
-										/ 2;
+			+ MSIn.nBdryTris + MSIn.nBdryQuads - 2) / 2;
 
 	ssize_t inputEdges = (ssize_t(MSIn.nVerts) + inputFaceCount - inputCellCount
-												- 1 - inputGenus);
+			- 1 - inputGenus);
 
 	ssize_t outputFaceVerts = inputTriCount * (nDivs - 2) * (nDivs - 1) / 2
 			+ inputQuadCount * (nDivs - 1) * (nDivs - 1);
-	ssize_t outputCellVerts = MSIn.nTets * (nDivs - 3) * (nDivs - 2) * (nDivs - 1)
-			/ 6
-														+ MSIn.nPyrs * (2 * nDivs - 3) * (nDivs - 2)
-															* (nDivs - 1)
-															/ 6
-														+ MSIn.nPrisms * (nDivs - 1) * (nDivs - 2)
-															* (nDivs - 1)
-															/ 2
-														+ MSIn.nHexes * (nDivs - 1) * (nDivs - 1)
-															* (nDivs - 1);
+	ssize_t outputCellVerts = MSIn.nTets * (nDivs - 3) * (nDivs - 2)
+			* (nDivs - 1) / 6
+			+ MSIn.nPyrs * (2 * nDivs - 3) * (nDivs - 2) * (nDivs - 1) / 6
+			+ MSIn.nPrisms * (nDivs - 1) * (nDivs - 2) * (nDivs - 1) / 2
+			+ MSIn.nHexes * (nDivs - 1) * (nDivs - 1) * (nDivs - 1);
 	ssize_t outputEdgeVerts = inputEdges * (nDivs - 1);
 	ssize_t outputVerts = outputFaceVerts + outputEdgeVerts + outputCellVerts
-												+ MSIn.nVerts;
+			+ MSIn.nVerts;
 //	ssize_t outputEdges = outputVerts + inputFaceCount * surfFactor
 //												- inputCellCount * volFactor - 1 - inputGenus;
 	MSOut.nVerts = outputVerts;

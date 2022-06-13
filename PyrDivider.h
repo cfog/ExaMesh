@@ -32,10 +32,11 @@
 class PyrDivider: public CellDivider {
 	double xyzOffset[3], uVec[3], vVec[3], uvVec[3], xyzApex[3];
 public:
-	PyrDivider(UMesh *pInitMesh, const int segmentsPerEdge,
+	PyrDivider(UMesh *pVolMesh, const ExaMesh* const pInitMesh,
+			const int segmentsPerEdge,
 			const Mapping::MappingType type = Mapping::Uniform)
       :
-			CellDivider(pInitMesh, segmentsPerEdge) {
+			CellDivider(pVolMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
     vertIJK[0][1] = 0;
     vertIJK[0][2] = nDivs;
@@ -127,13 +128,13 @@ public:
 
 		if (type == Mapping::LengthScale) {
 			// TODO: Must fix this
-			m_Map = new UniformPyramidMapping(pInitMesh);
+			m_Map = new Q1PyramidMapping(pInitMesh);
 		}
 		else if (type == Mapping::Lagrange) {
 			m_Map = new LagrangeCubicPyramidMapping(pInitMesh);
 		}
 		else {
-			m_Map = new UniformPyramidMapping(pInitMesh);
+			m_Map = new Q1PyramidMapping(pInitMesh);
 		}
   }
 	~PyrDivider() {

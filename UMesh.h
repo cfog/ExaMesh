@@ -178,7 +178,7 @@ public:
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;
 
 	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
-			std::vector<CellPartData>& vecCPD) const;
+			std::vector<CellPartData>& vecCPD, const int numDivs) const;
 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,

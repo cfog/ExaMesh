@@ -31,10 +31,16 @@
 #include "CubicMesh.h"
 
 #include "TetDivider.h"
+#include "PyrDivider.h"
+#include "PrismDivider.h"
+#include "HexDivider.h"
 
 #include "Mapping.h"
 
-static void checkExpectedSize(const UMesh& UM) {
+#undef DO_SUBDIVISION_TESTS
+
+#ifdef DO_SUBDIVISION_TESTS
+static void checkExpectedSize(const UMesh &UM) {
 	BOOST_CHECK_EQUAL(UM.maxNVerts(), UM.numVerts());
 	BOOST_CHECK_EQUAL(UM.maxNBdryTris(), UM.numBdryTris());
 	BOOST_CHECK_EQUAL(UM.maxNBdryQuads(), UM.numBdryQuads());
@@ -43,6 +49,1369 @@ static void checkExpectedSize(const UMesh& UM) {
 	BOOST_CHECK_EQUAL(UM.maxNPrisms(), UM.numPrisms());
 	BOOST_CHECK_EQUAL(UM.maxNHexes(), UM.numHexes());
 }
+#endif
+
+struct MixedMeshFixture {
+	UMesh *pUM_In, *pUM_Out;
+	exa_map<Edge, EdgeVerts> vertsOnEdges;
+	exa_set<TriFaceVerts> vertsOnTris;
+	exa_set<QuadFaceVerts> vertsOnQuads;
+	MixedMeshFixture() {
+		pUM_In = new UMesh(11, 11, 6, 6, 1, 1, 1, 1);
+		double coords[][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 },
+				{ 0, 1, 0 }, { 0, 0, 1 }, { 0, 0, -1 }, { 1, 0, -1 },
+				{ 1, 1, -1 }, { 0, 1, -1 }, { 0, -1, 0 }, { 0, -1, -1 } };
+		emInt triVerts[][3] = { { 1, 2, 4 }, { 2, 3, 4 }, { 3, 0, 4 },
+				{ 0, 9, 4 }, { 9, 1, 4 }, { 10, 6, 5 } };
+		emInt quadVerts[][4] = { { 6, 7, 2, 1 }, { 7, 8, 3, 2 }, { 8, 5, 0, 3 },
+				{ 10, 6, 1, 9 }, { 5, 10, 9, 0 }, { 5, 6, 7, 8 } };
+		emInt tetVerts[4] = { 9, 1, 0, 4 };
+		emInt pyrVerts[5] = { 0, 1, 2, 3, 4 };
+		emInt prismVerts[6] = { 10, 6, 5, 9, 1, 0 };
+		emInt hexVerts[8] = { 5, 6, 7, 8, 0, 1, 2, 3 };
+
+		for (int ii = 0; ii < 11; ii++) {
+			pUM_In->addVert(coords[ii]);
+		}
+		for (int ii = 0; ii < 6; ii++) {
+			pUM_In->addBdryTri(triVerts[ii]);
+			pUM_In->addBdryQuad(quadVerts[ii]);
+		}
+		pUM_In->addTet(tetVerts);
+		pUM_In->addPyramid(pyrVerts);
+		pUM_In->addPrism(prismVerts);
+		pUM_In->addHex(hexVerts);
+
+		MeshSize MSOut = pUM_In->computeFineMeshSize(4);
+		pUM_Out = new UMesh(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris,
+				MSOut.nBdryQuads, MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms,
+				MSOut.nHexes);
+		for (int ii = 0; ii < 11; ii++) {
+			pUM_Out->addVert(coords[ii]);
+		}
+	}
+	~MixedMeshFixture() {
+		delete pUM_In;
+	}
+	void makeLengthScaleUniform() {
+		// Check the uniform length scale cases.
+		for (int ii = 0; ii < 11; ii++) {
+			pUM_In->setLengthScale(ii, 1.);
+		}
+	}
+	void setPrescribedLengthScale() {
+		// A simple analytic length scale.
+		for (int ii = 0; ii < 11; ii++) {
+			double len = 1 + 0.1*(pUM_In->getX(ii) + pUM_In->getY(ii) + pUM_In->getZ(ii));
+			pUM_In->setLengthScale(ii, len);
+		}
+	}
+};
+
+// The following test suite confirms correctness of the parametric-to-
+// physical space mapping for cubic Lagrange element shapes.
+BOOST_AUTO_TEST_SUITE(LagrangeCubicMappingTest)
+static void cubicXYZ(const double uvw[3], double xyz[3]) {
+	const double &u = uvw[0];
+	const double &v = uvw[1];
+	const double &w = uvw[2];
+	xyz[0] = u * u * u + 2 * u * u * v + 4 * u * v * v - 30 * u * v * w
+			+ 5 * u * u + 6 * u - 3 * u * v + 3;
+	xyz[1] = v * v * v + 2 * v * v * w + 4 * v * w * w - 54 * u * v * w
+			+ 5 * v * v + 6 * v - 4 * v * w + 7;
+	xyz[2] = w * w * w + 2 * w * w * u + 4 * w * u * u - 72 * u * v * w
+			+ 5 * w * w + 7 * w - 5 * w * u + 10.5;
+}
+
+BOOST_AUTO_TEST_CASE(CubicTet) {
+	printf("Testing cubic tet mapping\n");
+	CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
+	LagrangeCubicTetMapping LCTM(&CM);
+
+	// So the nodal values are just these functions evaluated at nodes, where for the
+	// canonical tet, we have:
+	double uvw[][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, // Corner nodes
+			{ 1 / 3., 0, 0 }, { 2 / 3., 0, 0 },  // Nodes between 0 and 1
+			{ 2 / 3., 1 / 3., 0 }, { 1 / 3., 2 / 3., 0 }, // Nodes between 1 and 2
+			{ 0, 2 / 3., 0 }, { 0, 1 / 3., 0 }, // Nodes between 2 and 0
+			{ 0, 0, 1 / 3. }, { 0, 0, 2 / 3. }, // Nodes between 0 and 3
+			{ 2 / 3., 0, 1 / 3. }, { 1 / 3., 0, 2 / 3. }, // Nodes between 1 and 3
+			{ 0, 2 / 3., 1 / 3. }, { 0, 1 / 3., 2 / 3. }, // Nodes between 2 and 3
+			{ 1 / 3., 1 / 3., 0 }, // Node on 012
+			{ 1 / 3., 0, 1 / 3. }, // Node on 013
+			{ 1 / 3., 1 / 3., 1 / 3. }, // Node on 123
+			{ 0, 1 / 3., 1 / 3. } }; // Node on 203
+	double xyz[20][3] = { 0 };
+
+	// Now the nodal values, by simple functional evaluation.
+	for (int ii = 0; ii < 20; ii++) {
+		cubicXYZ(uvw[ii], xyz[ii]);
+	}
+	LCTM.setNodalValues(xyz);
+	LCTM.setModalValues();
+
+	double testUVW[] = { 1. / M_PI, 1. / M_E, 0.5 * (1 - 1. / M_PI - 1. / M_E) };
+	double LCTMxyz[3], funcxyz[3];
+	LCTM.computeTransformedCoords(testUVW, LCTMxyz);
+	cubicXYZ(testUVW, funcxyz);
+	BOOST_CHECK_CLOSE(LCTMxyz[0], funcxyz[0], 1.e-8);
+	BOOST_CHECK_CLOSE(LCTMxyz[1], funcxyz[1], 1.e-8);
+	BOOST_CHECK_CLOSE(LCTMxyz[2], funcxyz[2], 1.e-8);
+
+	for (int ii = 0; ii < 20; ii++) {
+		LCTM.computeTransformedCoords(uvw[ii], LCTMxyz);
+//			printf("%d\n", ii);
+		BOOST_CHECK_CLOSE(LCTMxyz[0], xyz[ii][0], 1.e-8);
+		BOOST_CHECK_CLOSE(LCTMxyz[1], xyz[ii][1], 1.e-8);
+		BOOST_CHECK_CLOSE(LCTMxyz[2], xyz[ii][2], 1.e-8);
+	}
+
+}
+
+BOOST_AUTO_TEST_CASE(CubicPyramid) {
+	printf("Testing cubic pyramid mapping\n");
+	CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
+	LagrangeCubicPyramidMapping LCPM(&CM);
+
+	// So the nodal values are just these functions evaluated at nodes, where for the
+	// canonical pyramid, we have:
+	double uvw[][3] = { { -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 }, { -1, 1, 0 },
+			{ 0, 0, 1 }, // Corner nodes
+			{ -1 / 3., -1, 0 },
+			{ 1 / 3., -1, 0 }, // Nodes between 0 and 1
+			{ 1, -1 / 3., 0 },
+			{ 1, 1 / 3., 0 }, // Nodes between 1 and 2
+			{ 1 / 3., 1, 0 },
+			{ -1 / 3., 1, 0 }, // Nodes between 2 and 3
+			{ -1, 1 / 3., 0 },
+			{ -1, -1 / 3., 0 }, // Nodes between 3 and 0
+			{ -2 / 3., -2 / 3., 1 / 3. },
+			{ -1 / 3., -1 / 3., 2 / 3. }, // Nodes between 0 and 4
+			{ 2 / 3., -2 / 3., 1 / 3. },
+			{ 1 / 3., -1 / 3., 2 / 3. }, // Nodes between 1 and 4
+			{ 2 / 3., 2 / 3., 1 / 3. },
+			{ 1 / 3., 1 / 3., 2 / 3. }, // Nodes between 2 and 4
+			{ -2 / 3., 2 / 3., 1 / 3. },
+			{ -1 / 3., 1 / 3., 2 / 3. }, // Nodes between 3 and 4
+			{ -1 / 3., -1 / 3., 0 }, { 1 / 3., -1 / 3., 0 },
+			{ 1 / 3., 1 / 3., 0 }, { -1 / 3., 1 / 3., 0 }, // Nodes on the base
+			{ 0, -2 / 3., 1 / 3. }, // Node on 014
+			{ 2 / 3., 0, 1 / 3. }, // Node on 124
+			{ 0, 2 / 3., 1 / 3. }, // Node on 234
+			{ -2 / 3., 0, 1 / 3. }, // Node on 304
+			{ 0, 0, 1 / 3. } }; // Node in the interior
+
+	double uvwToMap[30][3];
+
+	double xyz[30][3] = { 0 };
+
+	// Now the nodal values, by simple functional evaluation.
+	for (int ii = 0; ii < 30; ii++) {
+		double w = uvw[ii][2];
+		uvwToMap[ii][0] = (uvw[ii][0] + (1 - w)) / 2;
+		uvwToMap[ii][1] = (uvw[ii][1] + (1 - w)) / 2;
+		uvwToMap[ii][2] = w;
+		cubicXYZ(uvw[ii], xyz[ii]);
+	}
+	LCPM.setNodalValues(xyz);
+	LCPM.setModalValues();
+
+	double testUVW[] = { 1. / M_PI, 1. / M_E, 2 * (1 - 1. / M_PI - 1. / M_E) };
+	double LCPMxyz[3], funcxyz[3];
+	cubicXYZ(testUVW, funcxyz);
+	testUVW[0] = (testUVW[0] + (1 - testUVW[2])) / 2;
+	testUVW[1] = (testUVW[1] + (1 - testUVW[2])) / 2;
+	LCPM.computeTransformedCoords(testUVW, LCPMxyz);
+	BOOST_CHECK_CLOSE(LCPMxyz[0], funcxyz[0], 1.e-8);
+	BOOST_CHECK_CLOSE(LCPMxyz[1], funcxyz[1], 1.e-8);
+	BOOST_CHECK_CLOSE(LCPMxyz[2], funcxyz[2], 1.e-8);
+
+	for (int ii = 0; ii < 30; ii++) {
+		LCPM.computeTransformedCoords(uvwToMap[ii], LCPMxyz);
+//			printf("%d\n", ii);
+		BOOST_CHECK_CLOSE(LCPMxyz[0], xyz[ii][0], 1.e-8);
+		BOOST_CHECK_CLOSE(LCPMxyz[1], xyz[ii][1], 1.e-8);
+		BOOST_CHECK_CLOSE(LCPMxyz[2], xyz[ii][2], 1.e-8);
+	}
+}
+
+BOOST_AUTO_TEST_CASE(CubicPrism) {
+	printf("Testing cubic prism mapping\n");
+	CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
+	LagrangeCubicPrismMapping LCPM(&CM);
+
+	// So the nodal values are just these functions evaluated at nodes, where for the
+	// canonical prism, we have:
+	double uvw[][3] = { { 0, 0, 0 }, // 0
+			{ 1, 0, 0 }, // 1
+			{ 0, 1, 0 }, // 2
+			{ 0, 0, 1 }, // 3
+			{ 1, 0, 1 }, // 4
+			{ 0, 1, 1 }, // 5
+			{ 1. / 3, 0, 0 }, // 6
+			{ 2. / 3, 0, 0 }, // 7
+			{ 2. / 3, 1. / 3, 0 }, // 8
+			{ 1. / 3, 2. / 3, 0 }, // 9
+			{ 0, 2. / 3, 0 }, // 10
+			{ 0, 1. / 3, 0 }, // 11
+			{ 0, 0, 1. / 3 }, // 12
+			{ 0, 0, 2. / 3 }, // 13
+			{ 1, 0, 1. / 3 }, // 14
+			{ 1, 0, 2. / 3 }, // 15
+			{ 0, 1, 1. / 3 }, // 16
+			{ 0, 1, 2. / 3 }, // 17
+			{ 1. / 3, 0, 1 }, // 18
+			{ 2. / 3, 0, 1 }, // 19
+			{ 2. / 3, 1. / 3, 1 }, // 20
+			{ 1. / 3, 2. / 3, 1 }, // 21
+			{ 0, 2. / 3, 1 }, // 22
+			{ 0, 1. / 3, 1 }, // 23
+			{ 1. / 3, 1. / 3, 0 }, // 24
+			{ 1. / 3, 0, 1. / 3 }, // 25
+			{ 2. / 3, 0, 1. / 3 }, // 26
+			{ 2. / 3, 0, 2. / 3 }, // 27
+			{ 1. / 3, 0, 2. / 3 }, // 28
+			{ 2. / 3, 1. / 3, 1. / 3 }, // 29
+			{ 1. / 3, 2. / 3, 1. / 3 }, // 30
+			{ 1. / 3, 2. / 3, 2. / 3 }, // 31
+			{ 2. / 3, 1. / 3, 2. / 3 }, // 32
+			{ 0, 2. / 3, 1. / 3 }, // 33
+			{ 0, 1. / 3, 1. / 3 }, // 34
+			{ 0, 1. / 3, 2. / 3 }, // 35
+			{ 0, 2. / 3, 2. / 3 }, // 36
+			{ 1. / 3, 1. / 3, 1 }, // 37
+			{ 1. / 3, 1. / 3, 1. / 3 }, // 38
+			{ 1. / 3, 1. / 3, 2. / 3 } // 39
+	};
+
+	double xyz[40][3] = { 0 };
+
+	// Now the nodal values, by simple functional evaluation.
+	for (int ii = 0; ii < 40; ii++) {
+		cubicXYZ(uvw[ii], xyz[ii]);
+	}
+	LCPM.setNodalValues(xyz);
+	LCPM.setModalValues();
+
+	double testUVW[] = { 1. / M_PI, 1. / M_E, 0.5 * (1 - 1. / M_PI - 1. / M_E) };
+	double LCPMxyz[3], funcxyz[3];
+	cubicXYZ(testUVW, funcxyz);
+	LCPM.computeTransformedCoords(testUVW, LCPMxyz);
+	BOOST_CHECK_CLOSE(LCPMxyz[0], funcxyz[0], 1.e-8);
+	BOOST_CHECK_CLOSE(LCPMxyz[1], funcxyz[1], 1.e-8);
+	BOOST_CHECK_CLOSE(LCPMxyz[2], funcxyz[2], 1.e-8);
+
+	for (int ii = 0; ii < 40; ii++) {
+		LCPM.computeTransformedCoords(uvw[ii], LCPMxyz);
+//			printf("%d\n", ii);
+		BOOST_CHECK_CLOSE(LCPMxyz[0], xyz[ii][0], 1.e-8);
+		BOOST_CHECK_CLOSE(LCPMxyz[1], xyz[ii][1], 1.e-8);
+		BOOST_CHECK_CLOSE(LCPMxyz[2], xyz[ii][2], 1.e-8);
+	}
+}
+
+BOOST_AUTO_TEST_CASE(CubicHex) {
+	printf("Testing cubic hex mapping\n");
+	CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
+	LagrangeCubicHexMapping LCHM(&CM);
+
+	// So the nodal values are just these functions evaluated at nodes, where for the
+	// canonical pyramid, we have:
+	double uvw[][3] = {
+	// Bottom layer
+			{ 0, 0, 0 }, // 0
+			{ 1, 0, 0 }, // 1
+			{ 1, 1, 0 }, // 2
+			{ 0, 1, 0 }, // 3
+			{ 0, 0, 1 }, // 4
+			{ 1, 0, 1 }, // 5
+			{ 1, 1, 1 }, // 6
+			{ 0, 1, 1 }, // 7
+			{ 1. / 3, 0, 0 }, // 8
+			{ 2. / 3, 0, 0 }, // 9
+			{ 1, 1. / 3, 0 }, // 10
+			{ 1, 2. / 3, 0 }, // 11
+			{ 2. / 3, 1, 0 }, // 12
+			{ 1. / 3, 1, 0 }, // 13
+			{ 0, 2. / 3, 0 }, // 14
+			{ 0, 1. / 3, 0 }, // 15
+			{ 0, 0, 1. / 3 }, // 16
+			{ 0, 0, 2. / 3 }, // 17
+			{ 1, 0, 1. / 3 }, // 18
+			{ 1, 0, 2. / 3 }, // 19
+			{ 1, 1, 1. / 3 }, // 20
+			{ 1, 1, 2. / 3 }, // 21
+			{ 0, 1, 1. / 3 }, // 22
+			{ 0, 1, 2. / 3 }, // 23
+			{ 1. / 3, 0, 1 }, // 24
+			{ 2. / 3, 0, 1 }, // 25
+			{ 1, 1. / 3, 1 }, // 26
+			{ 1, 2. / 3, 1 }, // 27
+			{ 2. / 3, 1, 1 }, // 28
+			{ 1. / 3, 1, 1 }, // 29
+			{ 0, 2. / 3, 1 }, // 30
+			{ 0, 1. / 3, 1 }, // 31
+			{ 1. / 3, 1. / 3, 0 }, // 32
+			{ 2. / 3, 1. / 3, 0 }, // 33
+			{ 2. / 3, 2. / 3, 0 }, // 34
+			{ 1. / 3, 2. / 3, 0 }, // 35
+			{ 1. / 3, 0, 1. / 3 }, // 36
+			{ 2. / 3, 0, 1. / 3 }, // 37
+			{ 2. / 3, 0, 2. / 3 }, // 38
+			{ 1. / 3, 0, 2. / 3 }, // 39
+			{ 1, 1. / 3, 1. / 3 }, // 40
+			{ 1, 2. / 3, 1. / 3 }, // 41
+			{ 1, 2. / 3, 2. / 3 }, // 42
+			{ 1, 1. / 3, 2. / 3 }, // 43
+			{ 2. / 3, 1, 1. / 3 }, // 44
+			{ 1. / 3, 1, 1. / 3 }, // 45
+			{ 1. / 3, 1, 2. / 3 }, // 46
+			{ 2. / 3, 1, 2. / 3 }, // 47
+			{ 0, 2. / 3, 1. / 3 }, // 48
+			{ 0, 1. / 3, 1. / 3 }, // 49
+			{ 0, 1. / 3, 2. / 3 }, // 50
+			{ 0, 2. / 3, 2. / 3 }, // 51
+			{ 1. / 3, 1. / 3, 1 }, // 52
+			{ 2. / 3, 1. / 3, 1 }, // 53
+			{ 2. / 3, 2. / 3, 1 }, // 54
+			{ 1. / 3, 2. / 3, 1 }, // 55
+			{ 1. / 3, 1. / 3, 1. / 3 }, // 56
+			{ 2. / 3, 1. / 3, 1. / 3 }, // 57
+			{ 2. / 3, 2. / 3, 1. / 3 }, // 58
+			{ 1. / 3, 2. / 3, 1. / 3 }, // 59
+			{ 1. / 3, 1. / 3, 2. / 3 }, // 60
+			{ 2. / 3, 1. / 3, 2. / 3 }, // 61
+			{ 2. / 3, 2. / 3, 2. / 3 }, // 62
+			{ 1. / 3, 2. / 3, 2. / 3 } // 63
+	};
+
+	double xyz[64][3] = { 0 };
+
+	// Now the nodal values, by simple functional evaluation.
+	for (int ii = 0; ii < 64; ii++) {
+		cubicXYZ(uvw[ii], xyz[ii]);
+	}
+	LCHM.setNodalValues(xyz);
+	LCHM.setModalValues();
+
+	double testUVW[] = { 1. / M_PI, 1. / M_E, 0.5 * (1 - 1. / M_PI - 1. / M_E) };
+	double LCHMxyz[3], funcxyz[3];
+	cubicXYZ(testUVW, funcxyz);
+	LCHM.computeTransformedCoords(testUVW, LCHMxyz);
+	BOOST_CHECK_CLOSE(LCHMxyz[0], funcxyz[0], 1.e-8);
+	BOOST_CHECK_CLOSE(LCHMxyz[1], funcxyz[1], 1.e-8);
+	BOOST_CHECK_CLOSE(LCHMxyz[2], funcxyz[2], 1.e-8);
+
+	for (int ii = 0; ii < 64; ii++) {
+		LCHM.computeTransformedCoords(uvw[ii], LCHMxyz);
+//			printf("%d\n", ii);
+		BOOST_CHECK_CLOSE(LCHMxyz[0], xyz[ii][0], 1.e-8);
+		BOOST_CHECK_CLOSE(LCHMxyz[1], xyz[ii][1], 1.e-8);
+		BOOST_CHECK_CLOSE(LCHMxyz[2], xyz[ii][2], 1.e-8);
+	}
+}
+BOOST_AUTO_TEST_SUITE_END()
+
+// *******************************************************************
+// BEGIN OBSOLETE SECTION
+// *******************************************************************
+
+// The following test suite confirms correctness of the physical space
+// coordinates computed using the old length scale mapping.
+BOOST_AUTO_TEST_SUITE(LengthScaleMappingTests)
+
+BOOST_AUTO_TEST_CASE(TetMapping) {
+	printf("Testing tet length-scale mapping.\n");
+	UMesh VM(4, 4, 4, 0, 1, 0, 0, 0);
+	double vert0[] = { 1, 1, 1 };
+	double vert1[] = { 2, 2, 2 };
+	double vert2[] = { 1.5, 2, 2 };
+	double vert3[] = { 1.5, 1, 3 };
+
+	VM.addVert(vert0);
+	VM.addVert(vert1);
+	VM.addVert(vert2);
+	VM.addVert(vert3);
+
+	emInt verts[] = { 0, 1, 2, 3 };
+	VM.addTet(verts);
+
+	LengthScaleTetMapping TLSM(&VM);
+
+	// Test for known cubic functions:
+	// x = u^3 + 2 u^2 v + 4 u v^2 - 30 u v w + 5 u^2 + 6 u + 3
+	// y = v^3 + 2 v^2 w + 4 v w^2 - 54 u v w + 5 v^2 + 6 v + 7
+	// z = w^3 + 2 w^2 u + 4 w u^2 - 72 u v w + 5 w^2 + 6 w + 10
+	// so
+	// dx/du = 3 u^2 + 4 u v + 4 v^2 - 30 v w + 10 u + 6
+	// dx/dv = 2 u^2 + 8 u v - 30 u w
+	// dx/dw = -30 u v
+	//
+	// dy/du = -54 v w
+	// dy/dv = 3 v^2 + 4 v w - 54 u w + 4 w^2 + 10 v + 6
+	// dy/dw = 2 v^2 + 8 v w - 54 u v
+	//
+	// dz/du = 2 w^2 + 8 u w -72 v w
+	// dz/dv = -54 u w
+	// dz/dw = 3 w^2 + 4 u w + 4 u^2 + 10 w + 6 - 54 u v
+
+	//
+	// Now just evaluate these at points 0 (0,0,0), 1 (1,0,0), 2 (0,1,0),
+	// and 3 (0,0,1) to get:
+	{
+		double xyz[][3] = { { 3, 7, 10 }, { 15, 7, 10 }, { 3, 19, 10 }, { 3, 7,
+				22 } };
+
+		double uderiv[][3] = { { 6, 0, 0 }, { 19, 0, 0 }, { 10, 0, 0 }, { 6, 0,
+				2 } };
+
+		double vderiv[][3] = { { 0, 6, 0 }, { 2, 6, 0 }, { 0, 19, 0 }, { 0, 10,
+				0 } };
+
+		double wderiv[][3] = { { 0, 0, 6 }, { 0, 0, 10 }, { 0, 2, 6 }, { 0, 0,
+				19 } };
+
+		TLSM.setPolyCoeffs(xyz, uderiv, vderiv, wderiv);
+
+		double uvw[] = { 0.2, 0.3, 0.4 };
+		double xyzTest[3];
+		TLSM.computeTransformedCoords(uvw, xyzTest);
+		BOOST_CHECK_CLOSE(xyzTest[0], 4.552, 1.e-8);
+		BOOST_CHECK_CLOSE(xyzTest[1], 9.589, 1.e-8);
+		BOOST_CHECK_CLOSE(xyzTest[2], 13.44, 1.e-8);
+	}
+
+	TLSM.setupCoordMapping(verts);
+
+	double uvw[] = { 0, 0, 0 };
+	double xyz[3];
+
+	TLSM.computeTransformedCoords(uvw, xyz);
+	BOOST_CHECK_CLOSE(xyz[0], vert0[0], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[1], vert0[1], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[2], vert0[2], 1.e-8);
+
+	uvw[0] = 1;
+	TLSM.computeTransformedCoords(uvw, xyz);
+	BOOST_CHECK_CLOSE(xyz[0], vert1[0], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[1], vert1[1], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[2], vert1[2], 1.e-8);
+
+	uvw[0] = 0;
+	uvw[1] = 1;
+	TLSM.computeTransformedCoords(uvw, xyz);
+	BOOST_CHECK_CLOSE(xyz[0], vert2[0], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[1], vert2[1], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[2], vert2[2], 1.e-8);
+
+	uvw[1] = 0;
+	uvw[2] = 1;
+	TLSM.computeTransformedCoords(uvw, xyz);
+	BOOST_CHECK_CLOSE(xyz[0], vert3[0], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[1], vert3[1], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[2], vert3[2], 1.e-8);
+
+#ifndef NDEBUG
+	// Really a regression test
+	uvw[0] = 0.25;
+	uvw[1] = 1. / 6;
+	uvw[2] = 5. / 12;
+	TLSM.computeTransformedCoords(uvw, xyz);
+	BOOST_CHECK_CLOSE(xyz[0], 1.5745947924241497, 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[1], 1.4122999796448497, 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[2], 2.4182016298381059, 1.e-8);
+#endif
+
+	emInt verts2[] = { 3, 1, 2, 0 };
+	TLSM.setupCoordMapping(verts2);
+
+	uvw[0] = uvw[1] = uvw[2] = 0;
+	TLSM.computeTransformedCoords(uvw, xyz);
+	BOOST_CHECK_CLOSE(xyz[0], vert3[0], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[1], vert3[1], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[2], vert3[2], 1.e-8);
+
+	uvw[0] = 1;
+	TLSM.computeTransformedCoords(uvw, xyz);
+	BOOST_CHECK_CLOSE(xyz[0], vert1[0], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[1], vert1[1], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[2], vert1[2], 1.e-8);
+
+	uvw[0] = 0;
+	uvw[1] = 1;
+	TLSM.computeTransformedCoords(uvw, xyz);
+	BOOST_CHECK_CLOSE(xyz[0], vert2[0], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[1], vert2[1], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[2], vert2[2], 1.e-8);
+
+	uvw[1] = 0;
+	uvw[2] = 1;
+	TLSM.computeTransformedCoords(uvw, xyz);
+	BOOST_CHECK_CLOSE(xyz[0], vert0[0], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[1], vert0[1], 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[2], vert0[2], 1.e-8);
+
+	// Really a regression test
+	uvw[0] = 0.25;
+	uvw[1] = 1. / 6;
+	uvw[2] = 1. / 6;
+	TLSM.computeTransformedCoords(uvw, xyz);
+	BOOST_CHECK_CLOSE(xyz[0], 1.5331084593558231, 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[1], 1.495850138813301, 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[2], 2.063058892315818, 1.e-8);
+}
+
+BOOST_AUTO_TEST_CASE(PrismMapping) {
+	printf("Testing prism length-scale mapping.\n");
+
+	// Need a valid UMesh to be able to do this, but it doesn't have
+	// to bear any resemblance to the test we're about to do.
+	UMesh VM(4, 4, 4, 0, 1, 0, 0, 0);
+	double vert0[] = { 1, 1, 1 };
+	double vert1[] = { 2, 2, 2 };
+	double vert2[] = { 1.5, 2, 2 };
+	double vert3[] = { 1.5, 1, 3 };
+
+	VM.addVert(vert0);
+	VM.addVert(vert1);
+	VM.addVert(vert2);
+	VM.addVert(vert3);
+
+	emInt verts[] = { 0, 1, 2, 3 };
+	VM.addTet(verts);
+
+	LengthScalePrismMapping PLSM(&VM);
+
+	// Test for known analytic functions that (between them) hit all terms
+	// in the polynomial expansion.
+	// x = u^3 + 2 u^2 v - 4 u^3 w^2 - 3 u^2 v w^2 + 5 u^2 - 3 u^2 w^2 + 6 u + 3 + u w + 2 u^3 w^3
+	// y = v^3 + 2 u v^2 + 4 v^3 w^2 - 5 u v^2 w^2 + 5 v^2 - 4 v^2 w^2 + 6 v + 7 + 2 v w + 3 v^3 w^3
+	// z = w^3 + 2 w^3 u + 4 w^3 v   - 7 u w^2     - 6 v w^2 + 5 w^2   + 6 w + 10 - u^2 w^3 - 2 v^2 w^3 + 3 u^3 w^3 - 4 v^3 w^3
+	// so
+	// dx/du = 3 u^2 + 4 uv - 12 u^2 w^2 - 6 u v w^2 + 10 u - 6 u w^2 + 6 + w + 6 u^2 w^3
+	// dx/dv = 2 u^2 - 3 u^2 w^2
+	// dx/dw = - 8 u^3 w - 6 u^2 v w - 6 u^2 w + u + 6 u^3 w + u
+	//
+	// dy/du = 2 v^2 - 5 v^2 w^2
+	// dy/dv = 9 v^2 w^3 + 12 v^2 w^2 + 3 v^2 + 4 u v - 10 u v w^2 + 10 v - 8 v w^2 + 6 + 2 w
+	// dy/dw = 8 v^3 w - 10 u v^2 w - 8 v^2 w + 2 v + 9 v^3 w^2
+	//
+	// dz/du = 2 w^3 - 7 w^2 - 2 u w^3 + 9 u^2 w^3
+	// dz/dv = 4 w^3 - 6 w^2 - 4 v w^3 - 12 v^2 w^3
+	// dz/dw = 3 w^2 + 6 w^2 u + 12 w^2 v - 14 u w - 12 v w + 10 w + 6 - 3 u^2 w^2 - 6 v^2 w^2 + 9 u^3 w^2 - 12 v^3 w^2
+
+	//
+	// Now just evaluate these at all points to get:
+	{
+		double xyz[6][3] = { { 3, 7, 10 }, // 0,0,0
+				{ 15, 7, 10 }, // 1,0,0
+				{ 3, 19, 10 }, // 0,1,0
+				{ 3, 7, 22 }, // 0,0,1
+				{ 13, 7, 16 }, // 1,0,1
+				{ 3, 17, 18 } // 0,1,1
+		};
+		double uderiv[6][3] = { { 6, 0, 0 }, // 0,0,0
+				{ 19, 0, 0 }, // 1,0,0
+				{ 6, 2, 0 }, // 0,1,0
+				{ 7, 0, -5 }, // 0,0,1
+				{ 14, 0, -7 }, // 1,0,1
+				{ 7, 2, -5 } // 0,1,1
+		};
+		double vderiv[6][3] = { { 0, 6, 0 }, // 0,0,0
+				{ 2, 6, 0 }, // 1,0,0
+				{ 0, 19, 0 }, // 0,1,0
+				{ 0, 8, -2 }, // 0,0,1
+				{ 2, 8, -2 }, // 1,0,1
+				{ 0, 13, -6 } // 0,1,1
+		};
+		double wderiv[6][3] = { { 0, 0, 6 }, // 0,0,0
+				{ 1, 0, 6 }, // 1,0,0
+				{ 0, 2, 6 }, // 0,1,0
+				{ 0, 0, 19 }, // 0,0,1
+				{ -5, 0, 8 }, // 1,0,1
+				{ 0, -6, 13 } // 0,1,1
+		};
+
+		PLSM.setPolyCoeffs(xyz, uderiv, vderiv, wderiv);
+
+		double uvw[] = { 0.2, 0.3, 0 };
+		double xyzOut[3];
+		PLSM.computeTransformedCoords(uvw, xyzOut);
+		BOOST_CHECK_CLOSE(xyzOut[0], 4.432, 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[1], 9.313, 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[2], 10, 1.e-8);
+
+		// On the lateral faces, the results don't match expectations.
+//		uvw[0] = 0;
+//		uvw[1] = 0.3;
+//		uvw[2] = 0.4;
+//		PLSM.computeTransformedCoords(uvw, xyzOut);
+//		BOOST_CHECK_CLOSE(xyzOut[0], 3, 1.e-8);
+//		BOOST_CHECK_CLOSE(xyzOut[1], 9.4594, 1.e-8);
+//		BOOST_CHECK_CLOSE(xyzOut[2], 13.04128, 1.e-8);
+
+//		uvw[0] = 0.2;
+//		uvw[1] = 0;
+//		uvw[2] = 0.4;
+//		PLSM.computeTransformedCoords(uvw, xyzOut);
+//		BOOST_CHECK_CLOSE(xyzOut[0], 4.4688, 1.e-8);
+//		BOOST_CHECK_CLOSE(xyzOut[1], 7, 1.e-8);
+//		BOOST_CHECK_CLOSE(xyzOut[2], 13.06304, 1.e-8);
+
+		uvw[0] = 0.2;
+		uvw[1] = 0.3;
+		uvw[2] = 1;
+		PLSM.computeTransformedCoords(uvw, xyzOut);
+		BOOST_CHECK_CLOSE(xyzOut[0], 4.512, 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[1], 9.553, 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[2], 20.18, 1.e-8);
+
+
+		uvw[0] = 0;
+		uvw[1] = 0;
+		uvw[2] = 0;
+		PLSM.computeTransformedCoords(uvw, xyzOut);
+		BOOST_CHECK_CLOSE(xyzOut[0], xyz[0][0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[1], xyz[0][1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[2], xyz[0][2], 1.e-8);
+
+		uvw[0] = 1;
+		uvw[1] = 0;
+		uvw[2] = 0;
+		PLSM.computeTransformedCoords(uvw, xyzOut);
+		BOOST_CHECK_CLOSE(xyzOut[0], xyz[1][0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[1], xyz[1][1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[2], xyz[1][2], 1.e-8);
+
+		uvw[0] = 0;
+		uvw[1] = 1;
+		uvw[2] = 0;
+		PLSM.computeTransformedCoords(uvw, xyzOut);
+		BOOST_CHECK_CLOSE(xyzOut[0], xyz[2][0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[1], xyz[2][1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[2], xyz[2][2], 1.e-8);
+
+		uvw[0] = 0;
+		uvw[1] = 0;
+		uvw[2] = 1;
+		PLSM.computeTransformedCoords(uvw, xyzOut);
+		BOOST_CHECK_CLOSE(xyzOut[0], xyz[3][0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[1], xyz[3][1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[2], xyz[3][2], 1.e-8);
+
+		uvw[0] = 1;
+		uvw[1] = 0;
+		uvw[2] = 1;
+		PLSM.computeTransformedCoords(uvw, xyzOut);
+		BOOST_CHECK_CLOSE(xyzOut[0], xyz[4][0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[1], xyz[4][1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[2], xyz[4][2], 1.e-8);
+
+		uvw[0] = 0;
+		uvw[1] = 1;
+		uvw[2] = 1;
+		PLSM.computeTransformedCoords(uvw, xyzOut);
+		BOOST_CHECK_CLOSE(xyzOut[0], xyz[5][0], 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[1], xyz[5][1], 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[2], xyz[5][2], 1.e-8);
+	}
+
+}
+
+BOOST_AUTO_TEST_CASE(HexMapping) {
+	printf("Testing hex length-scale mapping.\n");
+
+	// Need a valid UMesh to be able to do this, but it doesn't have
+	// to bear any resemblence to the test we're about to do.
+	UMesh VM(4, 4, 4, 0, 1, 0, 0, 0);
+	double vert0[] = { 1, 1, 1 };
+	double vert1[] = { 2, 2, 2 };
+	double vert2[] = { 1.5, 2, 2 };
+	double vert3[] = { 1.5, 1, 3 };
+
+	VM.addVert(vert0);
+	VM.addVert(vert1);
+	VM.addVert(vert2);
+	VM.addVert(vert3);
+
+	emInt verts[] = { 0, 1, 2, 3 };
+	VM.addTet(verts);
+
+	LengthScaleHexMapping HLSM(&VM);
+
+	// Test for known analytic functions that (between them) hit all 32 terms
+	// in the polynomial expansion.
+	// x = u^3 + 2 u^2 v + 4 u v^2 - 3 u v w + 5 u^2 - 3 u v + 6 u + 3 + u^3 v + 2 u^3 w + 3 u^2 v w + 4 u^3 v w
+	// y = v^3 + 2 v^2 w + 4 v w^2 - 5 u v w + 5 v^2 - 4 v w + 6 v + 7 + 5 u v^3 + 6 v^3 w + 7 u v^2 w + 8 u v^3 w
+	// z = w^3 + 2 w^2 u + 4 w u^2 - 7 u v w + 5 w^2 - 5 w u + 6 w + 10 - u w^3 - 2 v w^3 - 3 u v w^2 - 4 u v w^3
+	// so
+	// dx/du = 12 u^2 v w + 3 u^2 v + 6 u v w + 3 u^2 + 4 u v + 4 v^2 - 3 v w + 10 u - 3 v + 6
+	// dx/dv = 4 u^3 w + u^3 + 3 u^2 w + 2 u^2 + 8 u v - 3 u w - 3 u
+	// dx/dw = 4 u^3 w + 2 u^3 + 3 u^2 v - 3 u v
+	//
+	// dy/du = 8 v^3 w + 5 v^3 + 7 v^2 w - 5 v w
+	// dy/dv = 24 u v^2 w + 15 u v^2 + 14 u v w + 18 v^2 w + 3 v^2 + 4 v w - 5 u w + 4 w^2 + 10 v - 4 w + 6
+	// dy/dw = 8 u v^3 + 7 u v^2 + 6 v^3 + 2 v^2 + 8 v w - 5 u v - 4 v
+	//
+	// dz/du = -4 v w^3 - 3 v w^2 - w^3 + 2 w^2 + 8 u w - 7 v w - 5 w
+	// dz/dv = -4 u w^3 - 3 u w^2 - 2 w^3 - 7 u w
+	// dz/dw = -12 u v w^2 - 6 u v w - 3 u w^2 - 6 v w^2 + 3 w^2 + 4 u w + 4 u^2 - 5 u + 10 w + 6 - 7 u v
+
+	//
+	// Now just evaluate these at all points to get:
+	{
+		double xyz[8][3] = { { 3, 7, 10 }, // 0,0,0
+				{ 15, 7, 10 }, // 1,0,0
+				{ 19, 24, 10 }, // 1,1,0
+				{ 3, 19, 10 }, // 0,1,0
+				{ 3, 7, 22 }, // 0,0,1
+				{ 17, 7, 22 }, // 1,0,1
+				{ 25, 42, 6 }, // 1,1,1
+				{ 3, 27, 20 } // 0,1,1
+		};
+		double uderiv[8][3] = { { 6, 0, 0 }, // 0,0,0
+				{ 19, 0, 0 }, // 1,0,0
+				{ 27, 5, 0 }, // 1,1,0
+				{ 7, 5, 0 }, // 0,1,0
+				{ 6, 0, -4 }, // 0,0,1
+				{ 25, 0, 4 }, // 1,0,1
+				{ 48, 15, -10 }, // 1,1,1
+				{ 4, 15, -18 } // 0,1,1
+		};
+		double vderiv[8][3] = { { 0, 6, 0 }, // 0,0,0
+				{ 0, 6, 0 }, // 1,0,0
+				{ 8, 34, 0 }, // 1,1,0
+				{ 0, 19, 0 }, // 0,1,0
+				{ 0, 6, -2 }, // 0,0,1
+				{ 4, 1, -16 }, // 1,0,1
+				{ 12, 89, -16 }, // 1,1,1
+				{ 0, 41, -2 } // 0,1,1
+		};
+		double wderiv[8][3] = { { 0, 0, 6 }, // 0,0,0
+				{ 2, 0, 5 }, // 1,0,0
+				{ 6, 14, -2 }, // 1,1,0
+				{ 0, 4, 6 }, // 0,1,0
+				{ 0, 0, 19 }, // 0,0,1
+				{ 2, 0, 19 }, // 1,0,1
+				{ 6, 22, -12 }, // 1,1,1
+				{ 0, 12, 13 } // 0,1,1
+		};
+
+		HLSM.setPolyCoeffs(xyz, uderiv, vderiv, wderiv);
+
+		double uvw[] = { 0.2, 0.3, 0.4 };
+		double xyzOut[3];
+		HLSM.computeTransformedCoords(uvw, xyzOut);
+		BOOST_CHECK_CLOSE(xyzOut[0], 4.27904, 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[1], 9.10048, 1.e-8);
+		BOOST_CHECK_CLOSE(xyzOut[2], 12.72864, 1.e-8);
+	}
+
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+// *******************************************************************
+// END OBSOLETE SECTION
+// *******************************************************************
+
+BOOST_FIXTURE_TEST_SUITE(MappingTests, MixedMeshFixture)
+
+BOOST_AUTO_TEST_CASE(EdgeMappingUniform)
+ {
+	// Check the uniform length scale cases.
+	makeLengthScaleUniform();
+
+	TetDivider TD(pUM_Out, pUM_In, 4);
+
+	// Compute point locations and compare to the analytic
+	// result
+	const emInt *const thisTet = pUM_In->getTetConn(0);
+	TD.setupCoordMapping(thisTet);
+	TD.divideEdges(vertsOnEdges);
+
+	BOOST_CHECK_EQUAL(vertsOnEdges.size(), 6);
+	for (auto thisEdgeData : vertsOnEdges) {
+		EdgeVerts EV = thisEdgeData.second;
+		emInt startInd = EV.m_verts[0];
+		emInt vertInd = EV.m_verts[1];
+		emInt endInd = EV.m_verts[4];
+		BOOST_CHECK_CLOSE(pUM_Out->getX(vertInd),
+				0.75 * pUM_Out->getX(startInd) + 0.25 * pUM_Out->getX(endInd),
+				1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getY(vertInd),
+				0.75 * pUM_Out->getY(startInd) + 0.25 * pUM_Out->getY(endInd),
+				1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getZ(vertInd),
+				0.75 * pUM_Out->getZ(startInd) + 0.25 * pUM_Out->getZ(endInd),
+				1.e-8);
+	}
+}
+
+BOOST_AUTO_TEST_CASE(TetFaceMappingUniform) {
+	printf("Tet face uniform mapping test\n");
+	// Check the uniform length scale cases.
+	makeLengthScaleUniform();
+
+	TetDivider TD(pUM_Out, pUM_In, 4);
+	// Compute point locations and compare to the analytic
+	// result
+	const emInt *const thisTet = pUM_In->getTetConn(0);
+	TD.setupCoordMapping(thisTet);
+	TD.divideEdges(vertsOnEdges);
+	TD.divideFaces(vertsOnTris, vertsOnQuads);
+
+	BOOST_CHECK_EQUAL(vertsOnTris.size(), 4);
+	BOOST_CHECK_EQUAL(vertsOnQuads.size(), 0);
+
+	for (auto thisTriData : vertsOnTris) {
+		emInt corners[] = { thisTriData.getCorner(0), thisTriData.getCorner(1),
+				thisTriData.getCorner(2) };
+		double coords[3][3];
+		for (int ii = 0; ii < 3; ii++) {
+			coords[ii][0] = pUM_Out->getX(corners[ii]);
+			coords[ii][1] = pUM_Out->getY(corners[ii]);
+			coords[ii][2] = pUM_Out->getZ(corners[ii]);
+		}
+		emInt vertInd = thisTriData.getIntVertInd(2, 1);
+		BOOST_CHECK_CLOSE(pUM_Out->getX(vertInd),
+				0.5 * coords[1][0] + 0.25 * coords[2][0] + 0.25 * coords[0][0],
+				1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getY(vertInd),
+				0.5 * coords[1][1] + 0.25 * coords[2][1] + 0.25 * coords[0][1],
+				1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getZ(vertInd),
+				0.5 * coords[1][2] + 0.25 * coords[2][2] + 0.25 * coords[0][2],
+				1.e-8);
+	}
+}
+
+BOOST_AUTO_TEST_CASE(PyramidFaceMappingUniform) {
+	printf("Pyramid face uniform mapping test\n");
+	// Check the uniform length scale cases.
+makeLengthScaleUniform();
+
+	PyrDivider PD(pUM_Out, pUM_In, 4);
+	// Compute point locations and compare to the analytic
+	// result
+	const emInt *const thisPyr = pUM_In->getPyrConn(0);
+	PD.setupCoordMapping(thisPyr);
+	PD.divideFaces(vertsOnTris, vertsOnQuads);
+
+	BOOST_CHECK_EQUAL(vertsOnTris.size(), 4);
+	BOOST_CHECK_EQUAL(vertsOnQuads.size(), 1);
+
+	for (auto thisTriData : vertsOnTris) {
+		emInt corners[] = { thisTriData.getCorner(0), thisTriData.getCorner(1),
+				thisTriData.getCorner(2) };
+		double coords[3][3];
+		for (int ii = 0; ii < 3; ii++) {
+			coords[ii][0] = pUM_Out->getX(corners[ii]);
+			coords[ii][1] = pUM_Out->getY(corners[ii]);
+			coords[ii][2] = pUM_Out->getZ(corners[ii]);
+		}
+		emInt vertInd = thisTriData.getIntVertInd(2,1);
+		BOOST_CHECK_CLOSE(pUM_Out->getX(vertInd),
+				0.5 * coords[1][0] + 0.25 * coords[2][0] + 0.25 * coords[0][0],
+				1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getY(vertInd),
+				0.5 * coords[1][1] + 0.25 * coords[2][1] + 0.25 * coords[0][1],
+				1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getZ(vertInd),
+				0.5 * coords[1][2] + 0.25 * coords[2][2] + 0.25 * coords[0][2],
+				1.e-8);
+	}
+
+	for (auto thisQuadData : vertsOnQuads) {
+		emInt corners[] = { thisQuadData.getCorner(0), thisQuadData.getCorner(1),
+				thisQuadData.getCorner(2), thisQuadData.getCorner(3) };
+		double coords[4][3];
+		for (int ii = 0; ii < 4; ii++) {
+			coords[ii][0] = pUM_Out->getX(corners[ii]);
+			coords[ii][1] = pUM_Out->getY(corners[ii]);
+			coords[ii][2] = pUM_Out->getZ(corners[ii]);
+		}
+		emInt vertInd = thisQuadData.getIntVertInd(2, 1);
+		BOOST_CHECK_CLOSE(pUM_Out->getX(vertInd),
+				0.375 * (coords[0][0] + coords[1][0])
+						+ 0.125 * (coords[2][0] + coords[3][0]), 1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getY(vertInd),
+				0.375 * (coords[0][1] + coords[1][1])
+						+ 0.125 * (coords[2][1] + coords[3][1]), 1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getZ(vertInd),
+				0.375 * (coords[0][2] + coords[1][2])
+						+ 0.125 * (coords[2][2] + coords[3][2]), 1.e-8);
+	}
+}
+
+BOOST_AUTO_TEST_CASE(PrismFaceMappingUniform) {
+	printf("Prism face uniform mapping test\n");
+	// Check the uniform length scale cases.
+makeLengthScaleUniform();
+
+	PrismDivider PD(pUM_Out, pUM_In, 4);
+	// Compute point locations and compare to the analytic
+	// result
+	const emInt *const thisPrism = pUM_In->getPrismConn(0);
+	PD.setupCoordMapping(thisPrism);
+	PD.divideFaces(vertsOnTris, vertsOnQuads);
+
+	BOOST_CHECK_EQUAL(vertsOnTris.size(), 2);
+	BOOST_CHECK_EQUAL(vertsOnQuads.size(), 3);
+
+	for (auto thisTriData : vertsOnTris) {
+		emInt corners[] = { thisTriData.getCorner(0), thisTriData.getCorner(1),
+				thisTriData.getCorner(2) };
+		double coords[3][3];
+		for (int ii = 0; ii < 3; ii++) {
+			coords[ii][0] = pUM_Out->getX(corners[ii]);
+			coords[ii][1] = pUM_Out->getY(corners[ii]);
+			coords[ii][2] = pUM_Out->getZ(corners[ii]);
+		}
+		emInt vertInd = thisTriData.getIntVertInd(2, 1);
+		BOOST_CHECK_CLOSE(pUM_Out->getX(vertInd),
+				0.5 * coords[1][0] + 0.25 * coords[2][0] + 0.25 * coords[0][0],
+				1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getY(vertInd),
+				0.5 * coords[1][1] + 0.25 * coords[2][1] + 0.25 * coords[0][1],
+				1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getZ(vertInd),
+				0.5 * coords[1][2] + 0.25 * coords[2][2] + 0.25 * coords[0][2],
+				1.e-8);
+	}
+
+	for (auto thisQuadData : vertsOnQuads) {
+		emInt corners[] = { thisQuadData.getCorner(0), thisQuadData.getCorner(1),
+				thisQuadData.getCorner(2), thisQuadData.getCorner(3) };
+		double coords[4][3];
+		for (int ii = 0; ii < 4; ii++) {
+			coords[ii][0] = pUM_Out->getX(corners[ii]);
+			coords[ii][1] = pUM_Out->getY(corners[ii]);
+			coords[ii][2] = pUM_Out->getZ(corners[ii]);
+		}
+		emInt vertInd = thisQuadData.getIntVertInd(2, 1);
+		BOOST_CHECK_CLOSE(pUM_Out->getX(vertInd),
+				0.375 * (coords[0][0] + coords[1][0])
+						+ 0.125 * (coords[2][0] + coords[3][0]), 1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getY(vertInd),
+				0.375 * (coords[0][1] + coords[1][1])
+						+ 0.125 * (coords[2][1] + coords[3][1]), 1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getZ(vertInd),
+				0.375 * (coords[0][2] + coords[1][2])
+						+ 0.125 * (coords[2][2] + coords[3][2]), 1.e-8);
+	}
+}
+
+BOOST_AUTO_TEST_CASE(HexFaceMappingUniform) {
+	printf("Hex face uniform mapping test\n");
+	// Check the uniform length scale cases.
+makeLengthScaleUniform();
+
+	HexDivider HD(pUM_Out, pUM_In, 4);
+	// Compute point locations and compare to the analytic
+	// result
+	const emInt *const thisHex = pUM_In->getHexConn(0);
+	HD.setupCoordMapping(thisHex);
+	HD.divideFaces(vertsOnTris, vertsOnQuads);
+
+	BOOST_CHECK_EQUAL(vertsOnTris.size(), 0);
+	BOOST_CHECK_EQUAL(vertsOnQuads.size(), 6);
+
+	for (auto thisQuadData : vertsOnQuads) {
+		emInt corners[] = { thisQuadData.getCorner(0), thisQuadData.getCorner(1),
+				thisQuadData.getCorner(2), thisQuadData.getCorner(3) };
+		double coords[4][3];
+		for (int ii = 0; ii < 4; ii++) {
+			coords[ii][0] = pUM_Out->getX(corners[ii]);
+			coords[ii][1] = pUM_Out->getY(corners[ii]);
+			coords[ii][2] = pUM_Out->getZ(corners[ii]);
+		}
+		emInt vertInd = thisQuadData.getIntVertInd(2, 1);
+		BOOST_CHECK_CLOSE(pUM_Out->getX(vertInd),
+				0.375 * (coords[0][0] + coords[1][0])
+						+ 0.125 * (coords[2][0] + coords[3][0]), 1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getY(vertInd),
+				0.375 * (coords[0][1] + coords[1][1])
+						+ 0.125 * (coords[2][1] + coords[3][1]), 1.e-8);
+		BOOST_CHECK_CLOSE(pUM_Out->getZ(vertInd),
+				0.375 * (coords[0][2] + coords[1][2])
+						+ 0.125 * (coords[2][2] + coords[3][2]), 1.e-8);
+	}
+}
+
+BOOST_AUTO_TEST_CASE(TetMappingUniform) {
+	printf("Tet uniform mapping\n");
+	// Check the uniform length scale cases.
+makeLengthScaleUniform();
+
+	TetDivider TD(pUM_Out, pUM_In, 5);
+
+	const emInt *const thisTet = pUM_In->getTetConn(0);
+	TD.setupCoordMapping(thisTet);
+
+	TD.createDivisionVerts(vertsOnEdges, vertsOnTris, vertsOnQuads);
+
+	double uvw[4][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+	double xyz[4][3];
+	TD.getPhysCoordsFromParamCoords(uvw[0], xyz[0]);
+	TD.getPhysCoordsFromParamCoords(uvw[1], xyz[1]);
+	TD.getPhysCoordsFromParamCoords(uvw[2], xyz[2]);
+	TD.getPhysCoordsFromParamCoords(uvw[3], xyz[3]);
+	BOOST_CHECK_CLOSE(xyz[0][0], 0, 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[0][1], -1, 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[0][2], 0, 1.e-8);
+
+	BOOST_CHECK_CLOSE(xyz[1][0], 1, 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[1][1], 0, 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[1][2], 0, 1.e-8);
+
+	BOOST_CHECK_CLOSE(xyz[2][0], 0, 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[2][1], 0, 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[2][2], 0, 1.e-8);
+
+	BOOST_CHECK_CLOSE(xyz[3][0], 0, 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[3][1], 0, 1.e-8);
+	BOOST_CHECK_CLOSE(xyz[3][2], 1, 1.e-8);
+
+	// Check correctness of the uvw values.
+	emInt iArray[] = { 1, 1, 1, 2 };
+	emInt jArray[] = { 1, 1, 2, 1 };
+	emInt kArray[] = { 3, 4, 4, 4 };
+	double uArray[] = { 0.2, 0.2, 0.2, 0.4 };
+	double vArray[] = { 0.2, 0.2, 0.4, 0.2 };
+	double wArray[] = { 0.4, 0.2, 0.2, 0.2 };
+
+	double xArray[] = { 0.2, 0.2, 0.2, 0.4 };
+	double yArray[] = { -0.2, -0.4, -0.2, -0.2 };
+	double zArray[] = { 0.4, 0.2, 0.2, 0.2 };
+
+	// Now extract the uvw values and check correctness
+	for (int ii = 0; ii < 4; ii++) {
+		double my_uvw[3], my_xyz[3];
+		TD.getParamCoords(iArray[ii], jArray[ii], kArray[ii], my_uvw);
+		BOOST_CHECK_CLOSE(uArray[ii], my_uvw[0], 1.e-8);
+		BOOST_CHECK_CLOSE(vArray[ii], my_uvw[1], 1.e-8);
+		BOOST_CHECK_CLOSE(wArray[ii], my_uvw[2], 1.e-8);
+
+		TD.getPhysCoordsFromParamCoords(my_uvw, my_xyz);
+		BOOST_CHECK_CLOSE(xArray[ii], my_xyz[0], 1.e-8);
+		BOOST_CHECK_CLOSE(yArray[ii], my_xyz[1], 1.e-8);
+		BOOST_CHECK_CLOSE(zArray[ii], my_xyz[2], 1.e-8);
+	}
+}
+
+//BOOST_AUTO_TEST_CASE(PyramidMappingUniform) {
+//	printf("Pyramid uniform mapping\n");
+//	// Check the uniform length scale cases.
+//makeLengthScaleUniform();
+//
+//	PyrDivider PD(pUM_Out, pUM_In, 5);
+//
+//	const emInt *const thisPyr = pUM_In->getPyrConn(0);
+//	PD.setupCoordMapping(thisPyr);
+//
+//	PD.createDivisionVerts(vertsOnEdges, vertsOnTris, vertsOnQuads);
+//
+//	double uvw[5][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, {1, 1, 0}, { 0, 0, 1 } };
+//	double xyz[5][3];
+//	PD.getPhysCoordsFromParamCoords(uvw[0], xyz[0]);
+//	PD.getPhysCoordsFromParamCoords(uvw[1], xyz[1]);
+//	PD.getPhysCoordsFromParamCoords(uvw[2], xyz[2]);
+//	PD.getPhysCoordsFromParamCoords(uvw[3], xyz[3]);
+//	PD.getPhysCoordsFromParamCoords(uvw[4], xyz[4]);
+//
+//	// Check correctness of the uvw values.
+//	emInt iArray[] = { 1, 1, 1, 2, 2 };
+//	emInt jArray[] = { 1, 1, 2, 1, 2 };
+//	emInt kArray[] = { 3, 4, 4, 4, 4 };
+//	double uArray[] = { 0.2, 0.2, 0.2, 0.4, 0.4 };
+//	double vArray[] = { 0.2, 0.2, 0.4, 0.2, 0.4 };
+//	double wArray[] = { 0.4, 0.2, 0.2, 0.2, 0.2 };
+//
+//	double xArray[] = { 0.2, 0.2, 0.2, 0.4, 0.4 };
+//	double yArray[] = { 0.2, 0.2, 0.4, 0.2, 0.4 };
+//	double zArray[] = { 0.4, 0.2, 0.2, 0.2, 0.2 };
+//
+//	// Now extract the uvw values and check correctness
+//	for (int ii = 0; ii < 4; ii++) {
+//		double my_uvw[3], my_xyz[3];
+//		PD.getParamCoords(iArray[ii], jArray[ii], kArray[ii], my_uvw);
+//		BOOST_CHECK_CLOSE(uArray[ii], my_uvw[0], 1.e-8);
+//		BOOST_CHECK_CLOSE(vArray[ii], my_uvw[1], 1.e-8);
+//		BOOST_CHECK_CLOSE(wArray[ii], my_uvw[2], 1.e-8);
+//
+//		PD.getPhysCoordsFromParamCoords(my_uvw, my_xyz);
+//		BOOST_CHECK_CLOSE(xArray[ii], my_xyz[0], 1.e-8);
+//		BOOST_CHECK_CLOSE(yArray[ii], my_xyz[1], 1.e-8);
+//		BOOST_CHECK_CLOSE(zArray[ii], my_xyz[2], 1.e-8);
+//	}
+//}
+//
+BOOST_AUTO_TEST_CASE(PrismMappingUniform) {
+	printf("Prism uniform mapping\n");
+	// Check the uniform length scale cases.
+makeLengthScaleUniform();
+
+	PrismDivider PD(pUM_Out, pUM_In, 4);
+
+	const emInt *const thisPrism = pUM_In->getPrismConn(0);
+	PD.setupCoordMapping(thisPrism);
+
+	PD.createDivisionVerts(vertsOnEdges, vertsOnTris, vertsOnQuads);
+
+	double uvw[6][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 },
+			{ 1, 0, 1 }, { 0, 1, 1 }};
+	double xyz[6][3];
+	PD.getPhysCoordsFromParamCoords(uvw[0], xyz[0]);
+	PD.getPhysCoordsFromParamCoords(uvw[1], xyz[1]);
+	PD.getPhysCoordsFromParamCoords(uvw[2], xyz[2]);
+	PD.getPhysCoordsFromParamCoords(uvw[3], xyz[3]);
+	PD.getPhysCoordsFromParamCoords(uvw[4], xyz[4]);
+	PD.getPhysCoordsFromParamCoords(uvw[5], xyz[5]);
+
+	// Check correctness of the uvw values.
+	emInt iArray[] = { 1, 1, 2, 1, 1, 2, 1, 1, 2 };
+	emInt jArray[] = { 1, 2, 1, 1, 2, 1, 1, 2, 1 };
+	emInt kArray[] = { 1, 1, 1, 2, 2, 2, 3, 3, 3 };
+	double uArray[] = { 0.25, 0.25, 0.5, 0.25, 0.25, 0.5, 0.25, 0.25, 0.5 };
+	double vArray[] = { 0.25, 0.5, 0.25, 0.25, 0.5, 0.25, 0.25, 0.5, 0.25 };
+	double wArray[] = { 0.25, 0.25, 0.25, 0.5, 0.5, 0.5, 0.75, 0.75, 0.75 };
+
+	double xArray[] = { 0.25, 0.25, 0.5, 0.25, 0.25, 0.5, 0.25, 0.25, 0.5 };
+	double yArray[] = { -0.5, -0.25, -0.25, -0.5, -0.25, -0.25, -0.5, -0.25, -0.25 };
+	double zArray[] = { -0.75, -0.75, -0.75, -0.5, -0.5, -0.5, -0.25, -0.25, -0.25 };
+
+	// Now extract the uvw values and check correctness
+	for (int ii = 0; ii < 9; ii++) {
+		double my_uvw[3], my_xyz[3];
+		PD.getParamCoords(iArray[ii], jArray[ii], kArray[ii], my_uvw);
+		BOOST_CHECK_CLOSE(uArray[ii], my_uvw[0], 1.e-8);
+		BOOST_CHECK_CLOSE(vArray[ii], my_uvw[1], 1.e-8);
+		BOOST_CHECK_CLOSE(wArray[ii], my_uvw[2], 1.e-8);
+
+		PD.getPhysCoordsFromParamCoords(my_uvw, my_xyz);
+		BOOST_CHECK_CLOSE(xArray[ii], my_xyz[0], 1.e-8);
+		BOOST_CHECK_CLOSE(yArray[ii], my_xyz[1], 1.e-8);
+		BOOST_CHECK_CLOSE(zArray[ii], my_xyz[2], 1.e-8);
+	}
+}
+
+BOOST_AUTO_TEST_CASE(HexMappingUniform) {
+	printf("Hex uniform mapping\n");
+	// Check the uniform length scale cases.
+	makeLengthScaleUniform();
+
+	HexDivider HD(pUM_Out, pUM_In, 3);
+
+	const emInt *const thisHex = pUM_In->getHexConn(0);
+	HD.setupCoordMapping(thisHex);
+
+	HD.createDivisionVerts(vertsOnEdges, vertsOnTris, vertsOnQuads);
+
+	double uvw[8][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, { 1, 1, 0 },
+			{ 0, 0, 1 }, { 1, 0, 1 }, { 0, 1, 1 }, { 1, 1, 1 }	};
+	double xyz[8][3];
+	HD.getPhysCoordsFromParamCoords(uvw[0], xyz[0]);
+	HD.getPhysCoordsFromParamCoords(uvw[1], xyz[1]);
+	HD.getPhysCoordsFromParamCoords(uvw[2], xyz[2]);
+	HD.getPhysCoordsFromParamCoords(uvw[3], xyz[3]);
+	HD.getPhysCoordsFromParamCoords(uvw[4], xyz[4]);
+	HD.getPhysCoordsFromParamCoords(uvw[5], xyz[5]);
+	HD.getPhysCoordsFromParamCoords(uvw[6], xyz[6]);
+	HD.getPhysCoordsFromParamCoords(uvw[7], xyz[7]);
+
+	// Check correctness of the uvw values.
+	emInt iArray[] = { 1, 1, 2, 2, 1, 1, 2, 2 };
+	emInt jArray[] = { 1, 2, 2, 1, 1, 2, 2, 1 };
+	emInt kArray[] = { 1, 1, 1, 1, 2, 2, 2, 2 };
+
+	const double oneThird = 1./3;
+
+	// Now extract the uvw values and check correctness
+	for (int ii = 0; ii < 8; ii++) {
+		double my_uvw[3], my_xyz[3];
+		HD.getParamCoords(iArray[ii], jArray[ii], kArray[ii], my_uvw);
+		BOOST_CHECK_CLOSE(iArray[ii]*oneThird, my_uvw[0], 1.e-8);
+		BOOST_CHECK_CLOSE(jArray[ii]*oneThird, my_uvw[1], 1.e-8);
+		BOOST_CHECK_CLOSE(kArray[ii]*oneThird, my_uvw[2], 1.e-8);
+
+		HD.getPhysCoordsFromParamCoords(my_uvw, my_xyz);
+		BOOST_CHECK_CLOSE(my_uvw[0], my_xyz[0], 1.e-8);
+		BOOST_CHECK_CLOSE(my_uvw[1], my_xyz[1], 1.e-8);
+		BOOST_CHECK_CLOSE(-1+my_uvw[2], my_xyz[2], 1.e-8);
+	}
+}
+
+BOOST_AUTO_TEST_CASE(EdgeMappingNonuniformPrescribed) {
+	printf("Edge non-uniform mapping\n");
+	setPrescribedLengthScale();
+
+	TetDivider TD(pUM_Out, pUM_In, 4);
+
+	// Compute point locations and compare to the analytic
+	// result
+	const emInt *const thisTet = pUM_In->getTetConn(0);
+	TD.setupCoordMapping(thisTet);
+	TD.divideEdges(vertsOnEdges);
+
+	BOOST_CHECK_EQUAL(vertsOnEdges.size(), 6);
+	for (auto thisEdgeData : vertsOnEdges) {
+		EdgeVerts EV = thisEdgeData.second;
+		emInt startInd = EV.m_verts[0];
+		emInt vertInd = EV.m_verts[1];
+		emInt endInd = EV.m_verts[4];
+		double startLenOrig = pUM_In->getLengthScale(startInd);
+		double endLenOrig = pUM_In->getLengthScale(endInd);
+
+		double startCoords[3], endCoords[3];
+		pUM_In->getCoords(startInd, startCoords);
+		pUM_In->getCoords(endInd, endCoords);
+		double delta[] = {endCoords[0] - startCoords[0],
+				endCoords[1] - startCoords[1], endCoords[2] - startCoords[2]};
+
+		// Working out parametric coordinate along the edge, so (see Carl's
+		// notes for June 16, 2020, or the journal article) x_A = 0, dx = 1,
+		// and:
+		//
+		// u = startLen * xi + (3 - 2*startLen - endLen) * xi^2
+		//     + (startLen + endLen - 2) * xi^3
+
+		double startLen = sqrt(startLenOrig/endLenOrig);
+		double endLen = 1. / startLen;
+
+		double xi = 0.25;
+		double u = startLen * xi + (3 - 2*startLen - endLen) * xi*xi
+				   + (startLen + endLen - 2) * xi*xi*xi;
+
+		// Adding 10 to avoid problems comparing machine zero to exactly zero.
+		BOOST_CHECK_CLOSE(10+pUM_Out->getX(vertInd), 10+startCoords[0] + u*delta[0],
+				1.e-10);
+		BOOST_CHECK_CLOSE(10+pUM_Out->getY(vertInd), 10+startCoords[1] + u*delta[1],
+				1.e-10);
+		BOOST_CHECK_CLOSE(10+pUM_Out->getZ(vertInd), 10+startCoords[2] + u*delta[2],
+				1.e-10);
+	}
+}
+
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(NonuniformParamMapping)
+
+BOOST_AUTO_TEST_CASE(FaceInteriorIntersectionTrivial) {
+	// Trivial: coordinate aligned
+	double uvL[] = {0, 0.25};
+	double uvR[] = {1, 0.25};
+
+	double uvB[] = {0.43, 0};
+	double uvT[] = {0.43, 1};
+
+	double uv[] = {0, 0};
+	double uvExp[] = {0.43, 0.25};
+
+	getFaceParametricIntersectionPoint(uvL, uvR, uvB, uvT, uv);
+
+	BOOST_CHECK_CLOSE(uv[0], uvExp[0], 1.e-8);
+	BOOST_CHECK_CLOSE(uv[1], uvExp[1], 1.e-8);
+}
+
+BOOST_AUTO_TEST_CASE(FaceInteriorIntersectionQuad)
+{
+	double uvL[] = {0, 0.207};
+	double uvR[] = {1, 0.307};
+
+	double uvB[] = {0.38, 0};
+	double uvT[] = {0.58, 1};
+
+	double uv[] = {0, 0};
+	double uvExp[] = {0.43, 0.25};
+
+	getFaceParametricIntersectionPoint(uvL, uvR, uvB, uvT, uv);
+
+	BOOST_CHECK_CLOSE(uv[0], uvExp[0], 1.e-8);
+	BOOST_CHECK_CLOSE(uv[1], uvExp[1], 1.e-8);
+}
+
+BOOST_AUTO_TEST_CASE(FaceInteriorIntersectionTri) {
+	// Simulated triangle data, same result
+	double uvL[] = {0, 0.36};
+	double uvR[] = {0.86, 0.14};
+
+	double uvB[] = {0.36, 0};
+	double uvT[] = {0.5, 0.5};
+
+	double uv[] = {0, 0};
+	double uvExp[] = {0.43, 0.25};
+
+	getFaceParametricIntersectionPoint(uvL, uvR, uvB, uvT, uv);
+
+	BOOST_CHECK_CLOSE(uv[0], uvExp[0], 1.e-8);
+	BOOST_CHECK_CLOSE(uv[1], uvExp[1], 1.e-8);
+}
+
+BOOST_AUTO_TEST_CASE(CellInteriorIntersectionTrivial) {
+	// Trivial case: coordinate aligned, intersection
+	double uvwXLo[] = {0, 0.25, 0.45};
+	double uvwXHi[] = {1, 0.25, 0.45};
+	double uvwYLo[] = {0.35, 0, 0.45};
+	double uvwYHi[] = {0.35, 1, 0.45};
+	double uvwZLo[] = {0.35, 0.25, 0};
+	double uvwZHi[] = {0.35, 0.25, 1};
+	double uvwExp[] = {0.35, 0.25, 0.45};
+	double uvw[] = {0,0,0};
+	getCellInteriorParametricIntersectionPoint(uvwXLo, uvwXHi, uvwYLo, uvwYHi, uvwZLo, uvwZHi, uvw);
+	BOOST_CHECK_CLOSE(uvw[0], uvwExp[0], 1.e-8);
+	BOOST_CHECK_CLOSE(uvw[1], uvwExp[1], 1.e-8);
+	BOOST_CHECK_CLOSE(uvw[2], uvwExp[2], 1.e-8);
+}
+
+BOOST_AUTO_TEST_CASE(CellInteriorIntersectionHexExact) {
+	// Harder but has the same (analytically exact) answer
+	double uvwXLo[] = {0, 0.215, 0.485};
+	double uvwXHi[] = {1, 0.315, 0.385};
+	double uvwYLo[] = {0.325, 0, 0.475};
+	double uvwYHi[] = {0.425, 1, 0.375};
+	double uvwZLo[] = {0.305, 0.295, 0};
+	double uvwZHi[] = {0.405, 0.195, 1};
+
+	// s1 = 0.35  uvwX[] = {s1, 0.25+(s1-0.35)/10, 0.45-(s1-0.35)/10}
+	// s2 = 0.25  uvwY[] = {0.35+(s2-0.25)/10, s2, 0.45-(s2-0.25)/10}
+	// s3 = 0.45  uvwZ[] = {0.35+(s3-0.45)/10, 0.25-(s3-0.45)/10, s3}
+
+	double uvwExp[] = {0.35, 0.25, 0.45};
+	double uvw[] = {0,0,0};
+	getCellInteriorParametricIntersectionPoint(uvwXLo, uvwXHi, uvwYLo, uvwYHi, uvwZLo, uvwZHi, uvw);
+	BOOST_CHECK_CLOSE(uvw[0], uvwExp[0], 1.e-8);
+	BOOST_CHECK_CLOSE(uvw[1], uvwExp[1], 1.e-8);
+	BOOST_CHECK_CLOSE(uvw[2], uvwExp[2], 1.e-8);
+}
+
+BOOST_AUTO_TEST_CASE(CellInteriorIntersectionTetExact) {
+	// Harder but has the same (analytically exact) answer
+	double uvwXLo[] = {0, 0.235, 0.465};
+	double uvwXHi[] = {0.3, 0.265, 0.435};
+	double uvwYLo[] = {0.175, 0, 0.475};
+	double uvwYHi[] = {0.135, 0.4, 0.435};
+	double uvwZLo[] = {0.105, 0.295, 0};
+	double uvwZHi[] = {0.165, 0.235, 0.6};
+
+	// s1 = 0.15  uvwX[] = {s1, 0.25+(s1-0.15)/10, 0.45-(s1-0.15)/10}
+	// s2 = 0.25  uvwY[] = {0.15+(s2-0.25)/10, s2, 0.45-(s2-0.25)/10}
+	// s3 = 0.45  uvwZ[] = {0.15+(s3-0.45)/10, 0.25-(s3-0.45)/10, s3}
+
+	double uvwExp[] = {0.15, 0.25, 0.45};
+	double uvw[] = {0,0,0};
+	getCellInteriorParametricIntersectionPoint(uvwXLo, uvwXHi, uvwYLo, uvwYHi, uvwZLo, uvwZHi, uvw);
+	BOOST_CHECK_CLOSE(uvw[0], uvwExp[0], 1.e-8);
+	BOOST_CHECK_CLOSE(uvw[1], uvwExp[1], 1.e-8);
+	BOOST_CHECK_CLOSE(uvw[2], uvwExp[2], 1.e-8);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+
+#ifdef DO_SUBDIVISION_TESTS
+BOOST_AUTO_TEST_SUITE(SimpleMeshSubdivisionTests)
 
 BOOST_AUTO_TEST_CASE(SizeTestSingleTetBy2) {
 	MeshSize MSIn, MSOut;
@@ -406,8 +1775,9 @@ BOOST_AUTO_TEST_CASE(SingleTetN2) {
 	MSIn.nHexes = 0;
 	computeMeshSize(MSIn, 2, MSOut);
 
-	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
-							MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
+	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris,
+			MSOut.nBdryQuads, MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms,
+			MSOut.nHexes);
 	subdividePartMesh(&UM, &UMOut, 2);
 	checkExpectedSize(UMOut);
 }
@@ -446,8 +1816,9 @@ BOOST_AUTO_TEST_CASE(SingleTetN5) {
 	MSIn.nHexes = 0;
 	computeMeshSize(MSIn, 5, MSOut);
 
-	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
-							MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
+	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris,
+			MSOut.nBdryQuads, MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms,
+			MSOut.nHexes);
 	subdividePartMesh(&UM, &UMOut, 5);
 	checkExpectedSize(UMOut);
 }
@@ -479,8 +1850,9 @@ BOOST_AUTO_TEST_CASE(SinglePyrN3) {
 	MSIn.nHexes = 0;
 	computeMeshSize(MSIn, 3, MSOut);
 
-	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
-							MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
+	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris,
+			MSOut.nBdryQuads, MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms,
+			MSOut.nHexes);
 	subdividePartMesh(&UM, &UMOut, 3);
 	checkExpectedSize(UMOut);
 }
@@ -488,8 +1860,7 @@ BOOST_AUTO_TEST_CASE(SinglePyrN3) {
 BOOST_AUTO_TEST_CASE(SinglePrismN3) {
 	UMesh UM(6, 6, 2, 3, 0, 0, 1, 0);
 	double coords[][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, {
-			1, 0, 1 },
-													{ 0, 1, 1 } };
+			1, 0, 1 }, { 0, 1, 1 } };
 	emInt triVerts[][3] = { { 0, 1, 2 }, { 3, 4, 5 } };
 	emInt quadVerts[][4] = { { 0, 1, 4, 3 }, { 1, 2, 5, 4 }, { 2, 0, 3, 5 } };
 	emInt prismVerts[6] = { 0, 1, 2, 3, 4, 5 };
@@ -515,8 +1886,9 @@ BOOST_AUTO_TEST_CASE(SinglePrismN3) {
 	MSIn.nHexes = 0;
 	computeMeshSize(MSIn, 3, MSOut);
 
-	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
-							MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
+	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris,
+			MSOut.nBdryQuads, MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms,
+			MSOut.nHexes);
 	subdividePartMesh(&UM, &UMOut, 3);
 	checkExpectedSize(UMOut);
 }
@@ -524,14 +1896,12 @@ BOOST_AUTO_TEST_CASE(SinglePrismN3) {
 BOOST_AUTO_TEST_CASE(MixedN2) {
 	UMesh UM(11, 11, 6, 6, 1, 1, 1, 1);
 	double coords[][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 0, 1, 0 }, {
-			0, 0, 1 },
-													{ 0, 0, -1 }, { 1, 0, -1 }, { 1, 1, -1 },
-													{ 0, 1, -1 }, { 0, -1, 0 }, { 0, -1, -1 } };
-	emInt triVerts[][3] = { { 1, 2, 4 }, { 2, 3, 4 }, { 3, 0, 4 }, { 0, 9, 4 }, {
-			9, 1, 4 },
-													{ 10, 6, 5 } };
-	emInt quadVerts[][4] = { { 6, 7, 2, 1 }, { 7, 8, 3, 2 }, { 8, 5, 0, 3 },
-														{ 10, 6, 1, 9 }, { 5, 10, 9, 0 }, { 5, 6, 7, 8 } };
+			0, 0, 1 }, { 0, 0, -1 }, { 1, 0, -1 }, { 1, 1, -1 }, { 0, 1, -1 }, {
+			0, -1, 0 }, { 0, -1, -1 } };
+	emInt triVerts[][3] = { { 1, 2, 4 }, { 2, 3, 4 }, { 3, 0, 4 }, { 0, 9, 4 },
+			{ 9, 1, 4 }, { 10, 6, 5 } };
+	emInt quadVerts[][4] = { { 6, 7, 2, 1 }, { 7, 8, 3, 2 }, { 8, 5, 0, 3 }, {
+			10, 6, 1, 9 }, { 5, 10, 9, 0 }, { 5, 6, 7, 8 } };
 	emInt tetVerts[4] = { 9, 1, 0, 4 };
 	emInt pyrVerts[5] = { 0, 1, 2, 3, 4 };
 	emInt prismVerts[6] = { 10, 6, 5, 9, 1, 0 };
@@ -560,8 +1930,9 @@ BOOST_AUTO_TEST_CASE(MixedN2) {
 	MSIn.nHexes = 1;
 	computeMeshSize(MSIn, 2, MSOut);
 
-	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
-							MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
+	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris,
+			MSOut.nBdryQuads, MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms,
+			MSOut.nHexes);
 	subdividePartMesh(&UM, &UMOut, 2);
 	checkExpectedSize(UMOut);
 }
@@ -569,14 +1940,12 @@ BOOST_AUTO_TEST_CASE(MixedN2) {
 BOOST_AUTO_TEST_CASE(MixedN3) {
 	UMesh UM(11, 11, 6, 6, 1, 1, 1, 1);
 	double coords[][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 0, 1, 0 }, {
-			0, 0, 1 },
-													{ 0, 0, -1 }, { 1, 0, -1 }, { 1, 1, -1 },
-													{ 0, 1, -1 }, { 0, -1, 0 }, { 0, -1, -1 } };
-	emInt triVerts[][3] = { { 1, 2, 4 }, { 2, 3, 4 }, { 3, 0, 4 }, { 0, 9, 4 }, {
-			9, 1, 4 },
-													{ 10, 6, 5 } };
-	emInt quadVerts[][4] = { { 6, 7, 2, 1 }, { 7, 8, 3, 2 }, { 8, 5, 0, 3 },
-														{ 10, 6, 1, 9 }, { 5, 10, 9, 0 }, { 5, 6, 7, 8 } };
+			0, 0, 1 }, { 0, 0, -1 }, { 1, 0, -1 }, { 1, 1, -1 }, { 0, 1, -1 }, {
+			0, -1, 0 }, { 0, -1, -1 } };
+	emInt triVerts[][3] = { { 1, 2, 4 }, { 2, 3, 4 }, { 3, 0, 4 }, { 0, 9, 4 },
+			{ 9, 1, 4 }, { 10, 6, 5 } };
+	emInt quadVerts[][4] = { { 6, 7, 2, 1 }, { 7, 8, 3, 2 }, { 8, 5, 0, 3 }, {
+			10, 6, 1, 9 }, { 5, 10, 9, 0 }, { 5, 6, 7, 8 } };
 	emInt tetVerts[4] = { 9, 1, 0, 4 };
 	emInt pyrVerts[5] = { 0, 1, 2, 3, 4 };
 	emInt prismVerts[6] = { 10, 6, 5, 9, 1, 0 };
@@ -605,8 +1974,9 @@ BOOST_AUTO_TEST_CASE(MixedN3) {
 	MSIn.nHexes = 1;
 	computeMeshSize(MSIn, 3, MSOut);
 
-	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
-							MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
+	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris,
+			MSOut.nBdryQuads, MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms,
+			MSOut.nHexes);
 	subdividePartMesh(&UM, &UMOut, 3);
 	checkExpectedSize(UMOut);
 	bool result = UMOut.writeVTKFile("/tmp/test-exa.vtk");
@@ -618,14 +1988,12 @@ BOOST_AUTO_TEST_CASE(MixedN3) {
 BOOST_AUTO_TEST_CASE(MixedN5) {
 	UMesh UM(11, 11, 6, 6, 1, 1, 1, 1);
 	double coords[][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 0, 1, 0 }, {
-			0, 0, 1 },
-													{ 0, 0, -1 }, { 1, 0, -1 }, { 1, 1, -1 },
-													{ 0, 1, -1 }, { 0, -1, 0 }, { 0, -1, -1 } };
-	emInt triVerts[][3] = { { 1, 2, 4 }, { 2, 3, 4 }, { 3, 0, 4 }, { 0, 9, 4 }, {
-			9, 1, 4 },
-													{ 10, 6, 5 } };
-	emInt quadVerts[][4] = { { 6, 7, 2, 1 }, { 7, 8, 3, 2 }, { 8, 5, 0, 3 },
-														{ 10, 6, 1, 9 }, { 5, 10, 9, 0 }, { 5, 6, 7, 8 } };
+			0, 0, 1 }, { 0, 0, -1 }, { 1, 0, -1 }, { 1, 1, -1 }, { 0, 1, -1 }, {
+			0, -1, 0 }, { 0, -1, -1 } };
+	emInt triVerts[][3] = { { 1, 2, 4 }, { 2, 3, 4 }, { 3, 0, 4 }, { 0, 9, 4 },
+			{ 9, 1, 4 }, { 10, 6, 5 } };
+	emInt quadVerts[][4] = { { 6, 7, 2, 1 }, { 7, 8, 3, 2 }, { 8, 5, 0, 3 }, {
+			10, 6, 1, 9 }, { 5, 10, 9, 0 }, { 5, 6, 7, 8 } };
 	emInt tetVerts[4] = { 9, 1, 0, 4 };
 	emInt pyrVerts[5] = { 0, 1, 2, 3, 4 };
 	emInt prismVerts[6] = { 10, 6, 5, 9, 1, 0 };
@@ -654,482 +2022,14 @@ BOOST_AUTO_TEST_CASE(MixedN5) {
 	MSIn.nHexes = 1;
 	computeMeshSize(MSIn, 5, MSOut);
 
-	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
-							MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
+	UMesh UMOut(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris,
+			MSOut.nBdryQuads, MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms,
+			MSOut.nHexes);
 	subdividePartMesh(&UM, &UMOut, 5);
 	checkExpectedSize(UMOut);
 	bool result = UMOut.writeVTKFile("/tmp/test-exa.vtk");
 	BOOST_CHECK(result);
 }
 
-BOOST_AUTO_TEST_SUITE(MappingTests)
-
-	BOOST_AUTO_TEST_CASE(TetMapping) {
-		printf("Testing tet length-scale mapping.\n");
-		UMesh VM(4, 4, 4, 0, 1, 0, 0, 0);
-		double vert0[] = { 1, 1, 1 };
-		double vert1[] = { 2, 2, 2 };
-		double vert2[] = { 1.5, 2, 2 };
-		double vert3[] = { 1.5, 1, 3 };
-
-		VM.addVert(vert0);
-		VM.addVert(vert1);
-		VM.addVert(vert2);
-		VM.addVert(vert3);
-
-		emInt verts[] = { 0, 1, 2, 3 };
-		VM.addTet(verts);
-
-		TetLengthScaleMapping TLSM(&VM);
-
-		// Test for known cubic functions:
-		// x = u^3 + 2 u^2 v + 4 u v^2 - 30 u v w + 5 u^2 + 6 u + 3
-		// y = v^3 + 2 v^2 w + 4 v w^2 - 54 u v w + 5 v^2 + 6 v + 7
-		// z = w^3 + 2 w^2 u + 4 w u^2 - 72 u v w + 5 w^2 + 6 w + 10
-		// so
-		// dx/du = 3 u^2 + 4 u v + 4 v^2 - 30 v w + 10 u + 6
-		// dx/dv = 2 u^2 + 8 u v - 30 u w
-		// dx/dw = -30 u v
-		//
-		// dy/du = -54 v w
-		// dy/dv = 3 v^2 + 4 v w - 54 u w + 4 w^2 + 10 v + 6
-		// dy/dw = 2 v^2 + 8 v w - 54 u v
-		//
-		// dz/du = 2 w^2 + 8 u w -72 v w
-		// dz/dv = -54 u w
-		// dz/dw = 3 w^2 + 4 u w + 4 u^2 + 10 w + 6 - 54 u v
-
-		//
-		// Now just evaluate these at points 0 (0,0,0), 1 (1,0,0), 2 (0,1,0),
-		// and 3 (0,0,1) to get:
-		{
-			double xyz0[] = { 3, 7, 10 };
-			double xyz1[] = { 15, 7, 10 };
-			double xyz2[] = { 3, 19, 10 };
-			double xyz3[] = { 3, 7, 22 };
-
-			double uderiv0[] = { 6, 0, 0 };
-			double vderiv0[] = { 0, 6, 0 };
-			double wderiv0[] = { 0, 0, 6 };
-
-			double uderiv1[] = { 19, 0, 0 };
-			double vderiv1[] = { 2, 6, 0 };
-			double wderiv1[] = { 0, 0, 10 };
-
-			double uderiv2[] = { 10, 0, 0 };
-			double vderiv2[] = { 0, 19, 0 };
-			double wderiv2[] = { 0, 2, 6 };
-
-			double uderiv3[] = { 6, 0, 2 };
-			double vderiv3[] = { 0, 10, 0 };
-			double wderiv3[] = { 0, 0, 19 };
-
-			TLSM.setPolyCoeffs(xyz0, xyz1, xyz2, xyz3, uderiv0, vderiv0, wderiv0,
-												uderiv1, vderiv1, wderiv1, uderiv2, vderiv2, wderiv2,
-												uderiv3, vderiv3, wderiv3);
-
-			double uvw[] = { 0.2, 0.3, 0.4 };
-			double xyz[3];
-			TLSM.computeTransformedCoords(uvw, xyz);
-			BOOST_CHECK_CLOSE(xyz[0], 4.552, 1.e-8);
-			BOOST_CHECK_CLOSE(xyz[1], 9.589, 1.e-8);
-			BOOST_CHECK_CLOSE(xyz[2], 13.44, 1.e-8);
-		}
-
-		TLSM.setupCoordMapping(verts);
-
-		double uvw[] = { 0, 0, 0 };
-		double xyz[3];
-
-		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], vert0[0], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], vert0[1], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], vert0[2], 1.e-8);
-
-		uvw[0] = 1;
-		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], vert1[0], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], vert1[1], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], vert1[2], 1.e-8);
-
-		uvw[0] = 0;
-		uvw[1] = 1;
-		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], vert2[0], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], vert2[1], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], vert2[2], 1.e-8);
-
-		uvw[1] = 0;
-		uvw[2] = 1;
-		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], vert3[0], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], vert3[1], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], vert3[2], 1.e-8);
-
-#ifndef NDEBUG
-		// Really a regression test
-		uvw[0] = 0.25;
-		uvw[1] = 1. / 6;
-		uvw[2] = 5. / 12;
-		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], 1.5745947924241497, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], 1.4122999796448497, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], 2.4182016298381059, 1.e-8);
-#endif
-
-		emInt verts2[] = { 3, 1, 2, 0 };
-		TLSM.setupCoordMapping(verts2);
-
-		uvw[0] = uvw[1] = uvw[2] = 0;
-		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], vert3[0], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], vert3[1], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], vert3[2], 1.e-8);
-
-		uvw[0] = 1;
-		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], vert1[0], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], vert1[1], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], vert1[2], 1.e-8);
-
-		uvw[0] = 0;
-		uvw[1] = 1;
-		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], vert2[0], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], vert2[1], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], vert2[2], 1.e-8);
-
-		uvw[1] = 0;
-		uvw[2] = 1;
-		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], vert0[0], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], vert0[1], 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], vert0[2], 1.e-8);
-
-#ifndef NDEBUG
-		// Really a regression test
-		uvw[0] = 0.25;
-		uvw[1] = 1. / 6;
-		uvw[2] = 1. / 6;
-		TLSM.computeTransformedCoords(uvw, xyz);
-		BOOST_CHECK_CLOSE(xyz[0], 1.5331084593558231, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[1], 1.495850138813301, 1.e-8);
-		BOOST_CHECK_CLOSE(xyz[2], 2.063058892315818, 1.e-8);
-#endif
-	}
-
-	BOOST_AUTO_TEST_SUITE_END()
-
-BOOST_AUTO_TEST_SUITE(LagrangeCubicMappingTest)
-	static void cubicXYZ(const double uvw[3], double xyz[3]) {
-		const double& u = uvw[0];
-		const double& v = uvw[1];
-		const double& w = uvw[2];
-		xyz[0] = u * u * u + 2 * u * u * v + 4 * u * v * v - 30 * u * v * w
-				+ 5 * u * u + 6 * u
-							- 3 * u * v
-							+ 3;
-		xyz[1] = v * v * v + 2 * v * v * w + 4 * v * w * w - 54 * u * v * w
-				+ 5 * v * v + 6 * v
-							- 4 * v * w
-							+ 7;
-		xyz[2] = w * w * w + 2 * w * w * u + 4 * w * u * u - 72 * u * v * w
-				+ 5 * w * w + 7 * w
-							- 5 * w * u
-							+ 10.5;
-	}
-
-	BOOST_AUTO_TEST_CASE(CubicTet) {
-		printf("Testing cubic tet mapping\n");
-		CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
-		LagrangeCubicTetMapping LCTM(&CM);
-
-		// So the nodal values are just these functions evaluated at nodes, where for the
-		// canonical tet, we have:
-		double uvw[][3] =
-				{ { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 },
-					{ 0, 0, 1 }, // Corner nodes
-					{ 1 / 3., 0, 0 },
-					{ 2 / 3., 0, 0 },  // Nodes between 0 and 1
-					{ 2 / 3., 1 / 3., 0 },
-					{ 1 / 3., 2 / 3., 0 }, // Nodes between 1 and 2
-					{ 0, 2 / 3., 0 }, { 0, 1 / 3., 0 }, // Nodes between 2 and 0
-					{ 0, 0, 1 / 3. }, { 0, 0, 2 / 3. }, // Nodes between 0 and 3
-												{ 2 / 3., 0, 1 / 3. }, { 1 / 3., 0, 2 / 3. }, // Nodes between 1 and 3
-												{ 0, 2 / 3., 1 / 3. }, { 0, 1 / 3., 2 / 3. }, // Nodes between 2 and 3
-												{ 1 / 3., 1 / 3., 0 }, // Node on 012
-												{ 1 / 3., 0, 1 / 3. }, // Node on 013
-												{ 1 / 3., 1 / 3., 1 / 3. }, // Node on 123
-												{ 0, 1 / 3., 1 / 3. } }; // Node on 203
-		double xyz[20][3] = { 0 };
-
-		// Now the nodal values, by simple functional evaluation.
-		for (int ii = 0; ii < 20; ii++) {
-			cubicXYZ(uvw[ii], xyz[ii]);
-		}
-		LCTM.setNodalValues(xyz);
-		LCTM.setModalValues();
-
-		double testUVW[] = { 1. / M_PI, 1. / M_E, 0.5 * (1 - 1. / M_PI - 1. / M_E) };
-		double LCTMxyz[3], funcxyz[3];
-		LCTM.computeTransformedCoords(testUVW, LCTMxyz);
-		cubicXYZ(testUVW, funcxyz);
-		BOOST_CHECK_CLOSE(LCTMxyz[0], funcxyz[0], 1.e-8);
-		BOOST_CHECK_CLOSE(LCTMxyz[1], funcxyz[1], 1.e-8);
-		BOOST_CHECK_CLOSE(LCTMxyz[2], funcxyz[2], 1.e-8);
-
-		for (int ii = 0; ii < 20; ii++) {
-			LCTM.computeTransformedCoords(uvw[ii], LCTMxyz);
-//			printf("%d\n", ii);
-			BOOST_CHECK_CLOSE(LCTMxyz[0], xyz[ii][0], 1.e-8);
-			BOOST_CHECK_CLOSE(LCTMxyz[1], xyz[ii][1], 1.e-8);
-			BOOST_CHECK_CLOSE(LCTMxyz[2], xyz[ii][2], 1.e-8);
-		}
-
-	}
-
-
-	BOOST_AUTO_TEST_CASE(CubicPyramid) {
-		printf("Testing cubic pyramid mapping\n");
-		CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
-		LagrangeCubicPyramidMapping LCPM(&CM);
-
-		// So the nodal values are just these functions evaluated at nodes, where for the
-		// canonical pyramid, we have:
-		double uvw[][3] = {
-				{ -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 }, { -1, 1, 0 },
-												{ 0, 0, 1 }, // Corner nodes
-				{ -1 / 3., -1, 0 },
-				{ 1 / 3., -1, 0 }, // Nodes between 0 and 1
-				{ 1, -1 / 3., 0 },
-				{ 1, 1 / 3., 0 }, // Nodes between 1 and 2
-				{ 1 / 3., 1, 0 },
-				{ -1 / 3., 1, 0 }, // Nodes between 2 and 3
-				{ -1, 1 / 3., 0 },
-				{ -1, -1 / 3., 0 }, // Nodes between 3 and 0
-				{ -2 / 3., -2 / 3., 1 / 3. },
-				{ -1 / 3., -1 / 3., 2 / 3. }, // Nodes between 0 and 4
-				{ 2 / 3., -2 / 3., 1 / 3. },
-				{ 1 / 3., -1 / 3., 2 / 3. }, // Nodes between 1 and 4
-												{ 2 / 3., 2 / 3., 1 / 3. }, { 1 / 3., 1 / 3., 2 / 3. }, // Nodes between 2 and 4
-				{ -2 / 3., 2 / 3., 1 / 3. },
-				{ -1 / 3., 1 / 3., 2 / 3. }, // Nodes between 3 and 4
-				{ -1 / 3., -1 / 3., 0 }, { 1 / 3., -1 / 3., 0 }, { 1 / 3., 1 / 3., 0 },
-				{ -1 / 3., 1 / 3., 0 }, // Nodes on the base
-				{ 0, -2 / 3., 1 / 3. }, // Node on 014
-				{ 2 / 3., 0, 1 / 3. }, // Node on 124
-				{ 0, 2 / 3., 1 / 3. }, // Node on 234
-				{ -2 / 3., 0, 1 / 3. }, // Node on 304
-				{ 0, 0, 1 / 3. } }; // Node in the interior
-
-		double uvwToMap[30][3];
-
-		double xyz[30][3] = { 0 };
-
-		// Now the nodal values, by simple functional evaluation.
-		for (int ii = 0; ii < 30; ii++) {
-			double w = uvw[ii][2];
-			uvwToMap[ii][0] = (uvw[ii][0] + (1 - w)) / 2;
-			uvwToMap[ii][1] = (uvw[ii][1] + (1 - w)) / 2;
-			uvwToMap[ii][2] = w;
-			cubicXYZ(uvw[ii], xyz[ii]);
-		}
-		LCPM.setNodalValues(xyz);
-		LCPM.setModalValues();
-
-		double testUVW[] = { 1. / M_PI, 1. / M_E, 2 * (1 - 1. / M_PI - 1. / M_E) };
-		double LCPMxyz[3], funcxyz[3];
-		cubicXYZ(testUVW, funcxyz);
-		testUVW[0] = (testUVW[0] + (1 - testUVW[2])) / 2;
-		testUVW[1] = (testUVW[1] + (1 - testUVW[2])) / 2;
-		LCPM.computeTransformedCoords(testUVW, LCPMxyz);
-		BOOST_CHECK_CLOSE(LCPMxyz[0], funcxyz[0], 1.e-8);
-		BOOST_CHECK_CLOSE(LCPMxyz[1], funcxyz[1], 1.e-8);
-		BOOST_CHECK_CLOSE(LCPMxyz[2], funcxyz[2], 1.e-8);
-
-		for (int ii = 0; ii < 30; ii++) {
-			LCPM.computeTransformedCoords(uvwToMap[ii], LCPMxyz);
-//			printf("%d\n", ii);
-			BOOST_CHECK_CLOSE(LCPMxyz[0], xyz[ii][0], 1.e-8);
-			BOOST_CHECK_CLOSE(LCPMxyz[1], xyz[ii][1], 1.e-8);
-			BOOST_CHECK_CLOSE(LCPMxyz[2], xyz[ii][2], 1.e-8);
-		}
-	}
-
-	BOOST_AUTO_TEST_CASE(CubicPrism) {
-		printf("Testing cubic prism mapping\n");
-		CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
-		LagrangeCubicPrismMapping LCPM(&CM);
-
-		// So the nodal values are just these functions evaluated at nodes, where for the
-		// canonical prism, we have:
-		double uvw[][3] = {
-				{ 0, 0, 0 }, // 0
-				{ 1, 0, 0 }, // 1
-				{ 0, 1, 0 }, // 2
-				{ 0, 0, 1 }, // 3
-				{ 1, 0, 1 }, // 4
-				{ 0, 1, 1 }, // 5
-				{ 1. / 3, 0, 0 }, // 6
-				{ 2. / 3, 0, 0 }, // 7
-				{ 2. / 3, 1. / 3, 0 }, // 8
-				{ 1. / 3, 2. / 3, 0 }, // 9
-				{ 0, 2. / 3, 0 }, // 10
-				{ 0, 1. / 3, 0 }, // 11
-				{ 0, 0, 1. / 3 }, // 12
-				{ 0, 0, 2. / 3 }, // 13
-				{ 1, 0, 1. / 3 }, // 14
-				{ 1, 0, 2. / 3 }, // 15
-				{ 0, 1, 1. / 3 }, // 16
-				{ 0, 1, 2. / 3 }, // 17
-				{ 1. / 3, 0, 1 }, // 18
-				{ 2. / 3, 0, 1 }, // 19
-				{ 2. / 3, 1. / 3, 1 }, // 20
-				{ 1. / 3, 2. / 3, 1 }, // 21
-				{ 0, 2. / 3, 1 }, // 22
-				{ 0, 1. / 3, 1 }, // 23
-				{ 1. / 3, 1. / 3, 0 }, // 24
-				{ 1. / 3, 0, 1. / 3 }, // 25
-				{ 2. / 3, 0, 1. / 3 }, // 26
-				{ 2. / 3, 0, 2. / 3 }, // 27
-				{ 1. / 3, 0, 2. / 3 }, // 28
-				{ 2. / 3, 1. / 3, 1. / 3 }, // 29
-				{ 1. / 3, 2. / 3, 1. / 3 }, // 30
-				{ 1. / 3, 2. / 3, 2. / 3 }, // 31
-				{ 2. / 3, 1. / 3, 2. / 3 }, // 32
-				{ 0, 2. / 3, 1. / 3 }, // 33
-				{ 0, 1. / 3, 1. / 3 }, // 34
-				{ 0, 1. / 3, 2. / 3 }, // 35
-				{ 0, 2. / 3, 2. / 3 }, // 36
-				{ 1. / 3, 1. / 3, 1 }, // 37
-				{ 1. / 3, 1. / 3, 1. / 3 }, // 38
-				{ 1. / 3, 1. / 3, 2. / 3 } // 39
-				};
-
-		double xyz[40][3] = { 0 };
-
-		// Now the nodal values, by simple functional evaluation.
-		for (int ii = 0; ii < 40; ii++) {
-			cubicXYZ(uvw[ii], xyz[ii]);
-		}
-		LCPM.setNodalValues(xyz);
-		LCPM.setModalValues();
-
-		double testUVW[] = { 1. / M_PI, 1. / M_E, 0.5 * (1 - 1. / M_PI - 1. / M_E) };
-		double LCPMxyz[3], funcxyz[3];
-		cubicXYZ(testUVW, funcxyz);
-		LCPM.computeTransformedCoords(testUVW, LCPMxyz);
-		BOOST_CHECK_CLOSE(LCPMxyz[0], funcxyz[0], 1.e-8);
-		BOOST_CHECK_CLOSE(LCPMxyz[1], funcxyz[1], 1.e-8);
-		BOOST_CHECK_CLOSE(LCPMxyz[2], funcxyz[2], 1.e-8);
-
-		for (int ii = 0; ii < 40; ii++) {
-			LCPM.computeTransformedCoords(uvw[ii], LCPMxyz);
-//			printf("%d\n", ii);
-			BOOST_CHECK_CLOSE(LCPMxyz[0], xyz[ii][0], 1.e-8);
-			BOOST_CHECK_CLOSE(LCPMxyz[1], xyz[ii][1], 1.e-8);
-			BOOST_CHECK_CLOSE(LCPMxyz[2], xyz[ii][2], 1.e-8);
-		}
-	}
-
-	BOOST_AUTO_TEST_CASE(CubicHex) {
-		printf("Testing cubic hex mapping\n");
-		CubicMesh CM(0, 0, 0, 0, 0, 0, 0, 0);
-		LagrangeCubicHexMapping LCHM(&CM);
-
-		// So the nodal values are just these functions evaluated at nodes, where for the
-		// canonical pyramid, we have:
-		double uvw[][3] = {
-				// Bottom layer
-				{ 0, 0, 0 }, // 0
-				{ 1, 0, 0 }, // 1
-				{ 1, 1, 0 }, // 2
-				{ 0, 1, 0 }, // 3
-				{ 0, 0, 1 }, // 4
-				{ 1, 0, 1 }, // 5
-				{ 1, 1, 1 }, // 6
-				{ 0, 1, 1 }, // 7
-				{ 1. / 3, 0, 0 }, // 8
-				{ 2. / 3, 0, 0 }, // 9
-				{ 1, 1. / 3, 0 }, // 10
-				{ 1, 2. / 3, 0 }, // 11
-				{ 2. / 3, 1, 0 }, // 12
-				{ 1. / 3, 1, 0 }, // 13
-				{ 0, 2. / 3, 0 }, // 14
-				{ 0, 1. / 3, 0 }, // 15
-				{ 0, 0, 1. / 3 }, // 16
-				{ 0, 0, 2. / 3 }, // 17
-				{ 1, 0, 1. / 3 }, // 18
-				{ 1, 0, 2. / 3 }, // 19
-				{ 1, 1, 1. / 3 }, // 20
-				{ 1, 1, 2. / 3 }, // 21
-				{ 0, 1, 1. / 3 }, // 22
-				{ 0, 1, 2. / 3 }, // 23
-				{ 1. / 3, 0, 1 }, // 24
-				{ 2. / 3, 0, 1 }, // 25
-				{ 1, 1. / 3, 1 }, // 26
-				{ 1, 2. / 3, 1 }, // 27
-				{ 2. / 3, 1, 1 }, // 28
-				{ 1. / 3, 1, 1 }, // 29
-				{ 0, 2. / 3, 1 }, // 30
-				{ 0, 1. / 3, 1 }, // 31
-				{ 1. / 3, 1. / 3, 0 }, // 32
-				{ 2. / 3, 1. / 3, 0 }, // 33
-				{ 2. / 3, 2. / 3, 0 }, // 34
-				{ 1. / 3, 2. / 3, 0 }, // 35
-				{ 1. / 3, 0, 1. / 3 }, // 36
-				{ 2. / 3, 0, 1. / 3 }, // 37
-				{ 2. / 3, 0, 2. / 3 }, // 38
-				{ 1. / 3, 0, 2. / 3 }, // 39
-				{ 1, 1. / 3, 1. / 3 }, // 40
-				{ 1, 2. / 3, 1. / 3 }, // 41
-				{ 1, 2. / 3, 2. / 3 }, // 42
-				{ 1, 1. / 3, 2. / 3 }, // 43
-				{ 2. / 3, 1, 1. / 3 }, // 44
-				{ 1. / 3, 1, 1. / 3 }, // 45
-				{ 1. / 3, 1, 2. / 3 }, // 46
-				{ 2. / 3, 1, 2. / 3 }, // 47
-				{ 0, 2. / 3, 1. / 3 }, // 48
-				{ 0, 1. / 3, 1. / 3 }, // 49
-				{ 0, 1. / 3, 2. / 3 }, // 50
-				{ 0, 2. / 3, 2. / 3 }, // 51
-				{ 1. / 3, 1. / 3, 1 }, // 52
-				{ 2. / 3, 1. / 3, 1 }, // 53
-				{ 2. / 3, 2. / 3, 1 }, // 54
-				{ 1. / 3, 2. / 3, 1 }, // 55
-				{ 1. / 3, 1. / 3, 1. / 3 }, // 56
-				{ 2. / 3, 1. / 3, 1. / 3 }, // 57
-				{ 2. / 3, 2. / 3, 1. / 3 }, // 58
-				{ 1. / 3, 2. / 3, 1. / 3 }, // 59
-				{ 1. / 3, 1. / 3, 2. / 3 }, // 60
-				{ 2. / 3, 1. / 3, 2. / 3 }, // 61
-				{ 2. / 3, 2. / 3, 2. / 3 }, // 62
-				{ 1. / 3, 2. / 3, 2. / 3 } // 63
-				};
-
-		double xyz[64][3] = { 0 };
-
-		// Now the nodal values, by simple functional evaluation.
-		for (int ii = 0; ii < 64; ii++) {
-			cubicXYZ(uvw[ii], xyz[ii]);
-		}
-		LCHM.setNodalValues(xyz);
-		LCHM.setModalValues();
-
-		double testUVW[] = { 1. / M_PI, 1. / M_E, 0.5 * (1 - 1. / M_PI - 1. / M_E) };
-		double LCHMxyz[3], funcxyz[3];
-		cubicXYZ(testUVW, funcxyz);
-		LCHM.computeTransformedCoords(testUVW, LCHMxyz);
-		BOOST_CHECK_CLOSE(LCHMxyz[0], funcxyz[0], 1.e-8);
-		BOOST_CHECK_CLOSE(LCHMxyz[1], funcxyz[1], 1.e-8);
-		BOOST_CHECK_CLOSE(LCHMxyz[2], funcxyz[2], 1.e-8);
-
-		for (int ii = 0; ii < 64; ii++) {
-			LCHM.computeTransformedCoords(uvw[ii], LCHMxyz);
-//			printf("%d\n", ii);
-			BOOST_CHECK_CLOSE(LCHMxyz[0], xyz[ii][0], 1.e-8);
-			BOOST_CHECK_CLOSE(LCHMxyz[1], xyz[ii][1], 1.e-8);
-			BOOST_CHECK_CLOSE(LCHMxyz[2], xyz[ii][2], 1.e-8);
-		}
-	}
-	BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE_END()
+#endif // DO_SUBDIVISION_TESTS

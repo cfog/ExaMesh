@@ -413,7 +413,7 @@ static void remapIndices(const emInt nPts, const emInt newIndices[],
 }
 
 std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
-		std::vector<CellPartData>& vecCPD) const {
+		std::vector<CellPartData>& vecCPD, const int numDivs) const {
 	CALLGRIND_TOGGLE_COLLECT
 	;
 
@@ -443,10 +443,10 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 			case TETRA_20: {
 				nTets++;
 				conn = getTetConn(ind);
-				TriFaceVerts TFV012(conn[0], conn[1], conn[2], TETRA_20, ind);
-				TriFaceVerts TFV013(conn[0], conn[1], conn[3], TETRA_20, ind);
-				TriFaceVerts TFV123(conn[1], conn[2], conn[3], TETRA_20, ind);
-				TriFaceVerts TFV203(conn[2], conn[0], conn[3], TETRA_20, ind);
+				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], TETRA_20, ind);
+				TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3], TETRA_20, ind);
+				TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3], TETRA_20, ind);
+				TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3], TETRA_20, ind);
 				addUniquely(partBdryTris, TFV012);
 				addUniquely(partBdryTris, TFV013);
 				addUniquely(partBdryTris, TFV123);
@@ -461,11 +461,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 			case PYRA_30: {
 				nPyrs++;
 				conn = getPyrConn(ind);
-				QuadFaceVerts QFV0123(conn[0], conn[1], conn[2], conn[3], PYRA_30, ind);
-				TriFaceVerts TFV014(conn[0], conn[1], conn[4], PYRA_30, ind);
-				TriFaceVerts TFV124(conn[1], conn[2], conn[4], PYRA_30, ind);
-				TriFaceVerts TFV234(conn[2], conn[3], conn[4], PYRA_30, ind);
-				TriFaceVerts TFV304(conn[3], conn[0], conn[4], PYRA_30, ind);
+				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], PYRA_30, ind);
+				TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4], PYRA_30, ind);
+				TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4], PYRA_30, ind);
+				TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4], PYRA_30, ind);
+				TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4], PYRA_30, ind);
 				addUniquely(partBdryQuads, QFV0123);
 				addUniquely(partBdryTris, TFV014);
 				addUniquely(partBdryTris, TFV124);
@@ -481,14 +481,14 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 			case PENTA_40: {
 				nPrisms++;
 				conn = getPrismConn(ind);
-				QuadFaceVerts QFV0143(conn[0], conn[1], conn[4], conn[3], PENTA_40,
+				QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3], PENTA_40,
 															ind);
-				QuadFaceVerts QFV1254(conn[1], conn[2], conn[5], conn[4], PENTA_40,
+				QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4], PENTA_40,
 															ind);
-				QuadFaceVerts QFV2035(conn[2], conn[0], conn[3], conn[5], PENTA_40,
+				QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5], PENTA_40,
 															ind);
-				TriFaceVerts TFV012(conn[0], conn[1], conn[2], PENTA_40, ind);
-				TriFaceVerts TFV345(conn[3], conn[4], conn[5], PENTA_40, ind);
+				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], PENTA_40, ind);
+				TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5], PENTA_40, ind);
 				addUniquely(partBdryQuads, QFV0143);
 				addUniquely(partBdryQuads, QFV1254);
 				addUniquely(partBdryQuads, QFV2035);
@@ -505,12 +505,12 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 			case HEXA_64: {
 				nHexes++;
 				conn = getHexConn(ind);
-				QuadFaceVerts QFV0154(conn[0], conn[1], conn[5], conn[4], HEXA_64, ind);
-				QuadFaceVerts QFV1265(conn[1], conn[2], conn[6], conn[5], HEXA_64, ind);
-				QuadFaceVerts QFV2376(conn[2], conn[3], conn[7], conn[6], HEXA_64, ind);
-				QuadFaceVerts QFV3047(conn[3], conn[0], conn[6], conn[7], HEXA_64, ind);
-				QuadFaceVerts QFV0123(conn[0], conn[1], conn[2], conn[3], HEXA_64, ind);
-				QuadFaceVerts QFV4567(conn[4], conn[5], conn[6], conn[7], HEXA_64, ind);
+				QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4], HEXA_64, ind);
+				QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5], HEXA_64, ind);
+				QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6], HEXA_64, ind);
+				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[6], conn[7], HEXA_64, ind);
+				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], HEXA_64, ind);
+				QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7], HEXA_64, ind);
 				addUniquely(partBdryQuads, QFV0154);
 				addUniquely(partBdryQuads, QFV1265);
 				addUniquely(partBdryQuads, QFV2376);
@@ -535,7 +535,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	for (emInt ii = 0; ii < numBdryTris(); ii++) {
 		conn = getBdryTriConn(ii);
 		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]) {
-			TriFaceVerts TFV(conn[0], conn[1], conn[2]);
+			TriFaceVerts TFV(numDivs, conn[0], conn[1], conn[2]);
 			auto iter = partBdryTris.find(TFV);
 			// If this bdry tri is an unmatched tri from this part, match it, and
 			// add the bdry tri to the list of things to copy to the part coarse
@@ -555,7 +555,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		conn = getBdryQuadConn(ii);
 		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]
 				&& isVertUsed[conn[3]]) {
-			QuadFaceVerts QFV(conn[0], conn[1], conn[2], conn[3]);
+			QuadFaceVerts QFV(numDivs, conn[0], conn[1], conn[2], conn[3]);
 			auto iter = partBdryQuads.find(QFV);
 			// If this bdry tri is an unmatched tri from this part, match it, and
 			// add the bdry tri to the list of things to copy to the part coarse
@@ -577,15 +577,15 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	emInt nPartBdryQuads = partBdryQuads.size();
 
 	for (auto tri : partBdryTris) {
-		bdryVerts.insert(tri.corners[0]);
-		bdryVerts.insert(tri.corners[1]);
-		bdryVerts.insert(tri.corners[2]);
+		bdryVerts.insert(tri.getCorner(0));
+		bdryVerts.insert(tri.getCorner(1));
+		bdryVerts.insert(tri.getCorner(2));
 	}
 	for (auto quad : partBdryQuads) {
-		bdryVerts.insert(quad.corners[0]);
-		bdryVerts.insert(quad.corners[1]);
-		bdryVerts.insert(quad.corners[2]);
-		bdryVerts.insert(quad.corners[3]);
+		bdryVerts.insert(quad.getCorner(0));
+		bdryVerts.insert(quad.getCorner(1));
+		bdryVerts.insert(quad.getCorner(2));
+		bdryVerts.insert(quad.getCorner(3));
 	}
 	emInt nBdryVerts = 0, nNodes = 0;
 	emInt nVertNodes = 0;
@@ -670,16 +670,16 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	// TODO: Currently, there's nothing in the data structure that marks which
 	// are part bdry faces.
 	for (auto tri : partBdryTris) {
-		emInt cellInd = tri.volElement;
+		emInt cellInd = tri.getVolElement();
 		emInt conn[10];
-		switch (tri.volElementType) {
+		switch (tri.getVolElementType()) {
 			case TETRA_20: {
 				emInt *elemConn = m_Tet20Conn[cellInd];
 				// Identify which face this is.  Has to be 012, 013, 123, or 203.
-				if (tri.corners[2] == elemConn[2]) {
+				if (tri.getCorner(2) == elemConn[2]) {
 					// Has to be 012
-					assert(tri.corners[0] == elemConn[0]);
-					assert(tri.corners[1] == elemConn[1]);
+					assert(tri.getCorner(0) == elemConn[0]);
+					assert(tri.getCorner(1) == elemConn[1]);
 					conn[0] = elemConn[0];
 					conn[1] = elemConn[1];
 					conn[2] = elemConn[2];
@@ -691,10 +691,10 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					conn[8] = elemConn[9];
 					conn[9] = elemConn[16];
 				}
-				else if (tri.corners[0] == elemConn[0]) {
+				else if (tri.getCorner(0) == elemConn[0]) {
 					// Has to be 013
-					assert(tri.corners[1] == elemConn[1]);
-					assert(tri.corners[2] == elemConn[3]);
+					assert(tri.getCorner(1) == elemConn[1]);
+					assert(tri.getCorner(2) == elemConn[3]);
 					conn[0] = elemConn[0];
 					conn[1] = elemConn[1];
 					conn[2] = elemConn[3];
@@ -710,10 +710,10 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					// On face
 					conn[9] = elemConn[17];
 				}
-				else if (tri.corners[0] == elemConn[1]) {
+				else if (tri.getCorner(0) == elemConn[1]) {
 					// Has to be 123
-					assert(tri.corners[1] == elemConn[2]);
-					assert(tri.corners[2] == elemConn[3]);
+					assert(tri.getCorner(1) == elemConn[2]);
+					assert(tri.getCorner(2) == elemConn[3]);
 					conn[0] = elemConn[1];
 					conn[1] = elemConn[2];
 					conn[2] = elemConn[3];
@@ -729,10 +729,10 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					// On face
 					conn[9] = elemConn[18];
 				}
-				else if (tri.corners[0] == elemConn[2]) {
+				else if (tri.getCorner(0) == elemConn[2]) {
 					// Has to be 203
-					assert(tri.corners[1] == elemConn[0]);
-					assert(tri.corners[2] == elemConn[3]);
+					assert(tri.getCorner(1) == elemConn[0]);
+					assert(tri.getCorner(2) == elemConn[3]);
 					conn[0] = elemConn[2];
 					conn[1] = elemConn[0];
 					conn[2] = elemConn[3];
@@ -756,9 +756,9 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 			}
 			case PYRA_30: {
 				emInt *elemConn = m_Pyr30Conn[cellInd];
-				if (tri.corners[0] == elemConn[0]) {
-					assert(tri.corners[1] == elemConn[1]);
-					assert(tri.corners[2] == elemConn[4]);
+				if (tri.getCorner(0) == elemConn[0]) {
+					assert(tri.getCorner(1) == elemConn[1]);
+					assert(tri.getCorner(2) == elemConn[4]);
 					conn[0] = elemConn[0];
 					conn[1] = elemConn[1];
 					conn[2] = elemConn[4];
@@ -774,9 +774,9 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					// On face
 					conn[9] = elemConn[25];
 				}
-				else if (tri.corners[0] == elemConn[1]) {
-					assert(tri.corners[1] == elemConn[2]);
-					assert(tri.corners[2] == elemConn[4]);
+				else if (tri.getCorner(0) == elemConn[1]) {
+					assert(tri.getCorner(1) == elemConn[2]);
+					assert(tri.getCorner(2) == elemConn[4]);
 					conn[0] = elemConn[1];
 					conn[1] = elemConn[2];
 					conn[2] = elemConn[4];
@@ -792,9 +792,9 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					// On face
 					conn[9] = elemConn[26];
 				}
-				else if (tri.corners[0] == elemConn[2]) {
-					assert(tri.corners[1] == elemConn[3]);
-					assert(tri.corners[2] == elemConn[4]);
+				else if (tri.getCorner(0) == elemConn[2]) {
+					assert(tri.getCorner(1) == elemConn[3]);
+					assert(tri.getCorner(2) == elemConn[4]);
 					conn[0] = elemConn[2];
 					conn[1] = elemConn[3];
 					conn[2] = elemConn[4];
@@ -810,9 +810,9 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					// On face
 					conn[9] = elemConn[27];
 				}
-				else if (tri.corners[0] == elemConn[3]) {
-					assert(tri.corners[1] == elemConn[0]);
-					assert(tri.corners[2] == elemConn[4]);
+				else if (tri.getCorner(0) == elemConn[3]) {
+					assert(tri.getCorner(1) == elemConn[0]);
+					assert(tri.getCorner(2) == elemConn[4]);
 					conn[0] = elemConn[3];
 					conn[1] = elemConn[0];
 					conn[2] = elemConn[4];
@@ -836,9 +836,9 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 			}
 			case PENTA_40: {
 				emInt *elemConn = m_Prism40Conn[cellInd];
-				if (tri.corners[0] == elemConn[0]) {
-					assert(tri.corners[1] == elemConn[1]);
-					assert(tri.corners[2] == elemConn[2]);
+				if (tri.getCorner(0)  == elemConn[0]) {
+					assert(tri.getCorner(1) == elemConn[1]);
+					assert(tri.getCorner(2) == elemConn[2]);
 					conn[0] = elemConn[0];
 					conn[1] = elemConn[1];
 					conn[2] = elemConn[2];
@@ -854,9 +854,9 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					// On face
 					conn[9] = elemConn[24];
 				}
-				else if (tri.corners[0] == elemConn[3]) {
-					assert(tri.corners[1] == elemConn[4]);
-					assert(tri.corners[2] == elemConn[5]);
+				else if (tri.getCorner(0) == elemConn[3]) {
+					assert(tri.getCorner(1) == elemConn[4]);
+					assert(tri.getCorner(2) == elemConn[5]);
 					conn[0] = elemConn[3];
 					conn[1] = elemConn[4];
 					conn[2] = elemConn[5];
@@ -889,16 +889,16 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	}
 
 	for (auto quad : partBdryQuads) {
-		emInt cellInd = quad.volElement;
+		emInt cellInd = quad.getVolElement();
 		emInt conn[16];
-		switch (quad.volElementType) {
+		switch (quad.getVolElementType()) {
 			case PYRA_30: {
 				// Only one quad here, so it had better be the right one.
 				emInt *elemConn = m_Pyr30Conn[cellInd];
-				assert(quad.corners[0] == elemConn[0]);
-				assert(quad.corners[1] == elemConn[1]);
-				assert(quad.corners[2] == elemConn[2]);
-				assert(quad.corners[3] == elemConn[3]);
+				assert(quad.getCorner(0) == elemConn[0]);
+				assert(quad.getCorner(1) == elemConn[1]);
+				assert(quad.getCorner(2) == elemConn[2]);
+				assert(quad.getCorner(3) == elemConn[3]);
 
 				conn[0] = elemConn[0];
 				conn[1] = elemConn[1];
@@ -927,11 +927,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				emInt *elemConn = m_Prism40Conn[cellInd];
 
 				// Three possible quads: 0143 1254 2035
-				if (quad.corners[0] == elemConn[0]) {
+				if (quad.getCorner(0) == elemConn[0]) {
 					// 0143
-					assert(quad.corners[1] == elemConn[1]);
-					assert(quad.corners[2] == elemConn[4]);
-					assert(quad.corners[3] == elemConn[3]);
+					assert(quad.getCorner(1) == elemConn[1]);
+					assert(quad.getCorner(2) == elemConn[4]);
+					assert(quad.getCorner(3) == elemConn[3]);
 
 					conn[0] = elemConn[0];
 					conn[1] = elemConn[1];
@@ -955,11 +955,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					conn[14] = elemConn[27];
 					conn[15] = elemConn[28];
 				}
-				else if (quad.corners[0] == elemConn[1]) {
+				else if (quad.getCorner(0) == elemConn[1]) {
 					// 1254
-					assert(quad.corners[1] == elemConn[2]);
-					assert(quad.corners[2] == elemConn[5]);
-					assert(quad.corners[3] == elemConn[4]);
+					assert(quad.getCorner(1) == elemConn[2]);
+					assert(quad.getCorner(2) == elemConn[5]);
+					assert(quad.getCorner(3) == elemConn[4]);
 
 					conn[0] = elemConn[1];
 					conn[1] = elemConn[2];
@@ -983,11 +983,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					conn[14] = elemConn[31];
 					conn[15] = elemConn[32];
 				}
-				else if (quad.corners[0] == elemConn[2]) {
+				else if (quad.getCorner(0) == elemConn[2]) {
 					// 2035
-					assert(quad.corners[1] == elemConn[0]);
-					assert(quad.corners[2] == elemConn[3]);
-					assert(quad.corners[3] == elemConn[5]);
+					assert(quad.getCorner(1) == elemConn[0]);
+					assert(quad.getCorner(2) == elemConn[3]);
+					assert(quad.getCorner(3) == elemConn[5]);
 
 					conn[0] = elemConn[2];
 					conn[1] = elemConn[0];
@@ -1021,11 +1021,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				emInt *elemConn = m_Hex64Conn[cellInd];
 
 				// Six quads: 0154 1265 2376 3047 0123 4567
-				if (quad.corners[2] == elemConn[2]) {
+				if (quad.getCorner(2) == elemConn[2]) {
 					// Bottom: 0123
-					assert(quad.corners[0] == elemConn[0]);
-					assert(quad.corners[1] == elemConn[1]);
-					assert(quad.corners[3] == elemConn[3]);
+					assert(quad.getCorner(0) == elemConn[0]);
+					assert(quad.getCorner(1) == elemConn[1]);
+					assert(quad.getCorner(3) == elemConn[3]);
 
 					conn[0] = elemConn[0];
 					conn[1] = elemConn[1];
@@ -1049,11 +1049,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					conn[14] = elemConn[34];
 					conn[15] = elemConn[35];
 				}
-				else if (quad.corners[0] == elemConn[4]) {
+				else if (quad.getCorner(0) == elemConn[4]) {
 					// Top: 4567
-					assert(quad.corners[1] == elemConn[5]);
-					assert(quad.corners[2] == elemConn[6]);
-					assert(quad.corners[3] == elemConn[7]);
+					assert(quad.getCorner(1) == elemConn[5]);
+					assert(quad.getCorner(2) == elemConn[6]);
+					assert(quad.getCorner(3) == elemConn[7]);
 
 					conn[0] = elemConn[4];
 					conn[1] = elemConn[5];
@@ -1077,11 +1077,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					conn[14] = elemConn[54];
 					conn[15] = elemConn[55];
 				}
-				else if (quad.corners[0] == elemConn[0]) {
+				else if (quad.getCorner(0) == elemConn[0]) {
 					// Side: 0154
-					assert(quad.corners[1] == elemConn[1]);
-					assert(quad.corners[2] == elemConn[5]);
-					assert(quad.corners[3] == elemConn[4]);
+					assert(quad.getCorner(1) == elemConn[1]);
+					assert(quad.getCorner(2) == elemConn[5]);
+					assert(quad.getCorner(3) == elemConn[4]);
 
 					conn[0] = elemConn[0];
 					conn[1] = elemConn[1];
@@ -1105,11 +1105,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					conn[14] = elemConn[38];
 					conn[15] = elemConn[39];
 				}
-				else if (quad.corners[0] == elemConn[1]) {
+				else if (quad.getCorner(0) == elemConn[1]) {
 					// Side: 1254
-					assert(quad.corners[1] == elemConn[2]);
-					assert(quad.corners[2] == elemConn[6]);
-					assert(quad.corners[3] == elemConn[5]);
+					assert(quad.getCorner(1) == elemConn[2]);
+					assert(quad.getCorner(2) == elemConn[6]);
+					assert(quad.getCorner(3) == elemConn[5]);
 
 					conn[0] = elemConn[1];
 					conn[1] = elemConn[2];
@@ -1133,11 +1133,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					conn[14] = elemConn[42];
 					conn[15] = elemConn[43];
 				}
-				else if (quad.corners[0] == elemConn[2]) {
+				else if (quad.getCorner(0) == elemConn[2]) {
 					// Side: 2376
-					assert(quad.corners[1] == elemConn[3]);
-					assert(quad.corners[2] == elemConn[7]);
-					assert(quad.corners[3] == elemConn[6]);
+					assert(quad.getCorner(1) == elemConn[3]);
+					assert(quad.getCorner(2) == elemConn[7]);
+					assert(quad.getCorner(3) == elemConn[6]);
 
 					conn[0] = elemConn[2];
 					conn[1] = elemConn[3];
@@ -1161,11 +1161,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					conn[14] = elemConn[46];
 					conn[15] = elemConn[47];
 				}
-				else if (quad.corners[0] == elemConn[3]) {
+				else if (quad.getCorner(0) == elemConn[3]) {
 					// Side: 3047
-					assert(quad.corners[1] == elemConn[0]);
-					assert(quad.corners[2] == elemConn[4]);
-					assert(quad.corners[3] == elemConn[7]);
+					assert(quad.getCorner(1) == elemConn[0]);
+					assert(quad.getCorner(2) == elemConn[4]);
+					assert(quad.getCorner(3) == elemConn[7]);
 
 					conn[0] = elemConn[3];
 					conn[1] = elemConn[0];
@@ -1276,7 +1276,7 @@ std::unique_ptr<UMesh> CubicMesh::createFineUMesh(const emInt numDivs, Part& P,
 		std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const {
 	// Create a coarse
 	double start = exaTime();
-	auto coarse = extractCoarseMesh(P, vecCPD);
+	auto coarse = extractCoarseMesh(P, vecCPD, numDivs);
 	double middle = exaTime();
 	RS.extractTime = middle - start;
 

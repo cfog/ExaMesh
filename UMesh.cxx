@@ -33,6 +33,11 @@
 
 #include <string.h>
 
+// This include file is deliberately before ExaMesh headers so
+// there aren't warnings about standard autoconf things being
+// redefined.
+#include "GMGW_FileWrapper.hxx"
+
 #include "ExaMesh.h"
 #include "exa-defs.h"
 #include "UMesh.h"
@@ -49,8 +54,6 @@
 #define PRISM 13
 #define HEX 12
 #endif
-
-#include "GMGW_FileWrapper.hxx"
 
 using std::cout;
 using std::endl;
@@ -245,7 +248,7 @@ emInt UMesh::addPrism(const emInt verts[6]) {
 	return (m_header[ePrism]++);
 #endif
 }
-
+#define OLD_ADD_ELEMENT
 emInt UMesh::addHex(const emInt verts[8]) {
 #ifndef OLD_ADD_ELEMENT
 	emInt thisHexInd = m_header[eHex]++;
@@ -591,7 +594,7 @@ UMesh::UMesh(const CubicMesh& CMIn, const int nDivs) :
 	setlocale(LC_ALL, "");
 	fprintf(
 			stderr,
-			"Final mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",
+			"Final mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15u cells total\n",
 			m_nVerts, m_nTris, m_nQuads, m_nTets, m_nPyrs, m_nPrisms, m_nHexes,
 			numCells());
 #endif
@@ -762,7 +765,7 @@ static void remapIndices(const emInt nPts, const std::vector<emInt>& newIndices,
 }
 
 std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
-		std::vector<CellPartData>& vecCPD) const {
+		std::vector<CellPartData>& vecCPD, const int numDivs) const {
 	// Count the number of tris, quads, tets, pyrs, prisms and hexes.
 	const emInt first = P.getFirst();
 	const emInt last = P.getLast();
@@ -787,10 +790,10 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 			case TETRA_4: {
 				nTets++;
 				conn = getTetConn(ind);
-				TriFaceVerts TFV012(conn[0], conn[1], conn[2]);
-				TriFaceVerts TFV013(conn[0], conn[1], conn[3]);
-				TriFaceVerts TFV123(conn[1], conn[2], conn[3]);
-				TriFaceVerts TFV203(conn[2], conn[0], conn[3]);
+				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2]);
+				TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3]);
+				TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3]);
+				TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3]);
 				addUniquely(partBdryTris, TFV012);
 				addUniquely(partBdryTris, TFV013);
 				addUniquely(partBdryTris, TFV123);
@@ -804,11 +807,11 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 			case PYRA_5: {
 				nPyrs++;
 				conn = getPyrConn(ind);
-				QuadFaceVerts QFV0123(conn[0], conn[1], conn[2], conn[3]);
-				TriFaceVerts TFV014(conn[0], conn[1], conn[4]);
-				TriFaceVerts TFV124(conn[1], conn[2], conn[4]);
-				TriFaceVerts TFV234(conn[2], conn[3], conn[4]);
-				TriFaceVerts TFV304(conn[3], conn[0], conn[4]);
+				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3]);
+				TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4]);
+				TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4]);
+				TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4]);
+				TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4]);
 				addUniquely(partBdryQuads, QFV0123);
 				addUniquely(partBdryTris, TFV014);
 				addUniquely(partBdryTris, TFV124);
@@ -824,11 +827,11 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 			case PENTA_6: {
 				nPrisms++;
 				conn = getPrismConn(ind);
-				QuadFaceVerts QFV0143(conn[0], conn[1], conn[4], conn[3]);
-				QuadFaceVerts QFV1254(conn[1], conn[2], conn[5], conn[4]);
-				QuadFaceVerts QFV2035(conn[2], conn[0], conn[3], conn[5]);
-				TriFaceVerts TFV012(conn[0], conn[1], conn[2]);
-				TriFaceVerts TFV345(conn[3], conn[4], conn[5]);
+				QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3]);
+				QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4]);
+				QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5]);
+				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2]);
+				TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5]);
 				addUniquely(partBdryQuads, QFV0143);
 				addUniquely(partBdryQuads, QFV1254);
 				addUniquely(partBdryQuads, QFV2035);
@@ -845,12 +848,12 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 			case HEXA_8: {
 				nHexes++;
 				conn = getHexConn(ind);
-				QuadFaceVerts QFV0154(conn[0], conn[1], conn[5], conn[4]);
-				QuadFaceVerts QFV1265(conn[1], conn[2], conn[6], conn[5]);
-				QuadFaceVerts QFV2376(conn[2], conn[3], conn[7], conn[6]);
-				QuadFaceVerts QFV3047(conn[3], conn[0], conn[4], conn[7]);
-				QuadFaceVerts QFV0123(conn[0], conn[1], conn[2], conn[3]);
-				QuadFaceVerts QFV4567(conn[4], conn[5], conn[6], conn[7]);
+				QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4]);
+				QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5]);
+				QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6]);
+				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[6], conn[7]);
+				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3]);
+				QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7]);
 				addUniquely(partBdryQuads, QFV0154);
 				addUniquely(partBdryQuads, QFV1265);
 				addUniquely(partBdryQuads, QFV2376);
@@ -878,7 +881,7 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 	for (emInt ii = 0; ii < numBdryTris(); ii++) {
 		conn = getBdryTriConn(ii);
 		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]) {
-			TriFaceVerts TFV(conn[0], conn[1], conn[2]);
+			TriFaceVerts TFV(numDivs, conn[0], conn[1], conn[2]);
 			auto iter = partBdryTris.find(TFV);
 			// If this bdry tri is an unmatched tri from this part, match it, and
 			// add the bdry tri to the list of things to copy to the part coarse
@@ -898,7 +901,7 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 		conn = getBdryQuadConn(ii);
 		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]
 				&& isVertUsed[conn[3]]) {
-			QuadFaceVerts QFV(conn[0], conn[1], conn[2], conn[3]);
+			QuadFaceVerts QFV(numDivs, conn[0], conn[1], conn[2], conn[3]);
 			auto iter = partBdryQuads.find(QFV);
 			// If this bdry tri is an unmatched tri from this part, match it, and
 			// add the bdry tri to the list of things to copy to the part coarse
@@ -920,15 +923,16 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 	emInt nPartBdryQuads = partBdryQuads.size();
 
 	for (auto tri : partBdryTris) {
-		isBdryVert[tri.corners[0]] = true;
-		isBdryVert[tri.corners[1]] = true;
-		isBdryVert[tri.corners[2]] = true;
+		isBdryVert[tri.getCorner(0)] = true;
+		isBdryVert[tri.getCorner(1)] = true;
+		isBdryVert[tri.getCorner(2)] = true;
 	}
+
 	for (auto quad : partBdryQuads) {
-		isBdryVert[quad.corners[0]] = true;
-		isBdryVert[quad.corners[1]] = true;
-		isBdryVert[quad.corners[2]] = true;
-		isBdryVert[quad.corners[3]] = true;
+		isBdryVert[quad.getCorner(0)] = true;
+		isBdryVert[quad.getCorner(1)] = true;
+		isBdryVert[quad.getCorner(2)] = true;
+		isBdryVert[quad.getCorner(3)] = true;
 	}
 	emInt nBdryVerts = 0, nVerts = 0;
 	for (emInt ii = 0; ii < numVerts(); ii++) {
@@ -1007,25 +1011,29 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 	// TODO: Currently, there's nothing in the data structure that marks which
 	// are part bdry faces.
 	for (auto tri : partBdryTris) {
-		emInt conn[] = { newIndices[tri.corners[0]], newIndices[tri.corners[1]],
-											newIndices[tri.corners[2]] };
+		emInt conn[] = { newIndices[tri.getCorner(0)],
+				newIndices[tri.getCorner(1)],
+				newIndices[tri.getCorner(2)] };
 		UUM->addBdryTri(conn);
 	}
 
 	for (auto quad : partBdryQuads) {
-		emInt conn[] = { newIndices[quad.corners[0]], newIndices[quad.corners[1]],
-											newIndices[quad.corners[2]], newIndices[quad.corners[3]] };
+		emInt conn[] = { newIndices[quad.getCorner(0)],
+				newIndices[quad.getCorner(1)],
+				newIndices[quad.getCorner(2)],
+				newIndices[quad.getCorner(3)] };
 		UUM->addBdryQuad(conn);
 	}
 
 	return UUM;
 }
 
+
 std::unique_ptr<UMesh> UMesh::createFineUMesh(const emInt numDivs, Part& P,
 		std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const {
 	// Create a coarse
 	double start = exaTime();
-	auto coarse = extractCoarseMesh(P, vecCPD);
+	auto coarse = extractCoarseMesh(P, vecCPD, numDivs);
 	double middle = exaTime();
 	RS.extractTime = middle - start;
 

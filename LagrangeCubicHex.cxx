@@ -1798,7 +1798,7 @@ void LagrangeCubicHexMapping::computeTransformedCoords(
 	const double u2v2w3 = u2v2w2 * w;
 
 	const double u3v3w2 = u3v3w * w;
-	const double u3v2w3 = u3v2w2 * 2;
+	const double u3v2w3 = u3v2w2 * w;
 	const double u2v3w3 = u2v3w2 * w;
 
 	const double u3v3w3 = u3v3w2 * w;

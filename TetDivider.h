@@ -108,14 +108,30 @@ public:
 		faceVertIndices[3][1] = 3;
 		faceVertIndices[3][2] = 0;
 
+		faceEdgeIndices[0][0] = 0;
+		faceEdgeIndices[0][1] = 3;
+		faceEdgeIndices[0][2] = 1;
+
+		faceEdgeIndices[1][0] = 2;
+		faceEdgeIndices[1][1] = 4;
+		faceEdgeIndices[1][2] = 0;
+
+		faceEdgeIndices[2][0] = 4;
+		faceEdgeIndices[2][1] = 5;
+		faceEdgeIndices[2][2] = 3;
+
+		faceEdgeIndices[3][0] = 5;
+		faceEdgeIndices[3][1] = 2;
+		faceEdgeIndices[3][2] = 1;
+
 		if (type == Mapping::LengthScale) {
-			m_Map = new TetLengthScaleMapping(pInitMesh);
+			m_Map = new LengthScaleTetMapping(pInitMesh);
 		}
 		else if (type == Mapping::Lagrange) {
 			m_Map = new LagrangeCubicTetMapping(pInitMesh);
 		}
 		else {
-			m_Map = new TetLengthScaleMapping(pInitMesh);
+			m_Map = new Q1TetMapping(pInitMesh);
 		}
   }
 	~TetDivider() {

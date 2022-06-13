@@ -34,10 +34,11 @@ class HexDivider: public CellDivider {
 	double xyzOffsetTop[3], uVecTop[3], vVecTop[3], uvVecTop[3];
 
 public:
-	HexDivider(UMesh *pInitMesh, const int segmentsPerEdge,
+	HexDivider(UMesh *pVolMesh, const ExaMesh* const pInitMesh,
+			const int segmentsPerEdge,
 			const Mapping::MappingType type = Mapping::Uniform)
       :
-			CellDivider(pInitMesh, segmentsPerEdge) {
+			CellDivider(pVolMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
     vertIJK[0][1] = 0;
     vertIJK[0][2] = nDivs;
@@ -173,14 +174,13 @@ public:
 		faceVertIndices[5][3] = 0;
 
 		if (type == Mapping::LengthScale) {
-			// TODO: Must fix this
-			m_Map = new UniformHexMapping(pInitMesh);
+			m_Map = new LengthScaleHexMapping(pInitMesh);
 		}
 		else if (type == Mapping::Lagrange) {
 			m_Map = new LagrangeCubicHexMapping(pInitMesh);
 		}
 		else {
-			m_Map = new UniformHexMapping(pInitMesh);
+			m_Map = new Q1HexMapping(pInitMesh);
 		}
   }
 	~HexDivider() {
