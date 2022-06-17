@@ -140,6 +140,29 @@ public:
 		faceVertIndices[4][1] = 4;
 		faceVertIndices[4][2] = 3;
 
+		faceEdgeIndices[0][0] = 1;
+		faceEdgeIndices[0][1] = 7;
+		faceEdgeIndices[0][2] = 4;
+		faceEdgeIndices[0][3] = 8;
+
+		faceEdgeIndices[1][0] = 0;
+		faceEdgeIndices[1][1] = 6;
+		faceEdgeIndices[1][2] = 3;
+		faceEdgeIndices[1][3] = 7;
+
+		faceEdgeIndices[2][0] = 2;
+		faceEdgeIndices[2][1] = 8;
+		faceEdgeIndices[2][2] = 5;
+		faceEdgeIndices[2][3] = 6;
+
+		faceEdgeIndices[3][0] = 0;
+		faceEdgeIndices[3][1] = 1;
+		faceEdgeIndices[3][2] = 2;
+
+		faceEdgeIndices[4][0] = 4;
+		faceEdgeIndices[4][1] = 3;
+		faceEdgeIndices[4][2] = 5;
+
 		if (type == Mapping::LengthScale) {
 			// TODO: Must fix this
 			m_Map = new Q1PrismMapping(pInitMesh);
@@ -157,6 +180,10 @@ public:
 	virtual void createNewCells();
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
+
+	virtual int maxI(const int j, const int /*k*/) const {return nDivs - j;}
+	virtual int maxJ(const int i, const int /*k*/) const {return nDivs - i;}
+
 };
 
 #endif /* APPS_EXAMESH_PRISMDIVIDER_H_ */

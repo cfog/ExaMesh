@@ -76,28 +76,49 @@ void PrismDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 
 void PrismDivider::divideInterior() {
   // Number of verts added:
-  //    Tets:      (nD-1)(nD-2)(nD-3)/6
+  //    Prisms:      (nD-1)(nD-2)nD/2
 	if (nDivs < 3) return;
-	double uvw[3];
-	double &u = uvw[0];
-	double& v = uvw[1];
-	double& w = uvw[2];
 	for (int kk = 1; kk < nDivs; kk++) {
-		w = (1 - double(kk) / nDivs);
-		for (int jj = 1; jj <= nDivs - 2; jj++) {
-			v = double(jj) / nDivs;
-			for (int ii = 1; ii <= nDivs - 1 - jj; ii++) {
-				u = double(ii) / nDivs;
+		int jMax = maxJ(1, kk);
+		for (int jj = 1; jj < jMax; jj++) {
+			int iMax = maxI(jj, kk);
+			for (int ii = 1; ii < iMax; ii++) {
+				double uvw[] = { double(ii) / nDivs,
+						double(jj) / nDivs,
+						double(kk) / nDivs };
+				double &u = uvw[0];
+				double &v = uvw[1];
+				double &w = uvw[2];
 				double coordsNew[3];
 				getPhysCoordsFromParamCoords(uvw, coordsNew);
 				emInt vNew = m_pMesh->addVert(coordsNew);
 				localVerts[ii][jj][kk] = vNew;
-				m_uvw[ii][jj][nDivs - kk][0] = u;
-				m_uvw[ii][jj][nDivs - kk][1] = v;
-				m_uvw[ii][jj][nDivs - kk][2] = w;
-      }
-    } // Done looping over all interior verts for the triangle.
-  }   // Done looping over all levels for the prism.
+				m_uvw[ii][jj][kk][0] = u;
+				m_uvw[ii][jj][kk][1] = v;
+				m_uvw[ii][jj][kk][2] = w;
+//				printf("%3d %3d %3d %5f %5f %5f\n", ii, jj, kk, u, v, w);
+			}
+		} // Done looping over all interior verts for the triangle.
+	}   // Done looping over all levels for the prism.
+//	for (int kk = 1; kk < nDivs; kk++) {
+//		for (int jj = 1; jj <= nDivs - 2; jj++) {
+//			for (int ii = 1; ii <= nDivs - 1 - jj; ii++) {
+//				double uvw[] = { double(ii) / nDivs, double(jj) / nDivs, double(
+//						kk) / nDivs };
+//				double &u = uvw[0];
+//				double &v = uvw[1];
+//				double &w = uvw[2];
+//				double coordsNew[3];
+//				getPhysCoordsFromParamCoords(uvw, coordsNew);
+//				emInt vNew = m_pMesh->addVert(coordsNew);
+//				localVerts[ii][jj][kk] = vNew;
+//				m_uvw[ii][jj][kk][0] = u;
+//				m_uvw[ii][jj][kk][1] = v;
+//				m_uvw[ii][jj][kk][2] = w;
+//				printf("%3d %3d %3d %5f %5f %5f\n", ii, jj, kk, u, v, w);
+//			}
+//		} // Done looping over all interior verts for the triangle.
+//	}   // Done looping over all levels for the prism.
 }
 
 void PrismDivider::createNewCells() {

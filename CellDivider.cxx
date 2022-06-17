@@ -179,14 +179,14 @@ void QuadFaceVerts::computeParaCoords(const int ii, const int jj, double &s,
 	int iLeft = 0;
 	int jLeft = jj;
 
-	int iRight = m_nDivs - jj;
+	int iRight = m_nDivs;
 	int jRight = jj;
 
 	int iBot = ii;
 	int jBot = 0;
 
 	int iTop = ii;
-	int jTop = m_nDivs - ii;
+	int jTop = m_nDivs;
 
 	double stLeft[] =
 			{ m_param_st[iLeft][jLeft][0], m_param_st[iLeft][jLeft][1] };
@@ -318,6 +318,10 @@ void getFaceParametricIntersectionPoint(const double uvL[2],
 
 bool CellDivider::isEdgeForwardForFace(const EdgeVerts &EV,
 		emInt cornerStart, emInt cornerEnd) const {
+	assert(EV.m_verts[0] == cornerEnd || EV.m_verts[0] == cornerStart);
+	assert(EV.m_verts[nDivs] == cornerEnd ||
+			EV.m_verts[nDivs] == cornerStart);
+	assert(cornerEnd != cornerStart);
 	bool isForward = true;
 	if (EV.m_verts[0] == cornerEnd && EV.m_verts[nDivs] == cornerStart)
 		isForward = false;
@@ -376,7 +380,7 @@ void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const int face) const {
 			int jj = pp;
 			if (!isForward) {
 				st[1] = 1 - st[1];
-				jj = nDivs - pp;
+				jj = nDivs - jj;
 			}
 			// Now take advantage of knowing the s+t = 1
 			st[0] = 1 - st[1];
@@ -389,7 +393,7 @@ void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const int face) const {
 	// Grab the appropriate edge.  Indices are shifted by numEdges for
 	// edges that are reversed in the face compared to the edge definition.
 	{
-		int actualEdge = faceEdgeIndices[face][1];
+		int actualEdge = faceEdgeIndices[face][2];
 		assert(actualEdge >= 0 && actualEdge < numEdges);
 		const EdgeVerts &EV = m_EV[actualEdge];
 		emInt cornerStart = TFV.getCorner(2);
@@ -404,7 +408,7 @@ void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const int face) const {
 			int jj = nDivs - pp;
 			if (!isForward) {
 				st[1] = 1 - st[1];
-				jj = nDivs - pp;
+				jj = nDivs - jj;
 			}
 			TFV.setVertSTParams(0, jj, st);
 		}
@@ -465,6 +469,111 @@ typename exa_set<TriFaceVerts>::iterator CellDivider::getTriVerts(
 	return iterTris;
 }
 
+void CellDivider::initPerimeterParams(QuadFaceVerts &QFV, const int face) const {
+	// Need to identify which edge of the quad is which previously defined
+	// edge, and use the edge parameter info to set up parameter info
+	// for the quad.
+
+	// First edge
+
+	// Grab the appropriate edge.
+	{
+		int actualEdge = faceEdgeIndices[face][0];
+		assert(actualEdge >= 0 && actualEdge < numEdges);
+		const EdgeVerts &EV = m_EV[actualEdge];
+		emInt cornerStart = QFV.getCorner(0);
+		emInt cornerEnd = QFV.getCorner(1);
+		bool isForward = isEdgeForwardForFace(EV, cornerStart, cornerEnd);
+
+		// Transcribe that edge's parametric division on the quad.  This
+		// is idiosyncratic enough for edges that I'm not trying to loop it.
+		for (int pp = 0; pp <= nDivs; pp++) {
+			double st[] = { EV.m_param_t[pp], 0 };
+			int ii = pp, jj = 0;
+			if (!isForward) {
+				st[0] = 1 - st[0];
+				ii = nDivs - ii;
+			}
+			QFV.setVertSTParams(ii, jj, st);
+		}
+	}
+	// Second edge
+
+	// Grab the appropriate edge.
+	{
+		int actualEdge = faceEdgeIndices[face][1];
+		assert(actualEdge >= 0 && actualEdge < numEdges);
+		const EdgeVerts &EV = m_EV[actualEdge];
+		emInt cornerStart = QFV.getCorner(1);
+		emInt cornerEnd = QFV.getCorner(2);
+		bool isForward = isEdgeForwardForFace(EV, cornerStart, cornerEnd);
+
+		// Transcribe that edge's parametric division on the quad.  This
+		// is idiosyncratic enough for edges that I'm not trying to loop it.
+		for (int pp = 0; pp <= nDivs; pp++) {
+			// This is the hypotenuse in the st parametric space, so
+			// the edge runs from (s,t) = (1,0) to (0,1).
+			double st[] = {1, EV.m_param_t[pp]};
+			int jj = pp;
+			if (!isForward) {
+				st[1] = 1 - st[1];
+				jj = nDivs - pp;
+			}
+			QFV.setVertSTParams(nDivs, jj, st);
+		}
+	}
+
+	// Third edge
+
+	// Grab the appropriate edge.
+	{
+		int actualEdge = faceEdgeIndices[face][2];
+		assert(actualEdge >= 0 && actualEdge < numEdges);
+		const EdgeVerts &EV = m_EV[actualEdge];
+		emInt cornerStart = QFV.getCorner(2);
+		emInt cornerEnd = QFV.getCorner(3);
+		bool isForward = isEdgeForwardForFace(EV, cornerStart, cornerEnd);
+
+		// Transcribe that edge's parametric division on the quad.  This
+		// is idiosyncratic enough for edges that I'm not trying to loop it.
+		for (int pp = 0; pp <= nDivs; pp++) {
+			// This edge runs from (s,t) = (1,1) to (0,1)
+			double st[] = { 1 - EV.m_param_t[pp], 1 };
+			int ii = nDivs - pp;
+			if (!isForward) {
+				st[0] = 1 - st[0];
+				ii = pp;
+			}
+			QFV.setVertSTParams(ii, nDivs, st);
+		}
+	}
+
+	// Fourth edge
+
+	// Grab the appropriate edge.
+	{
+		int actualEdge = faceEdgeIndices[face][3];
+		assert(actualEdge >= 0 && actualEdge < numEdges);
+		const EdgeVerts &EV = m_EV[actualEdge];
+		emInt cornerStart = QFV.getCorner(3);
+		emInt cornerEnd = QFV.getCorner(0);
+		bool isForward = isEdgeForwardForFace(EV, cornerStart, cornerEnd);
+
+		// Transcribe that edge's parametric division on the quad.  This
+		// is idiosyncratic enough for edges that I'm not trying to loop it.
+		for (int pp = 0; pp <= nDivs; pp++) {
+			// This edge runs from (s,t) = (0,1) to (0,0)
+			double st[] = { 0, 1 - EV.m_param_t[pp] };
+			int jj = nDivs - pp;
+			if (!isForward) {
+				st[1] = 1 - st[1];
+				jj = nDivs - jj;
+			}
+			QFV.setVertSTParams(0, jj, st);
+		}
+	}
+}
+
 void CellDivider::getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
 		const int face, QuadFaceVerts &QFV) {
 	int ind0 = faceVertIndices[face][0];
@@ -498,6 +607,7 @@ void CellDivider::getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
 			(uvw2[1] + uvw0[1] - uvw1[1] - uvw3[1]), (uvw2[2] + uvw0[2]
 					- uvw1[2] - uvw3[2])};
 		QFV.setCorners(vert0, vert1, vert2, vert3);
+		initPerimeterParams(QFV, face);
 
 		for (int jj = 1; jj <= nDivs - 1; jj++) {
 			for (int ii = 1; ii <= nDivs - 1; ii++) {

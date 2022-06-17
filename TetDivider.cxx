@@ -42,27 +42,32 @@ void TetDivider::divideInterior() {
 	// Number of verts added:
 	//    Tets:      (nD-1)(nD-2)(nD-3)/6
 	if (nDivs <= 3) return;
-	double uvw[3];
-	double& u = uvw[0];
-	double& v = uvw[1];
-	double& w = uvw[2];
-	for (int kk = 0; kk <= nDivs - 4; kk++) {
-		w = double(kk + 1) / nDivs;
-		for (int jj = 0; jj <= nDivs - 4 - kk; jj++) {
-			v = double(jj + 1) / nDivs;
-			for (int ii = 0; ii <= nDivs - 4 - kk - jj; ii++) {
-				u = double(ii + 1) / nDivs;
-				assert(ii + jj + kk <= nDivs - 4);
+	// No need to include bdry points in the iteration
+	for (int kk = 1; kk < nDivs; kk++) {
+		int jMax = maxJ(1, kk);
+		for (int jj = 1; jj < jMax; jj++) {
+			int iMax = maxI(jj, kk);
+			for (int ii = 1; ii < iMax; ii++) {
+				assert(ii + jj + (nDivs - kk) <= 4);
+
+				double uvw[] = {double(ii) / nDivs,
+						double(jj) / nDivs,
+						1 - double(kk) / nDivs
+				};
 				double coords[3];
+
 				m_Map->computeTransformedCoords(uvw, coords);
 				emInt vNew = m_pMesh->addVert(coords);
-				localVerts[ii + 1][jj + 1][nDivs - (kk + 1)] = vNew;
-				m_uvw[ii+1][jj+1][nDivs - (kk+1)][0] = u;
-				m_uvw[ii+1][jj+1][nDivs - (kk+1)][1] = v;
-				m_uvw[ii+1][jj+1][nDivs - (kk+1)][2] = w;
+
+				localVerts[ii][jj][kk] = vNew;
+				m_uvw[ii][jj][kk][0] = uvw[0];
+				m_uvw[ii][jj][kk][1] = uvw[1];
+				m_uvw[ii][jj][kk][2] = uvw[2];
+//				printf("%3d %3d %3d %8f %8f %8f\n", ii, jj, kk,
+//						u, v, w);
 			}
 		}
-	} // Done looping to create all verts inside the tet.
+	}
 }
 
 void TetDivider::stuffTetsIntoOctahedron(emInt vertsNew[][4]) {

@@ -117,6 +117,15 @@ public:
 		uvw[1] = m_uvw[i][j][k][1];
 		uvw[2] = m_uvw[i][j][k][2];
 	}
+
+	// The virtual functions here will be overridden in most subclasses.
+	int minI(const int /*j*/, const int /*k*/) const {return 0;}
+	int minJ(const int /*i*/, const int /*k*/) const {return 0;}
+	virtual int minK(const int /*i*/, const int /*j*/) const {return 0;}
+
+	virtual int maxI(const int /*j*/, const int /*k*/) const {return nDivs;}
+	virtual int maxJ(const int /*i*/, const int /*k*/) const {return nDivs;}
+	int maxK(const int /*i*/, const int /*j*/) const {return nDivs;}
 private:
 	void getEdgeParametricDivision(EdgeVerts &EV) const;
 	void initPerimeterParams(TriFaceVerts& TFV, const int face) const;

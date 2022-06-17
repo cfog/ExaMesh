@@ -896,6 +896,7 @@ makeLengthScaleUniform();
 	// result
 	const emInt *const thisPyr = pUM_In->getPyrConn(0);
 	PD.setupCoordMapping(thisPyr);
+	PD.divideEdges(vertsOnEdges);
 	PD.divideFaces(vertsOnTris, vertsOnQuads);
 
 	BOOST_CHECK_EQUAL(vertsOnTris.size(), 4);
@@ -954,6 +955,7 @@ makeLengthScaleUniform();
 	// result
 	const emInt *const thisPrism = pUM_In->getPrismConn(0);
 	PD.setupCoordMapping(thisPrism);
+	PD.divideEdges(vertsOnEdges);
 	PD.divideFaces(vertsOnTris, vertsOnQuads);
 
 	BOOST_CHECK_EQUAL(vertsOnTris.size(), 2);
@@ -1012,6 +1014,7 @@ makeLengthScaleUniform();
 	// result
 	const emInt *const thisHex = pUM_In->getHexConn(0);
 	HD.setupCoordMapping(thisHex);
+	HD.divideEdges(vertsOnEdges);
 	HD.divideFaces(vertsOnTris, vertsOnQuads);
 
 	BOOST_CHECK_EQUAL(vertsOnTris.size(), 0);
@@ -1100,53 +1103,53 @@ makeLengthScaleUniform();
 	}
 }
 
-//BOOST_AUTO_TEST_CASE(PyramidMappingUniform) {
-//	printf("Pyramid uniform mapping\n");
-//	// Check the uniform length scale cases.
-//makeLengthScaleUniform();
-//
-//	PyrDivider PD(pUM_Out, pUM_In, 5);
-//
-//	const emInt *const thisPyr = pUM_In->getPyrConn(0);
-//	PD.setupCoordMapping(thisPyr);
-//
-//	PD.createDivisionVerts(vertsOnEdges, vertsOnTris, vertsOnQuads);
-//
-//	double uvw[5][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, {1, 1, 0}, { 0, 0, 1 } };
-//	double xyz[5][3];
-//	PD.getPhysCoordsFromParamCoords(uvw[0], xyz[0]);
-//	PD.getPhysCoordsFromParamCoords(uvw[1], xyz[1]);
-//	PD.getPhysCoordsFromParamCoords(uvw[2], xyz[2]);
-//	PD.getPhysCoordsFromParamCoords(uvw[3], xyz[3]);
-//	PD.getPhysCoordsFromParamCoords(uvw[4], xyz[4]);
-//
-//	// Check correctness of the uvw values.
-//	emInt iArray[] = { 1, 1, 1, 2, 2 };
-//	emInt jArray[] = { 1, 1, 2, 1, 2 };
-//	emInt kArray[] = { 3, 4, 4, 4, 4 };
-//	double uArray[] = { 0.2, 0.2, 0.2, 0.4, 0.4 };
-//	double vArray[] = { 0.2, 0.2, 0.4, 0.2, 0.4 };
-//	double wArray[] = { 0.4, 0.2, 0.2, 0.2, 0.2 };
-//
-//	double xArray[] = { 0.2, 0.2, 0.2, 0.4, 0.4 };
-//	double yArray[] = { 0.2, 0.2, 0.4, 0.2, 0.4 };
-//	double zArray[] = { 0.4, 0.2, 0.2, 0.2, 0.2 };
-//
-//	// Now extract the uvw values and check correctness
-//	for (int ii = 0; ii < 4; ii++) {
-//		double my_uvw[3], my_xyz[3];
-//		PD.getParamCoords(iArray[ii], jArray[ii], kArray[ii], my_uvw);
-//		BOOST_CHECK_CLOSE(uArray[ii], my_uvw[0], 1.e-8);
-//		BOOST_CHECK_CLOSE(vArray[ii], my_uvw[1], 1.e-8);
-//		BOOST_CHECK_CLOSE(wArray[ii], my_uvw[2], 1.e-8);
-//
-//		PD.getPhysCoordsFromParamCoords(my_uvw, my_xyz);
-//		BOOST_CHECK_CLOSE(xArray[ii], my_xyz[0], 1.e-8);
-//		BOOST_CHECK_CLOSE(yArray[ii], my_xyz[1], 1.e-8);
-//		BOOST_CHECK_CLOSE(zArray[ii], my_xyz[2], 1.e-8);
-//	}
-//}
-//
+BOOST_AUTO_TEST_CASE(PyramidMappingUniform) {
+	printf("Pyramid uniform mapping\n");
+	// Check the uniform length scale cases.
+makeLengthScaleUniform();
+
+	PyrDivider PD(pUM_Out, pUM_In, 5);
+
+	const emInt *const thisPyr = pUM_In->getPyrConn(0);
+	PD.setupCoordMapping(thisPyr);
+
+	PD.createDivisionVerts(vertsOnEdges, vertsOnTris, vertsOnQuads);
+
+	double uvw[5][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, {1, 1, 0}, { 0, 0, 1 } };
+	double xyz[5][3];
+	PD.getPhysCoordsFromParamCoords(uvw[0], xyz[0]);
+	PD.getPhysCoordsFromParamCoords(uvw[1], xyz[1]);
+	PD.getPhysCoordsFromParamCoords(uvw[2], xyz[2]);
+	PD.getPhysCoordsFromParamCoords(uvw[3], xyz[3]);
+	PD.getPhysCoordsFromParamCoords(uvw[4], xyz[4]);
+
+	// Check correctness of the uvw values.
+	emInt iArray[] = { 1, 1, 1, 2, 2 };
+	emInt jArray[] = { 1, 1, 2, 1, 2 };
+	emInt kArray[] = { 3, 4, 4, 4, 4 };
+	double uArray[] = { 0.2, 0.2, 0.2, 0.4, 0.4 };
+	double vArray[] = { 0.2, 0.2, 0.4, 0.2, 0.4 };
+	double wArray[] = { 0.4, 0.2, 0.2, 0.2, 0.2 };
+
+	double xArray[] = { 0.2, 0.2, 0.2, 0.4, 0.4 };
+	double yArray[] = { 0.2, 0.2, 0.4, 0.2, 0.4 };
+	double zArray[] = { 0.4, 0.2, 0.2, 0.2, 0.2 };
+
+	// Now extract the uvw values and check correctness
+	for (int ii = 0; ii < 4; ii++) {
+		double my_uvw[3], my_xyz[3];
+		PD.getParamCoords(iArray[ii], jArray[ii], kArray[ii], my_uvw);
+		BOOST_CHECK_CLOSE(uArray[ii], my_uvw[0], 1.e-8);
+		BOOST_CHECK_CLOSE(vArray[ii], my_uvw[1], 1.e-8);
+		BOOST_CHECK_CLOSE(wArray[ii], my_uvw[2], 1.e-8);
+
+		PD.getPhysCoordsFromParamCoords(my_uvw, my_xyz);
+		BOOST_CHECK_CLOSE(xArray[ii], my_xyz[0], 1.e-8);
+		BOOST_CHECK_CLOSE(yArray[ii], my_xyz[1], 1.e-8);
+		BOOST_CHECK_CLOSE(zArray[ii], my_xyz[2], 1.e-8);
+	}
+}
+
 BOOST_AUTO_TEST_CASE(PrismMappingUniform) {
 	printf("Prism uniform mapping\n");
 	// Check the uniform length scale cases.

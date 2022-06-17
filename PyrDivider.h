@@ -126,6 +126,27 @@ public:
 		faceVertIndices[4][1] = 4;
 		faceVertIndices[4][2] = 0;
 
+		faceEdgeIndices[0][0] = 0;
+		faceEdgeIndices[0][1] = 3;
+		faceEdgeIndices[0][2] = 5;
+		faceEdgeIndices[0][3] = 1;
+
+		faceEdgeIndices[1][0] = 2;
+		faceEdgeIndices[1][1] = 4;
+		faceEdgeIndices[1][2] = 0;
+
+		faceEdgeIndices[2][0] = 4;
+		faceEdgeIndices[2][1] = 6;
+		faceEdgeIndices[2][2] = 3;
+
+		faceEdgeIndices[3][0] = 6;
+		faceEdgeIndices[3][1] = 7;
+		faceEdgeIndices[3][2] = 5;
+
+		faceEdgeIndices[4][0] = 7;
+		faceEdgeIndices[4][1] = 2;
+		faceEdgeIndices[4][2] = 1;
+
 		if (type == Mapping::LengthScale) {
 			// TODO: Must fix this
 			m_Map = new Q1PyramidMapping(pInitMesh);
@@ -143,6 +164,12 @@ public:
   void createNewCells();
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
+
+	virtual int maxI(const int /*j*/, const int k) const {return k;}
+	virtual int maxJ(const int /*i*/, const int k) const {return k;}
+	virtual int minK(const int i, const int j) const {
+		return (i >= j ? i : j);
+	}
 };
 
 #endif /* APPS_EXAMESH_PYRDIVIDER_H_ */

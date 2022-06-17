@@ -105,7 +105,7 @@ public:
 
 		numVerts = 8;
 		numEdges = 12;
-		numTriFaces = 0;
+ 		numTriFaces = 0;
 		numQuadFaces = 6;
 		edgeVertIndices[0][0] = 0;
 		edgeVertIndices[0][1] = 1;
@@ -173,6 +173,36 @@ public:
 		faceVertIndices[5][2] = 4;
 		faceVertIndices[5][3] = 0;
 
+		faceEdgeIndices[0][0] = 0;
+		faceEdgeIndices[0][1] = 1;
+		faceEdgeIndices[0][2] = 2;
+		faceEdgeIndices[0][3] = 3;
+
+		faceEdgeIndices[1][0] = 6;
+		faceEdgeIndices[1][1] = 5;
+		faceEdgeIndices[1][2] = 4;
+		faceEdgeIndices[1][3] = 7;
+
+		faceEdgeIndices[2][0] = 8;
+		faceEdgeIndices[2][1] = 4;
+		faceEdgeIndices[2][2] = 9;
+		faceEdgeIndices[2][3] = 0;
+
+		faceEdgeIndices[3][0] = 9;
+		faceEdgeIndices[3][1] = 5;
+		faceEdgeIndices[3][2] = 10;
+		faceEdgeIndices[3][3] = 1;
+
+		faceEdgeIndices[4][0] = 10;
+		faceEdgeIndices[4][1] = 6;
+		faceEdgeIndices[4][2] = 11;
+		faceEdgeIndices[4][3] = 2;
+	       
+		faceEdgeIndices[5][0] = 11;
+		faceEdgeIndices[5][1] = 7;
+		faceEdgeIndices[5][2] = 8;
+		faceEdgeIndices[5][3] = 3;
+	      
 		if (type == Mapping::LengthScale) {
 			m_Map = new LengthScaleHexMapping(pInitMesh);
 		}

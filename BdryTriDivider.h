@@ -60,6 +60,10 @@ public:
 		faceVertIndices[0][0] = 0;
 		faceVertIndices[0][1] = 1;
 		faceVertIndices[0][2] = 2;
+
+		faceEdgeIndices[0][0] = 0;
+		faceEdgeIndices[0][1] = 1;
+		faceEdgeIndices[0][2] = 2;
 	}
 	~BdryTriDivider() {
 	}

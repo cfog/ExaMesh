@@ -84,16 +84,18 @@ void HexDivider::divideInterior() {
   // Number of verts added:
   //    Tets:      (nD-1)(nD-2)(nD-3)/6
 	if (nDivs < 2) return;
-	double uvw[3];
-	double &u = uvw[0];
-	double& v = uvw[1];
-	double& w = uvw[2];
-	for (int kk = 1; kk <= nDivs - 1; kk++) {
-		w = (1 - double(kk) / nDivs);
-		for (int jj = 1; jj <= nDivs - 1; jj++) {
-			v = double(jj) / nDivs;
-			for (int ii = 1; ii <= nDivs - 1; ii++) {
+	for (int kk = 1; kk < nDivs; kk++) {
+		int jMax = maxJ(1, kk);
+		for (int jj = 1; jj < jMax; jj++) {
+			int iMax = maxI(jj, kk);
+			for (int ii = 1; ii < iMax; ii++) {
+				double uvw[3];
+				double &u = uvw[0];
+				double& v = uvw[1];
+				double& w = uvw[2];
 				u = double(ii) / nDivs;
+				v = double(jj) / nDivs;
+				w = (1 - double(kk) / nDivs);
 				double coordsNew[3];
 				getPhysCoordsFromParamCoords(uvw, coordsNew);
 				emInt vNew = m_pMesh->addVert(coordsNew);
