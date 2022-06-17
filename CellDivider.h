@@ -125,7 +125,7 @@ public:
 
 	virtual int maxI(const int /*j*/, const int /*k*/) const {return nDivs;}
 	virtual int maxJ(const int /*i*/, const int /*k*/) const {return nDivs;}
-	int maxK(const int /*i*/, const int /*j*/) const {return nDivs;}
+	virtual int maxK(const int /*i*/, const int /*j*/) const {return nDivs;}
 private:
 	void getEdgeParametricDivision(EdgeVerts &EV) const;
 	void initPerimeterParams(TriFaceVerts& TFV, const int face) const;

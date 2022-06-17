@@ -79,6 +79,17 @@ public:
 	}
 	void getPhysCoordsFromParamCoords(const double /*uvw*/[], double /*xyz*/[]) {
 	}
+
+	// These definition ensure that we'll get no interior points for
+	// bdry tris.  The way things are set up, "interior" is "cell
+	// interior"; the points interior to a bdry tri are face points
+	// in this nomenclature.
+	virtual int minK(const int /*i*/, const int /*j*/) const {
+		return 0;
+	}
+	virtual int maxK(const int /*i*/, const int /*j*/) const {
+		return 0;
+	}
 };
 
 
