@@ -27,11 +27,13 @@
 #define SRC_BDRYQUADDIVIDER_H_
 
 #include "CellDivider.h"
+#include "Mapping.h"
 
 class BdryQuadDivider: public CellDivider {
 public:
-	BdryQuadDivider(UMesh *pVolMesh, const int segmentsPerEdge) :
-			CellDivider(pVolMesh, segmentsPerEdge) {
+	BdryQuadDivider(UMesh *pInitMesh, const int segmentsPerEdge,
+			const Mapping::MappingType type = Mapping::Uniform) :
+			CellDivider(pInitMesh, segmentsPerEdge) {
 		vertIJK[0][0] = 0;
 		vertIJK[0][1] = 0;
 		vertIJK[0][2] = 0;
@@ -73,6 +75,13 @@ public:
 		faceEdgeIndices[0][1] = 1;
 		faceEdgeIndices[0][2] = 2;
 		faceEdgeIndices[0][3] = 3;
+
+		if (type == Mapping::Lagrange) {
+			m_Map = new LagrangeCubicQuadMapping(pInitMesh);
+		}
+		else {
+			m_Map = new Q1QuadMapping(pInitMesh);
+		}
 	}
 	~BdryQuadDivider() {
 	}

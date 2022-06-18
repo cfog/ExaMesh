@@ -85,7 +85,7 @@ void PrismDivider::divideInterior() {
 			for (int ii = 1; ii < iMax; ii++) {
 				double uvw[] = { double(ii) / nDivs,
 						double(jj) / nDivs,
-						double(kk) / nDivs };
+						1 - double(kk) / nDivs };
 				double &u = uvw[0];
 				double &v = uvw[1];
 				double &w = uvw[2];

@@ -88,7 +88,7 @@ public:
 		delete[] m_uvw;
 		if (m_Map) delete m_Map;
 	}
-	virtual void createDivisionVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges,
+	void createDivisionVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges,
 			exa_set<TriFaceVerts> &vertsOnTris,
 			exa_set<QuadFaceVerts> &vertsOnQuads) {
 		divideEdges(vertsOnEdges);
@@ -99,6 +99,8 @@ public:
 
 		// Divide the cell
 		divideInterior();
+
+//		printAllPoints();
 	}
 	void divideEdges(exa_map<Edge, EdgeVerts> &vertsOnEdges);
 	void divideFaces(exa_set<TriFaceVerts> &vertsOnTris,
@@ -126,6 +128,9 @@ public:
 	virtual int maxI(const int /*j*/, const int /*k*/) const {return nDivs;}
 	virtual int maxJ(const int /*i*/, const int /*k*/) const {return nDivs;}
 	virtual int maxK(const int /*i*/, const int /*j*/) const {return nDivs;}
+
+	// Output for diagnostic purposes
+	void printAllPoints();
 private:
 	void getEdgeParametricDivision(EdgeVerts &EV) const;
 	void initPerimeterParams(TriFaceVerts& TFV, const int face) const;

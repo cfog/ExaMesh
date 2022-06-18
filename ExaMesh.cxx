@@ -53,7 +53,9 @@ static double tetVolume(const double coords0[], const double coords1[],
 	double edge03[] = DIFF(coords3, coords0);
 	double normal[3];
 	CROSS(edge01, edge02, normal);
-	return DOT(normal,edge03) / 6;
+	double retVal = DOT(normal,edge03) / 6;
+	assert(retVal > 0);
+	return retVal;
 }
 
 static void quadUnitNormal(const double coords0[], const double coords1[],
@@ -79,7 +81,9 @@ static double pyrVolume(const double coords0[], const double coords1[],
 	}
 	double normal[3];
 	CROSS(vecB, vecC, normal);
-	return DOT(normal, vecE) / 0.75;
+	double retVal = DOT(normal, vecE) / 0.75;
+	assert(retVal > 0);
+	return retVal;
 }
 
 void ExaMesh::setupLengthScales() {
@@ -246,7 +250,7 @@ void ExaMesh::setupLengthScales() {
 		getCoords(hexVerts[3], coords3);
 		getCoords(hexVerts[4], coords4);
 		getCoords(hexVerts[5], coords5);
-		getCoords(hexVerts[6], coords7);
+		getCoords(hexVerts[6], coords6);
 		getCoords(hexVerts[7], coords7);
 		quadUnitNormal(coords1, coords0, coords4, coords5, norm1045);
 		quadUnitNormal(coords2, coords1, coords5, coords6, norm2156);

@@ -63,7 +63,7 @@
 #define CALLGRIND_TOGGLE_COLLECT
 #endif
 
-#define MAX_DIVS 8
+#define MAX_DIVS 50
 #define FILE_NAME_LEN 1024
 
 typedef uint32_t emInt;

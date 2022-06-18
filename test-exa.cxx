@@ -37,7 +37,7 @@
 
 #include "Mapping.h"
 
-#undef DO_SUBDIVISION_TESTS
+#define DO_SUBDIVISION_TESTS
 
 #ifdef DO_SUBDIVISION_TESTS
 static void checkExpectedSize(const UMesh &UM) {
@@ -93,20 +93,21 @@ struct MixedMeshFixture {
 	~MixedMeshFixture() {
 		delete pUM_In;
 	}
-	void makeLengthScaleUniform() {
-		// Check the uniform length scale cases.
-		for (int ii = 0; ii < 11; ii++) {
-			pUM_In->setLengthScale(ii, 1.);
-		}
-	}
-	void setPrescribedLengthScale() {
-		// A simple analytic length scale.
-		for (int ii = 0; ii < 11; ii++) {
-			double len = 1 + 0.1*(pUM_In->getX(ii) + pUM_In->getY(ii) + pUM_In->getZ(ii));
-			pUM_In->setLengthScale(ii, len);
-		}
-	}
 };
+
+void makeLengthScaleUniform(const UMesh* pUM_In) {
+	// Check the uniform length scale cases.
+	for (int ii = 0; ii < pUM_In->numVerts(); ii++) {
+		pUM_In->setLengthScale(ii, 1.);
+	}
+}
+void setPrescribedLengthScale(const UMesh* pUM_In) {
+	// A simple analytic length scale.
+	for (int ii = 0; ii < pUM_In->numVerts(); ii++) {
+		double len = 1 + 0.1*(pUM_In->getX(ii) + pUM_In->getY(ii) + pUM_In->getZ(ii));
+		pUM_In->setLengthScale(ii, len);
+	}
+}
 
 // The following test suite confirms correctness of the parametric-to-
 // physical space mapping for cubic Lagrange element shapes.
@@ -820,7 +821,7 @@ BOOST_FIXTURE_TEST_SUITE(MappingTests, MixedMeshFixture)
 BOOST_AUTO_TEST_CASE(EdgeMappingUniform)
  {
 	// Check the uniform length scale cases.
-	makeLengthScaleUniform();
+	makeLengthScaleUniform(pUM_In);
 
 	TetDivider TD(pUM_Out, pUM_In, 4);
 
@@ -851,7 +852,7 @@ BOOST_AUTO_TEST_CASE(EdgeMappingUniform)
 BOOST_AUTO_TEST_CASE(TetFaceMappingUniform) {
 	printf("Tet face uniform mapping test\n");
 	// Check the uniform length scale cases.
-	makeLengthScaleUniform();
+	makeLengthScaleUniform(pUM_In);
 
 	TetDivider TD(pUM_Out, pUM_In, 4);
 	// Compute point locations and compare to the analytic
@@ -889,7 +890,7 @@ BOOST_AUTO_TEST_CASE(TetFaceMappingUniform) {
 BOOST_AUTO_TEST_CASE(PyramidFaceMappingUniform) {
 	printf("Pyramid face uniform mapping test\n");
 	// Check the uniform length scale cases.
-makeLengthScaleUniform();
+makeLengthScaleUniform(pUM_In);
 
 	PyrDivider PD(pUM_Out, pUM_In, 4);
 	// Compute point locations and compare to the analytic
@@ -948,7 +949,7 @@ makeLengthScaleUniform();
 BOOST_AUTO_TEST_CASE(PrismFaceMappingUniform) {
 	printf("Prism face uniform mapping test\n");
 	// Check the uniform length scale cases.
-makeLengthScaleUniform();
+makeLengthScaleUniform(pUM_In);
 
 	PrismDivider PD(pUM_Out, pUM_In, 4);
 	// Compute point locations and compare to the analytic
@@ -1007,7 +1008,7 @@ makeLengthScaleUniform();
 BOOST_AUTO_TEST_CASE(HexFaceMappingUniform) {
 	printf("Hex face uniform mapping test\n");
 	// Check the uniform length scale cases.
-makeLengthScaleUniform();
+makeLengthScaleUniform(pUM_In);
 
 	HexDivider HD(pUM_Out, pUM_In, 4);
 	// Compute point locations and compare to the analytic
@@ -1045,7 +1046,7 @@ makeLengthScaleUniform();
 BOOST_AUTO_TEST_CASE(TetMappingUniform) {
 	printf("Tet uniform mapping\n");
 	// Check the uniform length scale cases.
-makeLengthScaleUniform();
+makeLengthScaleUniform(pUM_In);
 
 	TetDivider TD(pUM_Out, pUM_In, 5);
 
@@ -1106,7 +1107,7 @@ makeLengthScaleUniform();
 BOOST_AUTO_TEST_CASE(PyramidMappingUniform) {
 	printf("Pyramid uniform mapping\n");
 	// Check the uniform length scale cases.
-makeLengthScaleUniform();
+makeLengthScaleUniform(pUM_In);
 
 	PyrDivider PD(pUM_Out, pUM_In, 5);
 
@@ -1153,7 +1154,7 @@ makeLengthScaleUniform();
 BOOST_AUTO_TEST_CASE(PrismMappingUniform) {
 	printf("Prism uniform mapping\n");
 	// Check the uniform length scale cases.
-makeLengthScaleUniform();
+makeLengthScaleUniform(pUM_In);
 
 	PrismDivider PD(pUM_Out, pUM_In, 4);
 
@@ -1178,11 +1179,11 @@ makeLengthScaleUniform();
 	emInt kArray[] = { 1, 1, 1, 2, 2, 2, 3, 3, 3 };
 	double uArray[] = { 0.25, 0.25, 0.5, 0.25, 0.25, 0.5, 0.25, 0.25, 0.5 };
 	double vArray[] = { 0.25, 0.5, 0.25, 0.25, 0.5, 0.25, 0.25, 0.5, 0.25 };
-	double wArray[] = { 0.25, 0.25, 0.25, 0.5, 0.5, 0.5, 0.75, 0.75, 0.75 };
+	double wArray[] = { 0.75, 0.75, 0.75, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25 };
 
 	double xArray[] = { 0.25, 0.25, 0.5, 0.25, 0.25, 0.5, 0.25, 0.25, 0.5 };
 	double yArray[] = { -0.5, -0.25, -0.25, -0.5, -0.25, -0.25, -0.5, -0.25, -0.25 };
-	double zArray[] = { -0.75, -0.75, -0.75, -0.5, -0.5, -0.5, -0.25, -0.25, -0.25 };
+	double zArray[] = { -0.25, -0.25, -0.25, -0.5, -0.5, -0.5, -0.75, -0.75, -0.75 };
 
 	// Now extract the uvw values and check correctness
 	for (int ii = 0; ii < 9; ii++) {
@@ -1202,7 +1203,7 @@ makeLengthScaleUniform();
 BOOST_AUTO_TEST_CASE(HexMappingUniform) {
 	printf("Hex uniform mapping\n");
 	// Check the uniform length scale cases.
-	makeLengthScaleUniform();
+	makeLengthScaleUniform(pUM_In);
 
 	HexDivider HD(pUM_Out, pUM_In, 3);
 
@@ -1247,7 +1248,7 @@ BOOST_AUTO_TEST_CASE(HexMappingUniform) {
 
 BOOST_AUTO_TEST_CASE(EdgeMappingNonuniformPrescribed) {
 	printf("Edge non-uniform mapping\n");
-	setPrescribedLengthScale();
+	setPrescribedLengthScale(pUM_In);
 
 	TetDivider TD(pUM_Out, pUM_In, 4);
 
@@ -1767,6 +1768,8 @@ BOOST_AUTO_TEST_CASE(SingleTetN2) {
 	BOOST_CHECK_EQUAL(UM.numTets(), 1);
 	BOOST_CHECK_EQUAL(UM.maxNTets(), 1);
 
+	makeLengthScaleUniform(&UM);
+
 	MeshSize MSIn, MSOut;
 	MSIn.nBdryVerts = 4;
 	MSIn.nVerts = 4;
@@ -1808,6 +1811,8 @@ BOOST_AUTO_TEST_CASE(SingleTetN5) {
 
 	UM.addTet(tetVerts);
 
+	makeLengthScaleUniform(&UM);
+
 	MeshSize MSIn, MSOut;
 	MSIn.nBdryVerts = 4;
 	MSIn.nVerts = 4;
@@ -1841,6 +1846,8 @@ BOOST_AUTO_TEST_CASE(SinglePyrN3) {
 	}
 	UM.addBdryQuad(quadVerts);
 	UM.addPyramid(pyrVerts);
+
+	makeLengthScaleUniform(&UM);
 
 	MeshSize MSIn, MSOut;
 	MSIn.nBdryVerts = 5;
@@ -1877,6 +1884,8 @@ BOOST_AUTO_TEST_CASE(SinglePrismN3) {
 		UM.addBdryQuad(quadVerts[ii]);
 	}
 	UM.addPrism(prismVerts);
+
+	makeLengthScaleUniform(&UM);
 
 	MeshSize MSIn, MSOut;
 	MSIn.nBdryVerts = 6;
@@ -1922,6 +1931,8 @@ BOOST_AUTO_TEST_CASE(MixedN2) {
 	UM.addPrism(prismVerts);
 	UM.addHex(hexVerts);
 
+	makeLengthScaleUniform(&UM);
+
 	MeshSize MSIn, MSOut;
 	MSIn.nBdryVerts = 11;
 	MSIn.nVerts = 11;
@@ -1965,6 +1976,8 @@ BOOST_AUTO_TEST_CASE(MixedN3) {
 	UM.addPyramid(pyrVerts);
 	UM.addPrism(prismVerts);
 	UM.addHex(hexVerts);
+
+	makeLengthScaleUniform(&UM);
 
 	MeshSize MSIn, MSOut;
 	MSIn.nBdryVerts = 11;
@@ -2013,6 +2026,8 @@ BOOST_AUTO_TEST_CASE(MixedN5) {
 	UM.addPyramid(pyrVerts);
 	UM.addPrism(prismVerts);
 	UM.addHex(hexVerts);
+
+	makeLengthScaleUniform(&UM);
 
 	MeshSize MSIn, MSOut;
 	MSIn.nBdryVerts = 11;

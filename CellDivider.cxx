@@ -23,6 +23,8 @@
  *      Author: cfog
  */
 
+#include <math.h>
+
 #include "ExaMesh.h"
 #include "GeomUtils.h"
 #include "CellDivider.h"
@@ -224,15 +226,21 @@ void CellDivider::getEdgeParametricDivision(EdgeVerts &EV) const {
 	//
 	// u = startLen * xi + (3 - 2*startLen - endLen) * xi^2
 	//     + (startLen + endLen - 2) * xi^3
+	assert(isfinite(startLenOrig) && startLenOrig > 0);
+	assert(isfinite(endLenOrig) && endLenOrig > 0);
 
 	double startLen = sqrt(startLenOrig / endLenOrig);
 	double endLen = 1. / startLen;
+	assert(isfinite(startLen));
+	assert(isfinite(endLen));
 
-	for (int ii = 0; ii <= nDivs; ii++) {
+	for (int ii = 1; ii < nDivs; ii++) {
 		double xi = ((double) ii) / nDivs;
 		EV.m_param_t[ii] = startLen * xi + (3 - 2 * startLen - endLen) * xi * xi
 				+ (startLen + endLen - 2) * xi * xi * xi;
 	}
+	EV.m_param_t[0] = 0;
+	EV.m_param_t[nDivs] = 1;
 }
 
 void CellDivider::getEdgeVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges,
@@ -242,11 +250,13 @@ void CellDivider::getEdgeVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges,
 
 	emInt vert0 = cellVerts[ind0];
 	emInt vert1 = cellVerts[ind1];
+//	printf("Edge: %5d %5d ", vert0, vert1);
 
 	Edge E(vert0, vert1);
 	auto iterEdges = vertsOnEdges.find(E);
 
 	if (iterEdges == vertsOnEdges.end()) {
+//		printf("new\n");
 		// Doesn't exist yet, so create it.
 		EV.m_verts[0] = E.getV0();
 		EV.m_verts[nDivs] = E.getV1();
@@ -279,15 +289,19 @@ void CellDivider::getEdgeVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges,
 				(uvwEnd[2] - uvwStart[2]) };
 		getEdgeParametricDivision(EV);
 		for (int ii = 1; ii < nDivs; ii++) {
-			double uvw[] = { uvwStart[0] + ii * EV.m_param_t[ii] * delta[0],
+			double uvw[] = { uvwStart[0] + EV.m_param_t[ii] * delta[0],
 					uvwStart[1] + EV.m_param_t[ii] * delta[1], uvwStart[2]
 							+ EV.m_param_t[ii] * delta[2] };
 			double newCoords[3];
 			getPhysCoordsFromParamCoords(uvw, newCoords);
 			EV.m_verts[ii] = m_pMesh->addVert(newCoords);
+//			printf("%3d %5f (%5f %5f %5f) (%8f %8f %8f)\n",
+//					ii, EV.m_param_t[ii], uvw[0], uvw[1], uvw[2],
+//					newCoords[0], newCoords[1], newCoords[2]);
 		}
 		vertsOnEdges.insert(std::make_pair(E, EV));
 	} else {
+//		printf("old\n");
 		iterEdges->second.m_totalDihed += dihedral;
 		EV = iterEdges->second;
 		if (EV.m_totalDihed > (2 - 1.e-8) * M_PI) {
@@ -585,11 +599,13 @@ void CellDivider::getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
 	emInt vert1 = cellVerts[ind1];
 	emInt vert2 = cellVerts[ind2];
 	emInt vert3 = cellVerts[ind3];
+//	printf("%6d %6d %6d %6d ", vert0, vert1, vert2, vert3);
 
 	QuadFaceVerts QFVTemp(nDivs, vert0, vert1, vert2, vert3);
 
 	auto iterQuads = vertsOnQuads.find(QFVTemp);
 	if (iterQuads == vertsOnQuads.end()) {
+//		printf("new\n");
 		const double uvw0[] = {uvwIJK[ind0][0], uvwIJK[ind0][1],
 			uvwIJK[ind0][2]};
 		const double uvw1[] = {uvwIJK[ind1][0], uvwIJK[ind1][1],
@@ -623,10 +639,12 @@ void CellDivider::getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
 				getPhysCoordsFromParamCoords(uvw, newCoords);
 				emInt vNew = m_pMesh->addVert(newCoords);
 				QFV.setIntVertInd(ii, jj, vNew);
+				QFV.setVertUVWParams(ii, jj, uvw);
 			}
 		} // Done looping over all interior verts for the triangle.
 		vertsOnQuads.insert(QFV);
 	} else {
+//		printf("old\n");
 		QFV = *iterQuads;
 		vertsOnQuads.erase(iterQuads); // Will never need this again.
 	}
@@ -731,6 +749,11 @@ void CellDivider::divideFaces(exa_set<TriFaceVerts> &vertsOnTris,
 				assert(KK >= 0 && KK <= nDivs);
 
 				localVerts[II][JJ][KK] = QFV.getIntVertInd(ii, jj);
+				double uvw[3];
+				QFV.getVertUVWParams(ii, jj, uvw);
+				m_uvw[II][JJ][KK][0] = uvw[0];
+				m_uvw[II][JJ][KK][1] = uvw[1];
+				m_uvw[II][JJ][KK][2] = uvw[2];
 			}
 		}
 	}
@@ -881,4 +904,21 @@ void getCellInteriorParametricIntersectionPoint(const double uvwA[3],
 	uvw[0] = (uvwAB[0] + uvwCD[0] + uvwEF[0]) / 3;
 	uvw[1] = (uvwAB[1] + uvwCD[1] + uvwEF[1]) / 3;
 	uvw[2] = (uvwAB[2] + uvwCD[2] + uvwEF[2]) / 3;
+}
+
+void CellDivider::printAllPoints() {
+	for (int kk = 0; kk <= nDivs; kk++) {
+		for (int jj = minJ(0, kk); jj <= maxJ(0,kk); jj++) {
+			for (int ii = minI(jj, kk); ii <= maxI(jj,kk); ii++) {
+				double *uvw = m_uvw[ii][jj][kk];
+				emInt point = localVerts[ii][jj][kk];
+				printf("%3d %3d %3d (%5f %5f %5f) (%8f %8f %8f)\n",
+						ii, jj, kk, uvw[0], uvw[1], uvw[2],
+						m_pMesh->getX(point), m_pMesh->getY(point),
+						m_pMesh->getZ(point));
+			}
+			printf("\n");
+		}
+		printf("\n");
+	}
 }

@@ -105,6 +105,32 @@ public:
 	void computeTransformedCoords(const double uvw[3], double xyz[3]) const;
 };
 
+class Q1TriMapping: public Q1Mapping {
+private:
+	double A[3], dU[3], dV[3], dW[3], dUV[3], dUW[3], dVW[3], dUVW[3];
+public:
+	Q1TriMapping(const ExaMesh* const EM) :
+			Q1Mapping(EM) {
+	}
+	void setupCoordMapping(const emInt verts[]);
+	void computeTransformedCoords(const double uvw[3], double xyz[3]) const;
+};
+
+class Q1QuadMapping: public Q1Mapping {
+private:
+	double A[3], dU[3], dV[3], dW[3], dUV[3], dUW[3], dVW[3], dUVW[3];
+public:
+	Q1QuadMapping(const ExaMesh* const EM) :
+			Q1Mapping(EM) {
+	}
+	void setupCoordMapping(const emInt verts[]) {
+		assert(0);
+	}
+	void computeTransformedCoords(const double uvw[3], double xyz[3]) const {
+		assert(0);
+	}
+};
+
 
 class CompoundMapping: public Mapping {
 	// A compound mapping starts from a uniform subdivision of a reference
@@ -408,6 +434,43 @@ public:
 	void setModalValues();
 	virtual void computeTransformedCoords(const double uvw[3],
 			double xyz[3]) const;
+
+};
+
+class LagrangeCubicTriMapping: public LagrangeCubicMapping {
+	double C[3], Cu[3], Cv[3], Cu2[3], Cuv[3], Cv2[3], Cu3[3], Cv3[3],
+		Cu2v[3], Cuv2[3];
+public:
+	LagrangeCubicTriMapping(const ExaMesh* const EM) :
+			LagrangeCubicMapping(EM, 10) {
+	}
+	virtual ~LagrangeCubicTriMapping() {
+	}
+	// Public for testing purposes
+	void setModalValues();
+	virtual void computeTransformedCoords(const double uvw[3],
+			double xyz[3]) const;
+
+};
+
+class LagrangeCubicQuadMapping: public LagrangeCubicMapping {
+	double C[3], Cu[3], Cv[3], Cu2[3], Cuv[3], Cv2[3], Cu3[3], Cv3[3],
+		Cu2v[3], Cuv2[3], Cu3v[3], Cuv3[3], Cu2v2[3], Cu3v2[3], Cu2v3[3],
+			Cu3v3[3];
+public:
+	LagrangeCubicQuadMapping(const ExaMesh* const EM) :
+			LagrangeCubicMapping(EM, 16) {
+	}
+	virtual ~LagrangeCubicQuadMapping() {
+	}
+	// Public for testing purposes
+	void setModalValues()  {
+		assert(0);
+	}
+	virtual void computeTransformedCoords(const double uvw[3],
+			double xyz[3]) const {
+		assert(0);
+	}
 
 };
 

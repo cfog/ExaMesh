@@ -48,7 +48,7 @@ void TetDivider::divideInterior() {
 		for (int jj = 1; jj < jMax; jj++) {
 			int iMax = maxI(jj, kk);
 			for (int ii = 1; ii < iMax; ii++) {
-				assert(ii + jj + (nDivs - kk) <= 4);
+				assert(ii + jj < kk);
 
 				double uvw[] = {double(ii) / nDivs,
 						double(jj) / nDivs,
