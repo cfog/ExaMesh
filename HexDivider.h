@@ -36,7 +36,7 @@ class HexDivider: public CellDivider {
 public:
 	HexDivider(UMesh *pVolMesh, const ExaMesh* const pInitMesh,
 			const int segmentsPerEdge,
-			const Mapping::MappingType type = Mapping::Uniform)
+			const Mapping::MappingType type = Mapping::Invalid)
       :
 			CellDivider(pVolMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
@@ -203,14 +203,21 @@ public:
 		faceEdgeIndices[5][2] = 8;
 		faceEdgeIndices[5][3] = 3;
 	      
-		if (type == Mapping::LengthScale) {
+		Mapping::MappingType myType = type;
+		if (myType == Mapping::Invalid) {
+			myType = pInitMesh->getDefaultMappingType();
+		}
+		switch (myType) {
+		case Mapping::LengthScale:
 			m_Map = new LengthScaleHexMapping(pInitMesh);
-		}
-		else if (type == Mapping::Lagrange) {
+			break;
+		case Mapping::Lagrange:
 			m_Map = new LagrangeCubicHexMapping(pInitMesh);
-		}
-		else {
+			break;
+		case Mapping::Uniform:
+		default:
 			m_Map = new Q1HexMapping(pInitMesh);
+			break;
 		}
   }
 	~HexDivider() {

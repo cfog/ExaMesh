@@ -171,7 +171,7 @@ public:
 	}
 
 	Mapping::MappingType getDefaultMappingType() const {
-		return Mapping::LengthScale;
+		return Mapping::Uniform;
 	}
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,

@@ -34,7 +34,7 @@ class PyrDivider: public CellDivider {
 public:
 	PyrDivider(UMesh *pVolMesh, const ExaMesh* const pInitMesh,
 			const int segmentsPerEdge,
-			const Mapping::MappingType type = Mapping::Uniform)
+			const Mapping::MappingType type = Mapping::Invalid)
       :
 			CellDivider(pVolMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
@@ -147,15 +147,21 @@ public:
 		faceEdgeIndices[4][1] = 2;
 		faceEdgeIndices[4][2] = 1;
 
-		if (type == Mapping::LengthScale) {
-			// TODO: Must fix this
-			m_Map = new Q1PyramidMapping(pInitMesh);
+		Mapping::MappingType myType = type;
+		if (myType == Mapping::Invalid) {
+			myType = pInitMesh->getDefaultMappingType();
 		}
-		else if (type == Mapping::Lagrange) {
+		switch (myType) {
+		case Mapping::LengthScale:
+			m_Map = new LengthScalePyramidMapping(pInitMesh);
+			break;
+		case Mapping::Lagrange:
 			m_Map = new LagrangeCubicPyramidMapping(pInitMesh);
-		}
-		else {
+			break;
+		case Mapping::Uniform:
+		default:
 			m_Map = new Q1PyramidMapping(pInitMesh);
+			break;
 		}
   }
 	~PyrDivider() {

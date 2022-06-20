@@ -35,7 +35,7 @@ public:
 	TetDivider(UMesh *pVolMesh, const ExaMesh* const pInitMesh,
 			const int segmentsPerEdge,
 			const Mapping::MappingType type =
-					Mapping::Uniform)
+					Mapping::Invalid)
       :
 			CellDivider(pVolMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
@@ -124,16 +124,24 @@ public:
 		faceEdgeIndices[3][1] = 2;
 		faceEdgeIndices[3][2] = 1;
 
-		if (type == Mapping::LengthScale) {
+		Mapping::MappingType myType = type;
+		if (myType == Mapping::Invalid) {
+			myType = pInitMesh->getDefaultMappingType();
+		}
+		switch (myType) {
+		case Mapping::LengthScale:
 			m_Map = new LengthScaleTetMapping(pInitMesh);
-		}
-		else if (type == Mapping::Lagrange) {
+			break;
+		case Mapping::Lagrange:
 			m_Map = new LagrangeCubicTetMapping(pInitMesh);
-		}
-		else {
+			break;
+		case Mapping::Uniform:
+		default:
 			m_Map = new Q1TetMapping(pInitMesh);
+			break;
 		}
-  }
+
+	}
 	~TetDivider() {
 	}
 	void divideInterior();
