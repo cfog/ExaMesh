@@ -413,6 +413,7 @@ BOOST_AUTO_TEST_CASE(CubicHex) {
 }
 BOOST_AUTO_TEST_SUITE_END()
 
+#ifdef INCLUDE_LEGACY_LENGTH_SCALE_MAPPING
 // *******************************************************************
 // BEGIN OBSOLETE SECTION
 // *******************************************************************
@@ -815,6 +816,7 @@ BOOST_AUTO_TEST_SUITE_END()
 // *******************************************************************
 // END OBSOLETE SECTION
 // *******************************************************************
+#endif
 
 BOOST_FIXTURE_TEST_SUITE(MappingTests, MixedMeshFixture)
 

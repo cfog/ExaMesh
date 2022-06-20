@@ -152,9 +152,11 @@ public:
 			myType = pInitMesh->getDefaultMappingType();
 		}
 		switch (myType) {
+#ifdef INCLUDE_LEGACY_LENGTH_SCALE_MAPPING
 		case Mapping::LengthScale:
 			m_Map = new LengthScalePyramidMapping(pInitMesh);
 			break;
+#endif
 		case Mapping::Lagrange:
 			m_Map = new LagrangeCubicPyramidMapping(pInitMesh);
 			break;

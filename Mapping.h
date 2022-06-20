@@ -46,7 +46,13 @@ public:
 	virtual void computeTransformedCoords(const double uvw[3],
 			double xyz[3]) const = 0;
 	enum MappingType {
-		Uniform, LengthScale, Lagrange, Compound, Invalid
+		Uniform,
+		Lagrange,
+#ifdef INCLUDE_LEGACY_LENGTH_SCALE_MAPPING
+		LengthScale,
+		Compound,
+#endif
+		Invalid
 	};
 };
 
@@ -132,6 +138,7 @@ public:
 };
 
 
+#ifdef INCLUDE_LEGACY_LENGTH_SCALE_MAPPING
 class CompoundMapping: public Mapping {
 	// A compound mapping starts from a uniform subdivision of a reference
 	// element.  The first stage maps that to a non-uniform subdivision of
@@ -328,6 +335,8 @@ public:
 	virtual void computeTransformedCoords(const double uvw[3],
 			double xyz[3]) const;
 };
+
+#endif
 
 class LagrangeMapping: public Mapping {
 	int m_numValues;

@@ -32,6 +32,7 @@ double Mapping::getIsoLengthScale(const emInt vertInd) {
 	return m_pMesh->getLengthScale(vertInd);
 }
 
+#ifdef INCLUDE_LEGACY_LENGTH_SCALE_MAPPING
 void LengthScaleTetMapping::setPolyCoeffs(const double xyz[4][3],
 		double uderiv[4][3], double vderiv[4][3], double wderiv[4][3]) {
 	const double *xyz0 = xyz[0];
@@ -691,3 +692,4 @@ void LengthScalePrismMapping::setupCoordMapping(const emInt verts[]) {
 	setPolyCoeffs(xyz, uderiv, vderiv, wderiv);
 }
 
+#endif
