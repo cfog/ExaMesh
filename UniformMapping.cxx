@@ -26,6 +26,10 @@
 #include "ExaMesh.h"
 #include "Mapping.h"
 
+double Mapping::getIsoLengthScale(const emInt vertInd) {
+	return m_pMesh->getLengthScale(vertInd);
+}
+
 void Q1TetMapping::setupCoordMapping(const emInt verts[]) {
 	double coords0[3], coords1[3], coords2[3], coords3[3];
 	m_pMesh->getCoords(verts[0], coords0);

@@ -208,11 +208,6 @@ public:
 			myType = pInitMesh->getDefaultMappingType();
 		}
 		switch (myType) {
-#ifdef INCLUDE_LEGACY_LENGTH_SCALE_MAPPING
-		case Mapping::LengthScale:
-			m_Map = new LengthScaleHexMapping(pInitMesh);
-			break;
-#endif
 		case Mapping::Lagrange:
 			m_Map = new LagrangeCubicHexMapping(pInitMesh);
 			break;
