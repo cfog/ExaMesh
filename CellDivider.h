@@ -105,7 +105,7 @@ public:
 	void divideEdges(exa_map<Edge, EdgeVerts> &vertsOnEdges);
 	void divideFaces(exa_set<TriFaceVerts> &vertsOnTris,
 	exa_set<QuadFaceVerts> &vertsOnQuads);
-	virtual void divideInterior() = 0;
+	virtual void divideInterior();
 	virtual void createNewCells() = 0;
 	virtual void setupCoordMapping(const emInt verts[]) = 0;
 	virtual void getPhysCoordsFromParamCoords(const double uvw[],
@@ -129,6 +129,9 @@ public:
 	virtual int maxJ(const int /*i*/, const int /*k*/) const {return nDivs;}
 	virtual int maxK(const int /*i*/, const int /*j*/) const {return nDivs;}
 
+	virtual int getMinInteriorDivs() const {return 3;}
+	void computeParaCoords(const int ii, const int jj, const int kk,
+			double uvw[3]) const;
 	// Output for diagnostic purposes
 	void printAllPoints();
 private:

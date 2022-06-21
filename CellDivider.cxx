@@ -814,6 +814,69 @@ void CellDivider::divideFaces(exa_set<TriFaceVerts> &vertsOnTris,
 	}
 }
 
+void CellDivider::computeParaCoords(const int ii, const int jj, const int kk,
+		double uvw[3]) const {
+	int iMin = minI(jj, kk);
+	int iMax = maxI(jj, kk);
+
+	int jMin = minJ(ii, kk);
+	int jMax = maxJ(ii, kk);
+
+	int kMin = minK(ii, jj);
+	int kMax = maxK(ii, jj);
+
+	double *uvwL = m_uvw[iMin][jj][kk];
+	double *uvwR = m_uvw[iMax][jj][kk];
+
+	double *uvwBot = m_uvw[ii][jMin][kk];
+	double *uvwTop = m_uvw[ii][jMax][kk];
+
+	double *uvwFr = m_uvw[ii][jj][kMin];
+	double *uvwBa = m_uvw[ii][jj][kMax];
+
+	getCellInteriorParametricIntersectionPoint(uvwL, uvwR, uvwBot, uvwTop,
+			uvwFr, uvwBa, uvw);
+	assert(uvw[0] >= 0 && uvw[0] <= 1);
+	assert(uvw[1] >= 0 && uvw[1] <= 1);
+	assert(uvw[2] >= 0 && uvw[2] <= 1);
+}
+
+
+void CellDivider::divideInterior() {
+	// Number of verts added:
+	//    Tets:      (nD-1)(nD-2)(nD-3)/2
+	//    Pyrs:      (nD-1)(nD-2)(2 nD-3)/6
+	//    Prisms:    (nD-1)(nD-2)nD/2
+	//    Hexes:     (nD-1)^3
+	if (nDivs < getMinInteriorDivs()) return;
+	for (int kk = 1; kk < nDivs; kk++) {
+		int jMax = maxJ(1, kk);
+		for (int jj = 1; jj < jMax; jj++) {
+			int iMax = maxI(jj, kk);
+			for (int ii = 1; ii < iMax; ii++) {
+				double uvw[3];
+				// Now find uvw by finding the near-intersection point
+				// of the lines of constant i, j, k
+				computeParaCoords(ii, jj, kk, uvw);
+
+				double &u = uvw[0];
+				double &v = uvw[1];
+				double &w = uvw[2];
+				double coords[3];
+				m_Map->computeTransformedCoords(uvw, coords);
+				emInt vNew = m_pMesh->addVert(coords);
+				localVerts[ii][jj][kk] = vNew;
+				m_uvw[ii][jj][kk][0] = u;
+				m_uvw[ii][jj][kk][1] = v;
+				m_uvw[ii][jj][kk][2] = w;
+				printf("%3d %3d %3d %5f %5f %5f\n", ii, jj,
+										kk, u, v, w);
+			}
+		}
+	} // Done looping to create all verts inside the cell.
+}
+
+
 void getCellInteriorParametricIntersectionPoint(const double uvwA[3],
 		const double uvwB[3], const double uvwC[3], const double uvwD[3],
 		const double uvwE[3], const double uvwF[3], double uvw[3]) {

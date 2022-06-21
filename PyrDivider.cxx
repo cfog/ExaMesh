@@ -76,38 +76,16 @@ void PyrDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 //}
 
 
-void PyrDivider::divideInterior() {
-  // Number of verts added:
-	//    Pyrs:      (nD-1)(nD-2)(2 nD-3)/6
-	if (nDivs < 3) return;
-
-	for (int kk = 1; kk < nDivs; kk++) {
-		int jMax = maxJ(1, kk);
-		for (int jj = 1; jj < jMax; jj++) {
-			int iMax = maxI(1, kk);
-			for (int ii = 1; ii < iMax; ii++) {
-				double uvw[] = { double(ii) / nDivs,
-						double(jj) / nDivs,
-						1 - double(kk) / nDivs };
-				double &u = uvw[0];
-				double &v = uvw[1];
-				double &w = uvw[2];
-				double coords[3];
-				m_Map->computeTransformedCoords(uvw, coords);
-				emInt vNew = m_pMesh->addVert(coords);
-				localVerts[ii][jj][kk] = vNew;
-				m_uvw[ii][jj][kk][0] = u;
-				m_uvw[ii][jj][kk][1] = v;
-				m_uvw[ii][jj][kk][2] = w;
-//				printf("%3d %3d %3d %5f %5f %5f\n", ii, jj,
-//						kk, u, v, w);
-			}
-		}
-	} // Done looping to create all verts inside the tet.
-//	printf("\n");
-//	for (int kk = 2; kk <= nDivs - 1; kk++) {
-//		for (int jj = 1; jj <= kk - 1; jj++) {
-//			for (int ii = 1; ii <= kk - 1; ii++) {
+//void PyrDivider::divideInterior() {
+//  // Number of verts added:
+//	//    Pyrs:      (nD-1)(nD-2)(2 nD-3)/6
+//	if (nDivs < 3) return;
+//
+//	for (int kk = 1; kk < nDivs; kk++) {
+//		int jMax = maxJ(1, kk);
+//		for (int jj = 1; jj < jMax; jj++) {
+//			int iMax = maxI(1, kk);
+//			for (int ii = 1; ii < iMax; ii++) {
 //				double uvw[] = { double(ii) / nDivs,
 //						double(jj) / nDivs,
 //						1 - double(kk) / nDivs };
@@ -121,12 +99,34 @@ void PyrDivider::divideInterior() {
 //				m_uvw[ii][jj][kk][0] = u;
 //				m_uvw[ii][jj][kk][1] = v;
 //				m_uvw[ii][jj][kk][2] = w;
-//				printf("%3d %3d %3d %5f %5f %5f\n", ii, jj,
-//						kk, u, v, w);
+////				printf("%3d %3d %3d %5f %5f %5f\n", ii, jj,
+////						kk, u, v, w);
 //			}
 //		}
 //	} // Done looping to create all verts inside the tet.
-}
+////	printf("\n");
+////	for (int kk = 2; kk <= nDivs - 1; kk++) {
+////		for (int jj = 1; jj <= kk - 1; jj++) {
+////			for (int ii = 1; ii <= kk - 1; ii++) {
+////				double uvw[] = { double(ii) / nDivs,
+////						double(jj) / nDivs,
+////						1 - double(kk) / nDivs };
+////				double &u = uvw[0];
+////				double &v = uvw[1];
+////				double &w = uvw[2];
+////				double coords[3];
+////				m_Map->computeTransformedCoords(uvw, coords);
+////				emInt vNew = m_pMesh->addVert(coords);
+////				localVerts[ii][jj][kk] = vNew;
+////				m_uvw[ii][jj][kk][0] = u;
+////				m_uvw[ii][jj][kk][1] = v;
+////				m_uvw[ii][jj][kk][2] = w;
+////				printf("%3d %3d %3d %5f %5f %5f\n", ii, jj,
+////						kk, u, v, w);
+////			}
+////		}
+////	} // Done looping to create all verts inside the tet.
+//}
 
 void PyrDivider::createNewCells() {
   // Output info about the points for this pyramid, layer by layer

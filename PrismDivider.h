@@ -179,7 +179,7 @@ public:
 	}
 	~PrismDivider() {
 	}
-	virtual void divideInterior();
+//	virtual void divideInterior();
 	virtual void createNewCells();
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);

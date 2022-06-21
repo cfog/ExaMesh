@@ -82,7 +82,8 @@ void HexDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 
 void HexDivider::divideInterior() {
   // Number of verts added:
-  //    Tets:      (nD-1)(nD-2)(nD-3)/6
+  //    Hexes:      (nD-1)^3
+	// Hexes store points in a different order than the others.make
 	if (nDivs < 2) return;
 	for (int kk = 1; kk < nDivs; kk++) {
 		int jMax = maxJ(1, kk);
@@ -93,9 +94,7 @@ void HexDivider::divideInterior() {
 				double &u = uvw[0];
 				double& v = uvw[1];
 				double& w = uvw[2];
-				u = double(ii) / nDivs;
-				v = double(jj) / nDivs;
-				w = (1 - double(kk) / nDivs);
+				computeParaCoords(ii, jj, kk, uvw);
 				double coordsNew[3];
 				getPhysCoordsFromParamCoords(uvw, coordsNew);
 				emInt vNew = m_pMesh->addVert(coordsNew);

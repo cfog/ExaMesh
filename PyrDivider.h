@@ -163,7 +163,7 @@ public:
   }
 	~PyrDivider() {
 	}
-	void divideInterior();
+//	void divideInterior();
   void createNewCells();
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);

@@ -223,6 +223,9 @@ public:
   void createNewCells();
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
+
+	virtual int getMinInteriorDivs() const {return 2;}
+
 };
 
 #endif /* APPS_EXAMESH_HEXDIVIDER_H_ */

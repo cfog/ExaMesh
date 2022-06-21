@@ -26,7 +26,7 @@ CXXOBJECTS=refine.o
 
 LIBOBJECTS=TetDivider.o PyrDivider.o PrismDivider.o HexDivider.o CellDivider.o \
 BdryTriDivider.o BdryQuadDivider.o refinePart.o ExaMesh.o UMesh.o CubicMesh.o GeomUtils.o \
-LagrangeMapping.o LengthScaleMapping.o UniformMapping.o \
+LagrangeMapping.o UniformMapping.o \
 LagrangeCubicTet.o LagrangeCubicPyr.o LagrangeCubicPrism.o LagrangeCubicHex.o \
 Part.o partition.o
 
@@ -73,7 +73,7 @@ depend:
 	makedepend $(CPPFLAGS) -Y *.cxx 2> /dev/null
 
 cover:
-	mkdir coverage
+	-mkdir coverage
 	lcov --capture --directory . --output coverage/lcov.raw.info
 	lcov --remove coverage/lcov.raw.info "/usr*" "*GMGW1*" -o coverage/lcov.info
 	genhtml --demangle-cpp --output-directory coverage coverage/lcov.info

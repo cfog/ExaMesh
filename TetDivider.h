@@ -40,19 +40,19 @@ public:
 			CellDivider(pVolMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
     vertIJK[0][1] = 0;
-    vertIJK[0][2] = nDivs;
+    vertIJK[0][2] = 0;
 
     vertIJK[1][0] = nDivs;
     vertIJK[1][1] = 0;
-    vertIJK[1][2] = nDivs;
+    vertIJK[1][2] = 0;
 
     vertIJK[2][0] = 0;
     vertIJK[2][1] = nDivs;
-    vertIJK[2][2] = nDivs;
+    vertIJK[2][2] = 0;
 
     vertIJK[3][0] = 0;
     vertIJK[3][1] = 0;
-    vertIJK[3][2] = 0;
+    vertIJK[3][2] = nDivs;
 
 		uvwIJK[0][0] = 0;
 		uvwIJK[0][1] = 0;
@@ -156,6 +156,8 @@ public:
 	virtual int maxI(const int j, const int k) const {return k - j;}
 	virtual int maxJ(const int i, const int k) const {return k - i;}
 	virtual int minK(const int i, const int j) const {return i + j;}
+
+	virtual int getMinInteriorDivs() const {return 4;}
 };
 
 #endif /* APPS_EXAMESH_TETDIVIDER_H_ */
