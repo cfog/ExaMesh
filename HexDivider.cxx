@@ -80,32 +80,32 @@ void HexDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 //	}
 //}
 
-void HexDivider::divideInterior() {
-  // Number of verts added:
-  //    Hexes:      (nD-1)^3
-	// Hexes store points in a different order than the others.make
-	if (nDivs < 2) return;
-	for (int kk = 1; kk < nDivs; kk++) {
-		int jMax = maxJ(1, kk);
-		for (int jj = 1; jj < jMax; jj++) {
-			int iMax = maxI(jj, kk);
-			for (int ii = 1; ii < iMax; ii++) {
-				double uvw[3];
-				double &u = uvw[0];
-				double& v = uvw[1];
-				double& w = uvw[2];
-				computeParaCoords(ii, jj, kk, uvw);
-				double coordsNew[3];
-				getPhysCoordsFromParamCoords(uvw, coordsNew);
-				emInt vNew = m_pMesh->addVert(coordsNew);
-				localVerts[ii][jj][kk] = vNew;
-				m_uvw[ii][jj][nDivs - kk][0] = u;
-				m_uvw[ii][jj][nDivs - kk][1] = v;
-				m_uvw[ii][jj][nDivs - kk][2] = w;
-      }
-    } // Done looping over all interior verts for the triangle.
-  }   // Done looping over all levels for the prism.
-}
+//void HexDivider::divideInterior() {
+//  // Number of verts added:
+//  //    Hexes:      (nD-1)^3
+//	// Hexes store points in a different order than the others.make
+//	if (nDivs < 2) return;
+//	for (int kk = 1; kk < nDivs; kk++) {
+//		int jMax = maxJ(1, kk);
+//		for (int jj = 1; jj < jMax; jj++) {
+//			int iMax = maxI(jj, kk);
+//			for (int ii = 1; ii < iMax; ii++) {
+//				double uvw[3];
+//				double &u = uvw[0];
+//				double& v = uvw[1];
+//				double& w = uvw[2];
+//				computeParaCoords(ii, jj, kk, uvw);
+//				double coordsNew[3];
+//				getPhysCoordsFromParamCoords(uvw, coordsNew);
+//				emInt vNew = m_pMesh->addVert(coordsNew);
+//				localVerts[ii][jj][kk] = vNew;
+//				m_uvw[ii][jj][nDivs - kk][0] = u;
+//				m_uvw[ii][jj][nDivs - kk][1] = v;
+//				m_uvw[ii][jj][nDivs - kk][2] = w;
+//      }
+//    } // Done looping over all interior verts for the triangle.
+//  }   // Done looping over all levels for the prism.
+//}
 
 void HexDivider::createNewCells() {
 	// Output info about the points for this hex, layer by layer

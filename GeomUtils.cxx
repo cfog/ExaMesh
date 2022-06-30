@@ -23,6 +23,8 @@
  *      Author: cfog
  */
 
+#include "exa-defs.h"
+
 #define MAX(a, b) \
 	((a) > (b) ? (a) : (b))
 
@@ -133,6 +135,37 @@ int checkOrient3D(const double adA[3], const double adB[3], const double adC[3],
 	//       else
 	return (0);
 }
+
+double tetVolume(const double coords0[], const double coords1[],
+		const double coords2[], const double coords3[]) {
+	double edge01[] = DIFF(coords1, coords0);
+	double edge02[] = DIFF(coords2, coords0);
+	double edge03[] = DIFF(coords3, coords0);
+	double normal[3];
+	CROSS(edge01, edge02, normal);
+	double retVal = DOT(normal,edge03) / 6;
+	assert(retVal > 0);
+	return retVal;
+}
+
+double pyrVolume(const double coords0[], const double coords1[],
+		const double coords2[], const double coords3[], double coords4[]) {
+	// Point 4 is the apex.
+	double vecB[3], vecC[3], vecE[3];
+	for (int ii = 0; ii < 3; ii++) {
+		vecB[ii] = 0.25 * (coords0[ii] + coords3[ii] - coords1[ii] - coords2[ii]);
+		vecC[ii] = 0.25 * (coords0[ii] + coords1[ii] - coords3[ii] - coords2[ii]);
+		vecE[ii] = coords4[ii]
+				- 0.25 * (coords0[ii] + coords1[ii] + coords2[ii] + coords3[ii]);
+	}
+	double normal[3];
+	CROSS(vecB, vecC, normal);
+	double retVal = DOT(normal, vecE) / 0.75;
+	assert(retVal > 0);
+	return retVal;
+}
+
+
 
 
 

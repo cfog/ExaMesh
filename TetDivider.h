@@ -141,7 +141,7 @@ public:
 	}
 	~TetDivider() {
 	}
-	void divideInterior();
+//	void divideInterior();
   void createNewCells();
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
@@ -153,9 +153,9 @@ public:
 			double wderiv3[3]);
 	void stuffTetsIntoOctahedron(emInt vertsNew[][4]);
 
-	virtual int maxI(const int j, const int k) const {return k - j;}
-	virtual int maxJ(const int i, const int k) const {return k - i;}
-	virtual int minK(const int i, const int j) const {return i + j;}
+	virtual int maxI(const int j, const int k) const {return nDivs - k - j;}
+	virtual int maxJ(const int i, const int k) const {return nDivs - k - i;}
+	virtual int maxK(const int i, const int j) const {return nDivs - i - j;}
 
 	virtual int getMinInteriorDivs() const {return 4;}
 };

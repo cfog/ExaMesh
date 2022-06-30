@@ -39,23 +39,23 @@ public:
 			CellDivider(pVolMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
     vertIJK[0][1] = 0;
-    vertIJK[0][2] = nDivs;
+    vertIJK[0][2] = 0;
 
     vertIJK[1][0] = nDivs;
     vertIJK[1][1] = 0;
-    vertIJK[1][2] = nDivs;
+    vertIJK[1][2] = 0;
 
     vertIJK[2][0] = nDivs;
     vertIJK[2][1] = nDivs;
-    vertIJK[2][2] = nDivs;
+    vertIJK[2][2] = 0;
 
     vertIJK[3][0] = 0;
     vertIJK[3][1] = nDivs;
-    vertIJK[3][2] = nDivs;
+    vertIJK[3][2] = 0;
 
     vertIJK[4][0] = 0;
     vertIJK[4][1] = 0;
-    vertIJK[4][2] = 0;
+    vertIJK[4][2] = nDivs;
 
 		uvwIJK[0][0] = 0;
 		uvwIJK[0][1] = 0;
@@ -168,10 +168,10 @@ public:
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
 
-	virtual int maxI(const int /*j*/, const int k) const {return k;}
-	virtual int maxJ(const int /*i*/, const int k) const {return k;}
-	virtual int minK(const int i, const int j) const {
-		return (i >= j ? i : j);
+	virtual int maxI(const int /*j*/, const int k) const {return nDivs - k;}
+	virtual int maxJ(const int /*i*/, const int k) const {return nDivs - k;}
+	virtual int maxK(const int i, const int j) const {
+		return nDivs - (i >= j ? i : j);
 	}
 };
 

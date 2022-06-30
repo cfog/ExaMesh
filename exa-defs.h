@@ -196,13 +196,8 @@ public:
 		m_param_st[ii][jj][0] = st[0];
 		m_param_st[ii][jj][1] = st[1];
 	}
-	void getVertSTParams(const int ii, const int jj, double st[2]) const {
-		assert(isValidIJ(ii, jj));
-		st[0] = m_param_st[ii][jj][0];
-		st[1] = m_param_st[ii][jj][1];
-		assert(isValidParam(st[0]));
-		assert(isValidParam(st[1]));
-	}
+	virtual void getVertAndST(const int ii, const int jj, emInt& vert,
+			double st[2], const int rotCase = 0) const = 0;
 	void setVertUVWParams(const int ii, const int jj, const double uvw[3]){
 		assert(isValidIJ(ii, jj));
 		assert(isValidParam(uvw[0]));
@@ -234,7 +229,7 @@ public:
 		return m_corners[ii];
 	}
 	virtual void computeParaCoords(const int ii, const int jj,
-			double &s, double &t) const = 0;
+			double st[2]) const = 0;
 	emInt getVolElement() const {
 		return m_volElem;
 	}
@@ -261,8 +256,10 @@ public:
 //		if (m_intVerts) delete[] m_intVerts;
 //	}
 	virtual void computeParaCoords(const int ii, const int jj,
-			double &s, double &t) const;
+			double st[2]) const;
 	virtual void setupSorted();
+	void getVertAndST(const int ii, const int jj, emInt& vert,
+			double st[2], const int rotCase = 0) const;
 	friend bool operator<(const TriFaceVerts& a, const TriFaceVerts& b);
 	friend bool operator==(const TriFaceVerts& a, const TriFaceVerts& b);
 };
@@ -277,8 +274,10 @@ public:
 			const emInt type = 0, const emInt elemInd = EMINT_MAX);
 	virtual ~QuadFaceVerts() {}
 	virtual void computeParaCoords(const int ii, const int jj,
-			double &s, double &t) const;
+			double st[2]) const;
 	virtual void setupSorted();
+	void getVertAndST(const int ii, const int jj, emInt& vert,
+			double st[2], const int rotCase = 0) const;
 	friend bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b);
 	friend bool operator==(const QuadFaceVerts& a, const QuadFaceVerts& b);
 };

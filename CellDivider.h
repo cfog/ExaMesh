@@ -56,13 +56,11 @@ private:
 	void getEdgeVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges, const int edge,
 			const double dihedral, EdgeVerts &EV);
 
-	void getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads, const int face,
-			QuadFaceVerts &QFV);
+	QuadFaceVerts getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads, const int face);
 
-	typename exa_set<TriFaceVerts>::iterator getTriVerts(
+	TriFaceVerts getTriVerts(
 			exa_set<TriFaceVerts> &vertsOnTris,
-			const int face,
-			bool& shouldErase);
+			const int face);
 public:
 	CellDivider(UMesh *pVolMesh, const emInt segmentsPerEdge) :
 			m_pMesh(pVolMesh), m_Map(nullptr),
@@ -123,7 +121,7 @@ public:
 	// The virtual functions here will be overridden in most subclasses.
 	int minI(const int /*j*/, const int /*k*/) const {return 0;}
 	int minJ(const int /*i*/, const int /*k*/) const {return 0;}
-	virtual int minK(const int /*i*/, const int /*j*/) const {return 0;}
+	int minK(const int /*i*/, const int /*j*/) const {return 0;}
 
 	virtual int maxI(const int /*j*/, const int /*k*/) const {return nDivs;}
 	virtual int maxJ(const int /*i*/, const int /*k*/) const {return nDivs;}

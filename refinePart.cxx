@@ -166,8 +166,7 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input, UMesh *const pVM_output,
 		BTD.setupCoordMapping(thisBdryTri);
 		// Shouldn't need to divide anything at all here, but these function
 		// copy the vertices into the CellDivider internal data structure.
-		BTD.divideEdges(vertsOnEdges);
-		BTD.divideFaces(vertsOnTris, vertsOnQuads);
+		BTD.createDivisionVerts(vertsOnEdges, vertsOnTris, vertsOnQuads);
 
 		BTD.createNewCells();
 		if ((iBT + 1) % 100000 == 0)
@@ -188,8 +187,7 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input, UMesh *const pVM_output,
 
 		// Shouldn't need to divide anything at all here, but this function
 		// copies the triangle vertices into the CellDivider internal data structure.
-		BQD.divideEdges(vertsOnEdges);
-		BQD.divideFaces(vertsOnTris, vertsOnQuads);
+		BQD.createDivisionVerts(vertsOnEdges, vertsOnTris, vertsOnQuads);
 
 		BQD.createNewCells();
 		if ((iBQ + 1) % 100000 == 0)

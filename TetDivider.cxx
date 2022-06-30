@@ -38,37 +38,37 @@ void TetDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 	m_Map->computeTransformedCoords(uvw, xyz);
 }
 
-void TetDivider::divideInterior() {
-	// Number of verts added:
-	//    Tets:      (nD-1)(nD-2)(nD-3)/6
-	if (nDivs <= 3) return;
-	// No need to include bdry points in the iteration
-	for (int kk = 1; kk < nDivs; kk++) {
-		int jMax = maxJ(1, kk);
-		for (int jj = 1; jj < jMax; jj++) {
-			int iMax = maxI(jj, kk);
-			for (int ii = 1; ii < iMax; ii++) {
-				assert(ii + jj < kk);
-
-				double uvw[] = {double(ii) / nDivs,
-						double(jj) / nDivs,
-						1 - double(kk) / nDivs
-				};
-				double coords[3];
-
-				m_Map->computeTransformedCoords(uvw, coords);
-				emInt vNew = m_pMesh->addVert(coords);
-
-				localVerts[ii][jj][kk] = vNew;
-				m_uvw[ii][jj][kk][0] = uvw[0];
-				m_uvw[ii][jj][kk][1] = uvw[1];
-				m_uvw[ii][jj][kk][2] = uvw[2];
-//				printf("%3d %3d %3d %8f %8f %8f\n", ii, jj, kk,
-//						u, v, w);
-			}
-		}
-	}
-}
+//void TetDivider::divideInterior() {
+//	// Number of verts added:
+//	//    Tets:      (nD-1)(nD-2)(nD-3)/6
+//	if (nDivs <= 3) return;
+//	// No need to include bdry points in the iteration
+//	for (int kk = 1; kk < nDivs; kk++) {
+//		int jMax = maxJ(1, kk);
+//		for (int jj = 1; jj < jMax; jj++) {
+//			int iMax = maxI(jj, kk);
+//			for (int ii = 1; ii < iMax; ii++) {
+//				assert(ii + jj < kk);
+//
+//				double uvw[] = {double(ii) / nDivs,
+//						double(jj) / nDivs,
+//						1 - double(kk) / nDivs
+//				};
+//				double coords[3];
+//
+//				m_Map->computeTransformedCoords(uvw, coords);
+//				emInt vNew = m_pMesh->addVert(coords);
+//
+//				localVerts[ii][jj][kk] = vNew;
+//				m_uvw[ii][jj][kk][0] = uvw[0];
+//				m_uvw[ii][jj][kk][1] = uvw[1];
+//				m_uvw[ii][jj][kk][2] = uvw[2];
+////				printf("%3d %3d %3d %8f %8f %8f\n", ii, jj, kk,
+////						u, v, w);
+//			}
+//		}
+//	}
+//}
 
 void TetDivider::stuffTetsIntoOctahedron(emInt vertsNew[][4]) {
 	m_pMesh->addTet(vertsNew[0]);
@@ -100,21 +100,24 @@ void TetDivider::createNewCells() {
 //		}
 //	}
 
+	// Level 1 is the tip of the original tet; level nDivs
+	// is at the bottom (level with most entities).
 	for (int level = 1; level <= nDivs; level++) {
 //		fprintf(stderr, "Level: %d\n", level);
 		// Create up-pointing tets.  For a given level, there are
 		// (level+1)(level)/2 of these.
 		for (int jj = 0; jj < level; jj++) {
 			for (int ii = 0; ii < level - jj; ii++) {
+				int kk = nDivs - level;
 				//					logMessage(
 				//							MSG_DEBUG,
 				//							"Tet: (%d, %d, %d), (%d, %d,
 				//%d), (%d, %d, %d), (%d, %d, %d)\n", 							ii, jj, level, ii + 1, jj, level,
 				//ii, jj + 1, level, ii, jj, 							level - 1);
-				emInt vert0 = localVerts[ii][jj][level];
-				emInt vert1 = localVerts[ii + 1][jj][level];
-				emInt vert2 = localVerts[ii][jj + 1][level];
-				emInt vert3 = localVerts[ii][jj][level - 1];
+				emInt vert0 = localVerts[ii][jj][kk];
+				emInt vert1 = localVerts[ii + 1][jj][kk];
+				emInt vert2 = localVerts[ii][jj + 1][kk];
+				emInt vert3 = localVerts[ii][jj][kk + 1];
 				emInt verts[] = { vert0, vert1, vert2, vert3 };
 
 				m_pMesh->addTet(verts);
@@ -125,13 +128,14 @@ void TetDivider::createNewCells() {
 
 		// Each down-point triangle on the previous level has a tet
 		// that extends down to a point on this level. There are
-		// (levels-1)*(levels-2)/2 of thes.
+		// (levels-1)*(levels-2)/2 of these.
 		for (int jj = 0; jj <= level - 3; jj++) {
 			for (int ii = 1; ii <= level - jj - 2; ii++) {
-				emInt vert0 = localVerts[ii][jj][level - 1];
-				emInt vert1 = localVerts[ii - 1][jj + 1][level - 1];
-				emInt vert2 = localVerts[ii][jj + 1][level - 1];
-				emInt vert3 = localVerts[ii][jj + 1][level];
+				int kk = nDivs - level;
+				emInt vert0 = localVerts[ii][jj][kk + 1];
+				emInt vert1 = localVerts[ii - 1][jj + 1][kk + 1];
+				emInt vert2 = localVerts[ii][jj + 1][kk + 1];
+				emInt vert3 = localVerts[ii][jj + 1][kk];
 				emInt verts[] = { vert0, vert1, vert2, vert3 };
 				//					logMessage(
 				//							MSG_DEBUG,
@@ -152,12 +156,13 @@ void TetDivider::createNewCells() {
 		bool useDiagAF = true, useDiagBD = false, useDiagCE = false;
 		for (int jj = 0; jj <= level - 2; jj++) {
 			for (int ii = 1; ii <= level - jj - 1; ii++) {
-				emInt vertA = localVerts[ii][jj][level];
-				emInt vertB = localVerts[ii][jj + 1][level];
-				emInt vertC = localVerts[ii - 1][jj + 1][level];
-				emInt vertD = localVerts[ii - 1][jj][level - 1];
-				emInt vertE = localVerts[ii][jj][level - 1];
-				emInt vertF = localVerts[ii - 1][jj + 1][level - 1];
+				int kk = nDivs - level;
+				emInt vertA = localVerts[ii][jj][kk];
+				emInt vertB = localVerts[ii][jj + 1][kk];
+				emInt vertC = localVerts[ii - 1][jj + 1][kk];
+				emInt vertD = localVerts[ii - 1][jj][kk + 1];
+				emInt vertE = localVerts[ii][jj][kk + 1];
+				emInt vertF = localVerts[ii - 1][jj + 1][kk + 1];
 
 				double coordsA[3], coordsB[3], coordsC[3], coordsD[3], coordsE[3],
 						coordsF[3];
@@ -185,25 +190,25 @@ void TetDivider::createNewCells() {
 				if (useDiagAF) {
 					assert(!useDiagBD && !useDiagCE);
 					emInt vertsNew[][4] = { { vertB, vertC, vertA, vertF },
-																	{ vertC, vertD, vertA, vertF },
-																	{ vertD, vertE, vertA, vertF },
-																	{ vertE, vertB, vertA, vertF } };
+							{ vertC, vertD, vertA, vertF },
+							{ vertD, vertE, vertA, vertF },
+							{ vertE, vertB, vertA, vertF } };
 					stuffTetsIntoOctahedron(vertsNew);
 				}
 				else if (useDiagBD) {
 					assert(!useDiagAF && !useDiagCE);
 					emInt vertsNew[][4] = { { vertC, vertA, vertB, vertD },
-																	{ vertA, vertE, vertB, vertD },
-																	{ vertE, vertF, vertB, vertD },
-																	{ vertF, vertC, vertB, vertD } };
+							{ vertA, vertE, vertB, vertD },
+							{ vertE, vertF, vertB, vertD },
+							{ vertF, vertC, vertB, vertD } };
 					stuffTetsIntoOctahedron(vertsNew);
 				}
 				else {
 					assert(!useDiagAF && !useDiagBD);
 					emInt vertsNew[][4] = { { vertA, vertB, vertC, vertE },
-																	{ vertB, vertF, vertC, vertE },
-																	{ vertF, vertD, vertC, vertE },
-																	{ vertD, vertA, vertC, vertE } };
+							{ vertB, vertF, vertC, vertE },
+							{ vertF, vertD, vertC, vertE },
+							{ vertD, vertA, vertC, vertE } };
 					stuffTetsIntoOctahedron(vertsNew);
 				}
 			}

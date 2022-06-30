@@ -677,7 +677,7 @@ makeLengthScaleUniform(pUM_In);
 	// Check correctness of the uvw values.
 	emInt iArray[] = { 1, 1, 1, 2 };
 	emInt jArray[] = { 1, 1, 2, 1 };
-	emInt kArray[] = { 3, 4, 4, 4 };
+	emInt kArray[] = { 2, 1, 1, 1 };
 	double uArray[] = { 0.2, 0.2, 0.2, 0.4 };
 	double vArray[] = { 0.2, 0.2, 0.4, 0.2 };
 	double wArray[] = { 0.4, 0.2, 0.2, 0.2 };
@@ -724,7 +724,7 @@ makeLengthScaleUniform(pUM_In);
 	// Check correctness of the uvw values.
 	emInt iArray[] = { 1, 1, 1, 2, 2 };
 	emInt jArray[] = { 1, 1, 2, 1, 2 };
-	emInt kArray[] = { 3, 4, 4, 4, 4 };
+	emInt kArray[] = { 2, 1, 1, 1, 1 };
 	double uArray[] = { 0.2, 0.2, 0.2, 0.4, 0.4 };
 	double vArray[] = { 0.2, 0.2, 0.4, 0.2, 0.4 };
 	double wArray[] = { 0.4, 0.2, 0.2, 0.2, 0.2 };
@@ -776,11 +776,11 @@ makeLengthScaleUniform(pUM_In);
 	emInt kArray[] = { 1, 1, 1, 2, 2, 2, 3, 3, 3 };
 	double uArray[] = { 0.25, 0.25, 0.5, 0.25, 0.25, 0.5, 0.25, 0.25, 0.5 };
 	double vArray[] = { 0.25, 0.5, 0.25, 0.25, 0.5, 0.25, 0.25, 0.5, 0.25 };
-	double wArray[] = { 0.75, 0.75, 0.75, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25 };
+	double wArray[] = { 0.25, 0.25, 0.25, 0.5, 0.5, 0.5, 0.75, 0.75, 0.75 };
 
 	double xArray[] = { 0.25, 0.25, 0.5, 0.25, 0.25, 0.5, 0.25, 0.25, 0.5 };
 	double yArray[] = { -0.5, -0.25, -0.25, -0.5, -0.25, -0.25, -0.5, -0.25, -0.25 };
-	double zArray[] = { -0.25, -0.25, -0.25, -0.5, -0.5, -0.5, -0.75, -0.75, -0.75 };
+	double zArray[] = { -0.75, -0.75, -0.75, -0.5, -0.5, -0.5, -0.25, -0.25, -0.25 };
 
 	// Now extract the uvw values and check correctness
 	for (int ii = 0; ii < 9; ii++) {

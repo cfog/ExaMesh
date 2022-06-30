@@ -41,35 +41,35 @@ public:
 			CellDivider(pVolMesh, segmentsPerEdge) {
     vertIJK[0][0] = 0;
     vertIJK[0][1] = 0;
-    vertIJK[0][2] = nDivs;
+    vertIJK[0][2] = 0;
 
     vertIJK[1][0] = nDivs;
     vertIJK[1][1] = 0;
-    vertIJK[1][2] = nDivs;
+    vertIJK[1][2] = 0;
 
     vertIJK[2][0] = nDivs;
     vertIJK[2][1] = nDivs;
-    vertIJK[2][2] = nDivs;
+    vertIJK[2][2] = 0;
 
     vertIJK[3][0] = 0;
     vertIJK[3][1] = nDivs;
-    vertIJK[3][2] = nDivs;
+    vertIJK[3][2] = 0;
 
     vertIJK[4][0] = 0;
     vertIJK[4][1] = 0;
-    vertIJK[4][2] = 0;
+    vertIJK[4][2] = nDivs;
 
     vertIJK[5][0] = nDivs;
     vertIJK[5][1] = 0;
-    vertIJK[5][2] = 0;
+    vertIJK[5][2] = nDivs;
 
     vertIJK[6][0] = nDivs;
     vertIJK[6][1] = nDivs;
-    vertIJK[6][2] = 0;
+    vertIJK[6][2] = nDivs;
 
     vertIJK[7][0] = 0;
     vertIJK[7][1] = nDivs;
-    vertIJK[7][2] = 0;
+    vertIJK[7][2] = nDivs;
 
 		uvwIJK[0][0] = 0;
 		uvwIJK[0][1] = 0;
@@ -219,7 +219,7 @@ public:
   }
 	~HexDivider() {
 	}
-	void divideInterior();
+//	void divideInterior();
   void createNewCells();
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);

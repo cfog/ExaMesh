@@ -25,6 +25,12 @@
 
 #include <cmath>
 
+double tetVolume(const double coords0[], const double coords1[],
+		const double coords2[], const double coords3[]);
+
+double pyrVolume(const double coords0[], const double coords1[],
+		const double coords2[], const double coords3[], double coords4[]);
+
 bool checkOrient3D(const double coordsA[3], const double coordsB[3],
 		const double coordsC[3], const double coordsD[3]);
 
