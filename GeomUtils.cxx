@@ -144,7 +144,7 @@ double tetVolume(const double coords0[], const double coords1[],
 	double normal[3];
 	CROSS(edge01, edge02, normal);
 	double retVal = DOT(normal,edge03) / 6;
-	assert(retVal > 0);
+//	assert(retVal > 0);
 	return retVal;
 }
 
@@ -161,7 +161,7 @@ double pyrVolume(const double coords0[], const double coords1[],
 	double normal[3];
 	CROSS(vecB, vecC, normal);
 	double retVal = DOT(normal, vecE) / 0.75;
-	assert(retVal > 0);
+//	assert(retVal > 0);
 	return retVal;
 }
 

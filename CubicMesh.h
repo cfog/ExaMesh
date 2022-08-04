@@ -51,6 +51,12 @@ class CubicMesh: public ExaMesh {
 	void renumberNodes(emInt thisSize, emInt* aliasConn, emInt* newNodeInd);
 	void decrementVertIndices(emInt connSize, emInt* const connect);
 
+	// Confirm positive volume for all subelements
+	bool verifyTetValidity() const;
+	bool verifyPyramidValidity() const;
+	bool verifyPrismValidity() const;
+	bool verifyHexValidity() const;
+
 	// Length scales
 public:
 	CubicMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,

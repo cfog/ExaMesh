@@ -95,7 +95,7 @@ int main(int argc, char* const argv[]) {
 							(cells / 1000000.) / (time / 60));
 
 //			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
-//			UMrefined.writeVTKFile("/tmp/junk.vtk");
+			UMrefined.writeVTKFile("/tmp/junk.vtk");
 		}
 #else
 		fprintf(stderr, "Not compiled with CGNS; curved meshes not supported.\n");

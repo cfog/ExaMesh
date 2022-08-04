@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 #include "exa_config.h"
+#include "GeomUtils.h"
 
 #if (HAVE_CGNS == 1)
 #include <cgnslib.h>
@@ -269,6 +270,9 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 	}
 	delete[] isBdryVert;
 	fprintf(stderr, "%'u\n", m_nBdryVerts);
+
+	assert(verifyTetValidity() && verifyPyramidValidity() &&
+			verifyPrismValidity() && verifyHexValidity());
 }
 
 CubicMesh::CubicMesh(const char CGNSfilename[]) {
@@ -1106,7 +1110,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 					conn[15] = elemConn[39];
 				}
 				else if (quad.getCorner(0) == elemConn[1]) {
-					// Side: 1254
+					// Side: 1265
 					assert(quad.getCorner(1) == elemConn[2]);
 					assert(quad.getCorner(2) == elemConn[6]);
 					assert(quad.getCorner(3) == elemConn[5]);
@@ -1285,6 +1289,166 @@ std::unique_ptr<UMesh> CubicMesh::createFineUMesh(const emInt numDivs, Part& P,
 	RS.cells = UUM->numCells();
 	RS.refineTime = exaTime() - middle;
 	return UUM;
+}
+
+bool CubicMesh::verifyTetValidity() const {
+	// Check 11 tets; don't try to check the tets in the octahedra.
+	const int tetPts[11][4] = {
+			{0, 4, 9, 10}, {4, 5, 16, 17}, {9, 16, 8, 19},
+			{5, 1, 6, 12}, {16, 6, 7, 18}, {8, 7, 2, 14},
+			{10, 17, 19, 11}, {17, 12, 18, 13}, {19, 18, 14, 15},
+			{11, 13, 15, 3}, {19, 18, 17, 16}
+	};
+	bool retVal = true;
+	for (emInt tet = 0; tet < m_nTet20; tet++) {
+		emInt *tetConn = m_Tet20Conn[tet];
+
+		for (int subtet = 0; subtet < 11; subtet++) {
+			double ptLocs[4][3];
+			for (int pt = 0; pt < 4; pt++) {
+				ptLocs[pt][0] = m_xcoords[tetConn[tetPts[subtet][pt]]];
+				ptLocs[pt][1] = m_ycoords[tetConn[tetPts[subtet][pt]]];
+				ptLocs[pt][2] = m_zcoords[tetConn[tetPts[subtet][pt]]];
+			}
+			bool isOkay = (tetVolume(ptLocs[0], ptLocs[1], ptLocs[2], ptLocs[3]) > 0);
+			retVal = retVal && isOkay;
+		} // Done checking all subtets.
+//		printf("Checked tet %u\n", tet);
+	} // Done checking all tets.
+	return retVal;
+}
+
+bool CubicMesh::verifyPyramidValidity() const {
+	bool retVal = true;
+	return retVal;
+}
+
+bool CubicMesh::verifyPrismValidity() const {
+	// Check all 27 possible prisms.  In each case, find the center
+	// and then confirm positive volume for each of six pyramids.
+
+	int prismPts[27][6] = {{0, 6, 11, 12, 25, 34},
+			{6, 7, 24, 25, 26, 38},
+			{6, 24, 11, 25, 38, 34},
+			{11, 24, 10, 34, 38, 33},
+			{7, 1, 8, 26, 14, 29},
+			{7, 8, 24, 26, 29, 38},
+			{24, 8, 9, 38, 29, 30},
+			{24, 9, 10, 38, 30, 33},
+			{10, 9, 2, 33, 30, 16},
+			{12, 25, 34, 13, 28, 35},
+			{25, 26, 38, 28, 27, 39},
+			{25, 38, 34, 28, 39, 35},
+			{34, 38, 33, 35, 39, 36},
+			{26, 14, 29, 27, 15, 32},
+			{26, 29, 38, 27, 32, 39},
+			{38, 29, 30, 39, 32, 31},
+			{38, 30, 33, 39, 31, 36},
+			{33, 30, 16, 36, 31, 17},
+			{13, 28, 35, 3, 18, 23},
+			{28, 27, 39, 18, 19, 37},
+			{28, 39, 35, 18, 37, 23},
+			{35, 39, 36, 23, 37, 22},
+			{27, 15, 32, 19, 4, 20},
+			{27, 32, 39, 19, 20, 37},
+			{39, 32, 31, 37, 20, 21},
+			{39, 31, 36, 37, 21, 22},
+			{36, 31, 17, 22, 21, 5}
+	};
+
+	bool retVal = true;
+	for (emInt prism = 0; prism < m_nPrism40; prism++) {
+		emInt *prismConn = m_Prism40Conn[prism];
+
+	for (int subprism = 0; subprism < 27; subprism++) {
+		double ptLocs[6][3];
+		for (int pt = 0; pt < 6; pt++) {
+			ptLocs[pt][0] = m_xcoords[prismConn[prismPts[subprism][pt]]];
+			ptLocs[pt][1] = m_ycoords[prismConn[prismPts[subprism][pt]]];
+			ptLocs[pt][2] = m_zcoords[prismConn[prismPts[subprism][pt]]];
+		}
+
+		double center[3];
+		for (int ii = 0; ii < 3; ii++) {
+			center[ii] = 1./6. * (ptLocs[0][ii] + ptLocs[1][ii] + ptLocs[2][ii]
+				+ ptLocs[3][ii]	+ ptLocs[4][ii] + ptLocs[5][ii]);
+		}
+		bool bottomOkay = (tetVolume(ptLocs[0], ptLocs[1], ptLocs[2], center) > 0);
+		bool topOkay = (tetVolume(ptLocs[5], ptLocs[4], ptLocs[3], center) > 0);
+		bool rightOkay = (pyrVolume(ptLocs[1], ptLocs[0], ptLocs[3], ptLocs[4], center) > 0);
+		bool backOkay = (pyrVolume(ptLocs[2], ptLocs[1], ptLocs[4], ptLocs[5], center) > 0);
+		bool leftOkay = (pyrVolume(ptLocs[0], ptLocs[2], ptLocs[5], ptLocs[3], center) > 0);
+		retVal = retVal && bottomOkay && topOkay && rightOkay && backOkay && leftOkay;
+	} // Done checking all subprismes.
+//	printf("Checked prism %u\n", prism);
+	} // Done checking all prismes.
+
+	return retVal;
+}
+
+bool CubicMesh::verifyHexValidity() const {
+	// Check all 27 possible hexes.  In each case, find the center
+	// and then confirm positive volume for each of six pyramids.
+
+	int hexPts[27][8] = {{0, 8, 32, 15, 16, 36, 56, 49},
+			{8, 9, 33, 32, 36, 37, 57, 56},
+			{9, 1, 10, 33, 37, 18, 40, 57},
+			{15, 32, 35, 14, 49, 56, 59, 48},
+			{32, 33, 34, 35, 56, 57, 58, 59},
+			{33, 10, 11, 34, 57, 40, 41, 58},
+			{14, 35, 13, 3, 48, 59, 45, 22},
+			{35, 34, 12, 13, 59, 58, 44, 45},
+			{34, 11, 2, 12, 58, 41, 20, 44},
+			{16, 36, 56, 49, 17, 39, 60, 50},
+			{36, 37, 57, 56, 39, 38, 61, 60},
+			{37, 18, 40, 57, 38, 19, 43, 61},
+			{49, 56, 59, 48, 50, 60, 63, 51},
+			{56, 57, 58, 59, 60, 61, 62, 63},
+			{57, 40, 41, 58, 61, 43, 42, 62},
+			{48, 59, 45, 22, 51, 63, 46, 23},
+			{59, 58, 44, 45, 63, 62, 47, 46},
+			{58, 41, 20, 44, 62, 42, 21, 47},
+			{17, 39, 60, 50, 4, 24, 52, 31},
+			{39, 38, 61, 60, 24, 25, 53, 52},
+			{38, 19, 43, 61, 25, 5, 26, 53},
+			{50, 60, 63, 51, 31, 52, 55, 30},
+			{60, 61, 62, 63, 52, 53, 54, 55},
+			{61, 43, 42, 62, 53, 26, 27, 54},
+			{51, 63, 46, 23, 30, 55, 29, 7},
+			{63, 62, 47, 46, 55, 54, 28, 29},
+			{62, 42, 21, 47, 54, 27, 6, 28}
+	};
+
+	bool retVal = true;
+	for (emInt hex = 0; hex < m_nHex64; hex++) {
+		emInt *hexConn = m_Hex64Conn[hex];
+
+	for (int subHex = 0; subHex < 27; subHex++) {
+		double ptLocs[8][3];
+		for (int pt = 0; pt < 8; pt++) {
+			ptLocs[pt][0] = m_xcoords[hexConn[hexPts[subHex][pt]]];
+			ptLocs[pt][1] = m_ycoords[hexConn[hexPts[subHex][pt]]];
+			ptLocs[pt][2] = m_zcoords[hexConn[hexPts[subHex][pt]]];
+		}
+
+		double center[3];
+		for (int ii = 0; ii < 3; ii++) {
+			center[ii] = 0.125 * (ptLocs[0][ii] + ptLocs[1][ii] + ptLocs[2][ii]
+				+ ptLocs[3][ii]	+ ptLocs[4][ii] + ptLocs[5][ii]
+				+ ptLocs[6][ii] + ptLocs[7][ii]);
+		}
+		retVal = retVal
+			&& (pyrVolume(ptLocs[0], ptLocs[1], ptLocs[2], ptLocs[3], center) > 0)
+			&& (pyrVolume(ptLocs[7], ptLocs[6], ptLocs[5], ptLocs[4], center) > 0)
+			&& (pyrVolume(ptLocs[1], ptLocs[0], ptLocs[4], ptLocs[5], center) > 0)
+			&& (pyrVolume(ptLocs[2], ptLocs[1], ptLocs[5], ptLocs[6], center) > 0)
+			&& (pyrVolume(ptLocs[3], ptLocs[2], ptLocs[6], ptLocs[7], center) > 0)
+			&& (pyrVolume(ptLocs[0], ptLocs[3], ptLocs[7], ptLocs[4], center) > 0);
+	} // Done checking all subhexes.
+//	printf("Checked hex %u\n", hex);
+	} // Done checking all hexes.
+
+	return retVal;
 }
 
 void CubicMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
