@@ -37,6 +37,9 @@
 // there aren't warnings about standard autoconf things being
 // redefined.
 #include "GMGW_FileWrapper.hxx"
+#undef PACKAGE_NAME
+#undef PACKAGE_VERSION
+#undef PACKAGE_STRING
 
 #include "ExaMesh.h"
 #include "exa-defs.h"
@@ -704,9 +707,15 @@ bool UMesh::writeVTKFile(const char fileName[]) {
 	return true;
 }
 
-void UMesh::incrementVertIndices(emInt* conn, emInt size, int inc) {
+void UMesh::incrementVertIndices(emInt* conn, emInt size) {
 	for (emInt ii = 0; ii < size; ii++) {
-		conn[ii] += inc;
+		conn[ii] ++;
+	}
+}
+
+void UMesh::decrementVertIndices(emInt* conn, emInt size) {
+	for (emInt ii = 0; ii < size; ii++) {
+		conn[ii] --;
 	}
 }
 
@@ -715,9 +724,9 @@ bool UMesh::writeUGridFile(const char fileName[]) {
 
 	// Need to increment all vert indices, because UGRID files are 1-based.
 	emInt size = m_nTris * 3 + m_nQuads * 4;
-	incrementVertIndices(reinterpret_cast<emInt*>(m_TriConn), size, 1);
+	incrementVertIndices(reinterpret_cast<emInt*>(m_TriConn), size);
 	size = m_nTets * 4 + m_nPyrs * 5 + m_nPrisms * 6 + m_nHexes * 8;
-	incrementVertIndices(reinterpret_cast<emInt*>(m_TetConn), size, 1);
+	incrementVertIndices(reinterpret_cast<emInt*>(m_TetConn), size);
 
 	// Also need to swap verts 2 and 4 for pyramids, because UGRID treats
 	// pyramids as prisms with the edge from 2 to 5 collapsed.  Compared
@@ -738,9 +747,9 @@ bool UMesh::writeUGridFile(const char fileName[]) {
 
 	// Need to undo the increment for future use
 	size = m_nTris * 3 + m_nQuads * 4;
-	incrementVertIndices(reinterpret_cast<emInt*>(m_TriConn), size, -1);
+	decrementVertIndices(reinterpret_cast<emInt*>(m_TriConn), size);
 	size = m_nTets * 4 + m_nPyrs * 5 + m_nPrisms * 6 + m_nHexes * 8;
-	incrementVertIndices(reinterpret_cast<emInt*>(m_TetConn), size, -1);
+	decrementVertIndices(reinterpret_cast<emInt*>(m_TetConn), size);
 
 	// Need to swap verts 2 and 4 back for future use.
 	for (emInt ii = 0; ii < m_nPyrs; ii++) {

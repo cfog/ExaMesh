@@ -282,6 +282,7 @@ public:
 	friend bool operator==(const QuadFaceVerts& a, const QuadFaceVerts& b);
 };
 
+#ifndef USE_ORDERED
 namespace std {
 	template<> struct hash<TriFaceVerts> {
 		typedef TriFaceVerts argument_type;
@@ -319,6 +320,7 @@ namespace std {
 		}
 	};
 }
+#endif
 
 bool operator==(const TriFaceVerts& a, const TriFaceVerts& b);
 bool operator<(const TriFaceVerts& a, const TriFaceVerts& b);

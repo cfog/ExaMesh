@@ -97,13 +97,13 @@ struct MixedMeshFixture {
 
 void makeLengthScaleUniform(const UMesh* pUM_In) {
 	// Check the uniform length scale cases.
-	for (int ii = 0; ii < pUM_In->numVerts(); ii++) {
+	for (unsigned int ii = 0; ii < pUM_In->numVerts(); ii++) {
 		pUM_In->setLengthScale(ii, 1.);
 	}
 }
 void setPrescribedLengthScale(const UMesh* pUM_In) {
 	// A simple analytic length scale.
-	for (int ii = 0; ii < pUM_In->numVerts(); ii++) {
+	for (unsigned int ii = 0; ii < pUM_In->numVerts(); ii++) {
 		double len = 1 + 0.1*(pUM_In->getX(ii) + pUM_In->getY(ii) + pUM_In->getZ(ii));
 		pUM_In->setLengthScale(ii, len);
 	}

@@ -191,7 +191,8 @@ public:
 		return m_fileImageSize;
 	}
 
-	void incrementVertIndices(emInt* conn, emInt size, int inc);
+	void incrementVertIndices(emInt* conn, emInt size);
+	void decrementVertIndices(emInt* conn, emInt size);
 
 	// Writing with compression reduces file size by a little over a factor of two,
 	// at the expense of making file write slower by two orders of magnitude.
