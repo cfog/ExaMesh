@@ -48,4 +48,5 @@ autoscan.log
 # vtk file
 *.vtk
 *.vtu 
-
+# vs code files
+*.json 
