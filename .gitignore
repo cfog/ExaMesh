@@ -44,3 +44,8 @@ autom4te.cache
 autoscan.log
 *.gcda
 *.gcno
+
+# vtk file
+*.vtk
+*.vtu 
+
