@@ -50,3 +50,5 @@ autoscan.log
 *.vtu 
 # vs code files
 *.json 
+# bash files 
+*.sh 
