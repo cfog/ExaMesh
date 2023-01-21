@@ -66,7 +66,7 @@
 #define MAX_DIVS 50
 #define FILE_NAME_LEN 1024
 
-typedef uint32_t emInt;
+typedef int32_t emInt;
 #define EMINT_MAX UINT_MAX
 
 #if (HAVE_CGNS == 0)
