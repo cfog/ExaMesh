@@ -28,7 +28,7 @@
 #include "ExaMesh.h"
 #include "GeomUtils.h"
 #include "CellDivider.h"
-
+#include <stdio.h>
 void sortVerts3(const emInt input[3], emInt output[3]) {
 	// This is insertion sort, specialized for three inputs.
 	if (input[1] < input[0]) {

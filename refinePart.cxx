@@ -35,7 +35,7 @@
 #include "TetDivider.h"
 #include "BdryTriDivider.h"
 #include "BdryQuadDivider.h"
-
+#include <stdio.h>
 emInt subdividePartMesh(const ExaMesh *const pVM_input, UMesh *const pVM_output,
 		const int nDivs) {
 	assert(nDivs >= 1);
