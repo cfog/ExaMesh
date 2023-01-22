@@ -39,7 +39,7 @@ int main(int argc, char* const argv[]) {
 	char inFileBaseName[1024];
 	char cgnsFileName[1024];
 	char outFileName[1024];
-	bool isInputCGNS = false, isParallel = false;
+	bool isInputCGNS = false, isParallel = false, isMPI=false;
 
 	sprintf(type, "vtk");
 	sprintf(infix, "b8");
@@ -47,7 +47,7 @@ int main(int argc, char* const argv[]) {
 	sprintf(inFileBaseName, "/need/a/file/name");
 	sprintf(cgnsFileName, "/need/a/file/name");
 
-	while ((opt = getopt(argc, argv, "c:i:m:n:o:pt:u:")) != EOF) {
+	while ((opt = getopt(argc, argv, "c:i:m:n:o:pt:u:q")) != EOF) {
 		switch (opt) {
 			case 'c':
 				sscanf(optarg, "%1023s", cgnsFileName);
@@ -74,6 +74,9 @@ int main(int argc, char* const argv[]) {
 			case 'u':
 				sscanf(optarg, "%9s", infix);
 				break;
+			case 'q':
+				isParallel=true; 
+				isMPI=true; 	
 		}
 	}
 
@@ -104,8 +107,14 @@ int main(int argc, char* const argv[]) {
 	}
 	else {
 		UMesh UMorig(inFileBaseName, type, infix);
-		if (isParallel) {
-			UMorig.refineForParallel(nDivs, maxCellsPerPart);
+		if (isParallel){
+			if(isMPI){
+				UMorig.refineForMPI(nDivs,maxCellsPerPart,2); 
+			}
+			else{
+				UMorig.refineForParallel(nDivs, maxCellsPerPart);
+			}
+
 		}
 		if (!isParallel) {
 			double start = exaTime();
@@ -117,8 +126,8 @@ int main(int argc, char* const argv[]) {
 			fprintf(stderr,
 							"                          %5.2F million cells / minute\n",
 							(cells / 1000000.) / (time / 60));
-			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
-			UMrefined.writeVTKFile("/tmp/junk.vtk");
+			UMrefined.writeUGridFile(outFileName);
+			UMrefined.writeVTKFile(outFileName);
 		}
 	}
 

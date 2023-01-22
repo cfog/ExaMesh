@@ -529,3 +529,83 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 //	fprintf(stderr, "Done filling up face maps\n");
 //	fprintf(stderr, "Done building face cell connectivity\n");
 //}
+void ExaMesh::refineForMPI(const emInt numDivs, const emInt maxCellsPerPart,
+ const emInt numProc) const{
+	// Find size of output mesh
+	size_t numCells = numTets() + numPyramids() + numHexes() + numPrisms();
+	size_t outputCells = numCells * (numDivs * numDivs * numDivs);
+
+	emInt nParts = numProc;
+
+	// Partition the mesh.
+	std::vector<Part> parts;
+	std::vector<CellPartData> vecCPD;
+	double start = exaTime();
+	partitionCells(this, nParts, parts, vecCPD);
+	double partitionTime = exaTime() - start;
+
+	// Create new sub-meshes and refine them.
+	double totalRefineTime = 0;
+	double totalExtractTime = 0;
+	size_t totalCells = 0;
+	size_t totalTets = 0, totalPyrs = 0, totalPrisms = 0, totalHexes = 0;
+	size_t totalFileSize = 0;
+	struct RefineStats RS;
+	double totalTime = partitionTime;
+	
+
+	for (emInt ii = 0; ii < nParts; ii++) {
+		start = exaTime();
+		printf("Part %3d: cells %5d-%5d.\n", ii, parts[ii].getFirst(),
+						parts[ii].getLast());
+		std::unique_ptr<UMesh> pUM = createFineUMesh(numDivs, parts[ii], vecCPD,
+																			RS);
+		totalRefineTime += RS.refineTime;
+		totalExtractTime += RS.extractTime;
+		totalCells += RS.cells;
+		totalTets += pUM->numTets();
+		totalPyrs += pUM->numPyramids();
+		totalPrisms += pUM->numPrisms();
+		totalHexes += pUM->numHexes();
+		totalFileSize += pUM->getFileImageSize();
+		totalTime += exaTime() - start;
+		printf("\nCPU time for refinement = %5.2F seconds\n",
+						RS.refineTime);
+		printf("                          %5.2F million cells / minute\n",
+						(RS.cells / 1000000.) / (RS.refineTime / 60));
+
+
+		char fileName [100]; 
+		sprintf(fileName, "TestCases/submesh%03d.vtk", ii);
+		cout<<fileName<<'\n'; 
+		pUM->writeVTKFile(fileName); 
+	}
+	printf("\nDone parallel refinement with %d parts.\n", nParts);
+	printf("Time for partitioning:           %10.3F seconds\n",
+					partitionTime);
+	printf("Time for coarse mesh extraction: %10.3F seconds\n",
+					totalExtractTime);
+	printf("Time for refinement:             %10.3F seconds\n",
+					totalRefineTime);
+	printf("Rate (refinement only):  %5.2F million cells / minute\n",
+					(totalCells / 1000000.) / (totalRefineTime / 60));
+	printf("Rate (overall):          %5.2F million cells / minute\n",
+					(totalCells / 1000000.) / (totalTime / 60));
+
+	if (totalFileSize >> 37) {
+		printf("Total ugrid file size = %lu GB\n", totalFileSize >> 30);
+	}
+	else if (totalFileSize >> 30) {
+		printf("Total ugrid file size = %.2f GB\n",
+						(totalFileSize >> 20) / 1024.);
+	}
+	else {
+		printf("Total ugrid file size = %lu MB\n", totalFileSize >> 20);
+	}
+
+	prettyPrintCellCount(totalCells, "Total cells");
+	prettyPrintCellCount(totalTets, "Total tets");
+	prettyPrintCellCount(totalPyrs, "Total pyrs");
+	prettyPrintCellCount(totalPrisms, "Total prisms");
+	prettyPrintCellCount(totalHexes, "Total hexes");
+}
