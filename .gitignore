@@ -52,3 +52,5 @@ autoscan.log
 *.json 
 # bash files 
 *.sh 
+# txt files 
+*.txt
