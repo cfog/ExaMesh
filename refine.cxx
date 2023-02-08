@@ -76,17 +76,22 @@ int main(int argc, char* const argv[]) {
 				break;
 			case 'q':
 				isParallel=true; 
-				isMPI=true; 	
+				isMPI=true; 
+				break;
 		}
 	}
 
 	if (isInputCGNS) {
 #if (HAVE_CGNS == 1)
 		CubicMesh CMorig(cgnsFileName);
-		if (isParallel) {
-			CMorig.refineForParallel(nDivs, maxCellsPerPart);
-		}
-		else {
+		if (isParallel){
+			if(isMPI){
+				UMorig.refineForMPI(nDivs,maxCellsPerPart); 
+			}
+			else{
+				UMorig.refineForParallel(nDivs, maxCellsPerPart);
+			}
+		}else {
 			double start = exaTime();
 			UMesh UMrefined(CMorig, nDivs);
 			double time = exaTime() - start;
@@ -109,7 +114,7 @@ int main(int argc, char* const argv[]) {
 		UMesh UMorig(inFileBaseName, type, infix);
 		if (isParallel){
 			if(isMPI){
-				UMorig.refineForMPI(nDivs,maxCellsPerPart,2); 
+				UMorig.refineForMPI(nDivs,maxCellsPerPart); 
 			}
 			else{
 				UMorig.refineForParallel(nDivs, maxCellsPerPart);
@@ -126,8 +131,8 @@ int main(int argc, char* const argv[]) {
 			fprintf(stderr,
 							"                          %5.2F million cells / minute\n",
 							(cells / 1000000.) / (time / 60));
-			UMrefined.writeUGridFile(outFileName);
-			UMrefined.writeVTKFile(outFileName);
+			//UMrefined.writeUGridFile(outFileName);
+			//UMrefined.writeVTKFile(outFileName);
 		}
 	}
 

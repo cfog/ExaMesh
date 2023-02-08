@@ -114,8 +114,7 @@ public:
 
 	virtual void refineForParallel(const emInt numDivs,
 			const emInt maxCellsPerPart) const;
-	virtual void refineForMPI(const emInt numDivs, const emInt maxCellsPerPart, 
-	const emInt numProc) const; 
+	virtual void refineForMPI(const emInt numDivs, const emInt maxCellsPerPart) const; 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const = 0;
 

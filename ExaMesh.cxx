@@ -36,6 +36,8 @@ using std::endl;
 #include "Part.h"
 #include "UMesh.h"
 
+#include "mpi.h"
+#include <fstream>
 
 
 static void triUnitNormal(const double coords0[], const double coords1[],
@@ -394,9 +396,9 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 		printf("                          %5.2F million cells / minute\n",
 						(RS.cells / 1000000.) / (RS.refineTime / 60));
 
-//		char filename[100];
-//		sprintf(filename, "/tmp/fine-submesh%03d.vtk", ii);
-//		pUM->writeVTKFile(filename);
+		// char filename[100];
+		// sprintf(filename, "TestCases/Testsubmesh%03d.vtk", ii);
+		// pUM->writeVTKFile(filename);
 	}
 	printf("\nDone parallel refinement with %d parts.\n", nParts);
 	printf("Time for partitioning:           %10.3F seconds\n",
@@ -529,83 +531,218 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 //	fprintf(stderr, "Done filling up face maps\n");
 //	fprintf(stderr, "Done building face cell connectivity\n");
 //}
-void ExaMesh::refineForMPI(const emInt numDivs, const emInt maxCellsPerPart,
- const emInt numProc) const{
-	// Find size of output mesh
-	size_t numCells = numTets() + numPyramids() + numHexes() + numPrisms();
-	size_t outputCells = numCells * (numDivs * numDivs * numDivs);
-
-	emInt nParts = numProc;
-
-	// Partition the mesh.
+void ExaMesh::refineForMPI(const emInt numDivs, const emInt maxCellsPerPart) const{
+	MPI_Init(NULL,NULL); 
+	emInt rank, size; 
+	emInt MASTER=0; 
+	MPI_Comm_size(MPI_COMM_WORLD,&size); 
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
+	
+	emInt nParts = size;
 	std::vector<Part> parts;
 	std::vector<CellPartData> vecCPD;
-	double start = exaTime();
-	partitionCells(this, nParts, parts, vecCPD);
-	double partitionTime = exaTime() - start;
-
-	// Create new sub-meshes and refine them.
-	double totalRefineTime = 0;
-	double totalExtractTime = 0;
-	size_t totalCells = 0;
-	size_t totalTets = 0, totalPyrs = 0, totalPrisms = 0, totalHexes = 0;
-	size_t totalFileSize = 0;
+	emInt N_vecCPD; 
 	struct RefineStats RS;
-	double totalTime = partitionTime;
+	//Introducing new MPI types 
+	Part obj_Part(1,1,1,1,1,1,1,1,1); 
+	// Just for the purpose of type generation, passing random variables
+	// based on the desired type 
+	CellPartData obj_CellPartData(1,1,1.0,1.0,1.0); 
+	MPI_Datatype type_Part= register_mpi_type(obj_Part);
+	MPI_Datatype type_CellPartData= register_mpi_type(obj_CellPartData); 
+	
+	//double start = exaTime();
+	MPI_Barrier(MPI_COMM_WORLD); 
+	double start= MPI_Wtime(); 
+
+	if(rank==MASTER){
+
+		partitionCells(this, size, parts, vecCPD);
+		N_vecCPD= vecCPD.size(); 
+
+	}else{
+		parts.resize(size); // will be initialized 
+	}	
+	MPI_Bcast(&N_vecCPD,1,MPI_INT32_T,MASTER,MPI_COMM_WORLD);
+	if(rank!=MASTER){
+		vecCPD.resize(N_vecCPD); 
+	}
+	MPI_Bcast(parts.data(),size,type_Part,MASTER,MPI_COMM_WORLD); 
+	MPI_Bcast(vecCPD.data(),vecCPD.size(),type_CellPartData,MASTER,MPI_COMM_WORLD);
+
 	
 
-	for (emInt ii = 0; ii < nParts; ii++) {
-		start = exaTime();
-		printf("Part %3d: cells %5d-%5d.\n", ii, parts[ii].getFirst(),
-						parts[ii].getLast());
-		std::unique_ptr<UMesh> pUM = createFineUMesh(numDivs, parts[ii], vecCPD,
-																			RS);
-		totalRefineTime += RS.refineTime;
-		totalExtractTime += RS.extractTime;
-		totalCells += RS.cells;
-		totalTets += pUM->numTets();
-		totalPyrs += pUM->numPyramids();
-		totalPrisms += pUM->numPrisms();
-		totalHexes += pUM->numHexes();
-		totalFileSize += pUM->getFileImageSize();
-		totalTime += exaTime() - start;
-		printf("\nCPU time for refinement = %5.2F seconds\n",
-						RS.refineTime);
-		printf("                          %5.2F million cells / minute\n",
-						(RS.cells / 1000000.) / (RS.refineTime / 60));
+		
+	
+	//double partitionTime = exaTime() - start;
+
+	// Create new sub-meshes and refine them.
+	// double totalRefineTime = 0;
+	// double totalExtractTime = 0;
+	// size_t totalCells = 0;
+	// size_t totalTets = 0, totalPyrs = 0, totalPrisms = 0, totalHexes = 0;
+	// size_t totalFileSize = 0;
+	
+	// double totalTime = partitionTime;
+	
+
+	//for (emInt ii = 0; ii < nParts; ii++) {
+	//start = exaTime();
+	// printf("Part %3d: cells %5d-%5d.\n", rank, parts[rank].getFirst(),
+	// 					parts[rank].getLast());
+	std::unique_ptr<UMesh> pUM = createFineUMesh(numDivs, parts[rank], vecCPD,
+	 																		RS);
+
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	double end= MPI_Wtime(); 
+
+	double executionTime= end-start; 
+	double finalTime; 
+	
+	MPI_Reduce(&executionTime,&finalTime,1,MPI_DOUBLE,MPI_MAX,MASTER,MPI_COMM_WORLD);
+	if(rank==MASTER){
+		std::ofstream out;
+		out.open("TimeVersuSize.txt",std::ofstream::app); 
+		out<<size<<'\t'<<finalTime<<endl; 
+	}
+	char fileName [100]; 
+	sprintf(fileName, "TestCases/submesh%03d.vtk", rank);
+	pUM->writeVTKFile(fileName); 
+		
 
 
-		char fileName [100]; 
-		sprintf(fileName, "TestCases/submesh%03d.vtk", ii);
-		cout<<fileName<<'\n'; 
-		pUM->writeVTKFile(fileName); 
-	}
-	printf("\nDone parallel refinement with %d parts.\n", nParts);
-	printf("Time for partitioning:           %10.3F seconds\n",
-					partitionTime);
-	printf("Time for coarse mesh extraction: %10.3F seconds\n",
-					totalExtractTime);
-	printf("Time for refinement:             %10.3F seconds\n",
-					totalRefineTime);
-	printf("Rate (refinement only):  %5.2F million cells / minute\n",
-					(totalCells / 1000000.) / (totalRefineTime / 60));
-	printf("Rate (overall):          %5.2F million cells / minute\n",
-					(totalCells / 1000000.) / (totalTime / 60));
+																		
+	// totalRefineTime += RS.refineTime;
+	// totalExtractTime += RS.extractTime;
+	// totalCells += RS.cells;
+	// totalTets += pUM->numTets();
+	// totalPyrs += pUM->numPyramids();
+	// totalPrisms += pUM->numPrisms();
+	// totalHexes += pUM->numHexes();
+	// totalFileSize += pUM->getFileImageSize();
+	// totalTime += exaTime() - start;
+	// printf("\nCPU time for refinement = %5.2F seconds\n",
+	// 					RS.refineTime);
+	// printf("                          %5.2F million cells / minute\n",
+	// 					(RS.cells / 1000000.) / (RS.refineTime / 60));
 
-	if (totalFileSize >> 37) {
-		printf("Total ugrid file size = %lu GB\n", totalFileSize >> 30);
+
+	//}
+	// MESH DATA 
+	// printf("\nDone parallel refinement with %d parts.\n", nParts);
+	// printf("Time for partitioning:           %10.3F seconds\n",
+	// 				partitionTime);
+	// printf("Time for coarse mesh extraction: %10.3F seconds\n",
+	// 				totalExtractTime);
+	// printf("Time for refinement:             %10.3F seconds\n",
+	// 				totalRefineTime);
+	// printf("Rate (refinement only):  %5.2F million cells / minute\n",
+	// 				(totalCells / 1000000.) / (totalRefineTime / 60));
+	// printf("Rate (overall):          %5.2F million cells / minute\n",
+	// 				(totalCells / 1000000.) / (totalTime / 60));
+
+	// if (totalFileSize >> 37) {
+	// 	printf("Total ugrid file size = %lu GB\n", totalFileSize >> 30);
+	// }
+	// else if (totalFileSize >> 30) {
+	// 	printf("Total ugrid file size = %.2f GB\n",
+	// 					(totalFileSize >> 20) / 1024.);
+	// }
+	// else {
+	// 	printf("Total ugrid file size = %lu MB\n", totalFileSize >> 20);
+	// }
+
+	// prettyPrintCellCount(totalCells,  "Total cells");
+	// prettyPrintCellCount(totalTets,   "Total tets");
+	// prettyPrintCellCount(totalPyrs,   "Total pyrs");
+	// prettyPrintCellCount(totalPrisms, "Total prisms");
+	// prettyPrintCellCount(totalHexes,  "Total hexes");
+	//int i=1; 
+	//if(rank==i){
+
+		// cout<<parts[i].getFirst()<<'\t'<<parts[i].getLast()<<'\t'<<
+		// parts[i].getXmax()<<'\t'<<parts[i].getXmin()<<'\t'<<
+		// parts[i].getYmax()<<'\t'<<parts[i].getYmin()<<'\t'<<
+		// parts[i].getZmax()<<'\t'<<parts[i].getZmin()<<'\t'<<
+		// parts[i].numParts()<<endl; 
+
+	//}
+
+
+	MPI_Finalize();
+
+}
+//Registering MPT Type for these two classes 
+MPI_Datatype register_mpi_type(Part const&){
+	constexpr std::size_t num_members=9; 
+	int lengths[num_members];
+	for (auto i=0 ; i<num_members; i++){
+		lengths[i]= 1; 
 	}
-	else if (totalFileSize >> 30) {
-		printf("Total ugrid file size = %.2f GB\n",
-						(totalFileSize >> 20) / 1024.);
-	}
-	else {
-		printf("Total ugrid file size = %lu MB\n", totalFileSize >> 20);
+	Part dummy(1,1,1,1,1,1,1,1,1);
+	MPI_Aint baseadress ; 
+	MPI_Aint offsets [num_members];
+	MPI_Get_address(&dummy,&baseadress); 
+	MPI_Get_address(&dummy.m_xmin,&offsets[0]); 
+	MPI_Get_address(&dummy.m_xmax,&offsets[1]); 
+	MPI_Get_address(&dummy.m_ymin,&offsets[2]); 
+	MPI_Get_address(&dummy.m_ymax,&offsets[3]); 
+	MPI_Get_address(&dummy.m_zmin,&offsets[4]); 
+	MPI_Get_address(&dummy.m_zmax,&offsets[5]); 
+	MPI_Get_address(&dummy.m_first,&offsets[6]); 
+	MPI_Get_address(&dummy.m_last,&offsets[7]); 
+	MPI_Get_address(&dummy.m_nParts,&offsets[8]); 
+
+	for (auto i=0 ; i<num_members ;i++){
+		offsets[i]=MPI_Aint_diff(offsets[i],baseadress);
 	}
 
-	prettyPrintCellCount(totalCells, "Total cells");
-	prettyPrintCellCount(totalTets, "Total tets");
-	prettyPrintCellCount(totalPyrs, "Total pyrs");
-	prettyPrintCellCount(totalPrisms, "Total prisms");
-	prettyPrintCellCount(totalHexes, "Total hexes");
+	
+	// MPI_Aint offsets[num_members]={
+	// 	offsetof(class Part,m_xmin),
+	// 	offsetof(class Part,m_xmax),
+	// 	offsetof(class Part,m_ymin),
+	// 	offsetof(class Part,m_ymax),
+	// 	offsetof(class Part,m_zmin),
+	// 	offsetof(class Part,m_zmax),
+	// 	offsetof(class Part,m_first),
+	// 	offsetof(class Part,m_last),
+	// 	offsetof(class Part,m_nParts)
+	// };
+
+	MPI_Datatype types[num_members]={MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,
+	MPI_DOUBLE,MPI_DOUBLE,MPI_INT32_T,MPI_INT32_T,MPI_INT32_T};
+	MPI_Datatype type;
+	MPI_Type_create_struct(num_members,lengths,offsets,types,&type);
+	MPI_Type_commit(&type);
+	return type; 
+};
+
+MPI_Datatype register_mpi_type(CellPartData const&){
+	constexpr std::size_t lengths=3; 
+	int block_length[lengths]= {1,1,3};
+	MPI_Aint displacements [lengths]; 
+	MPI_Aint base_address; 
+	CellPartData dummy (1,1,1,1,1) ; 
+ 
+
+	// MPI_Get_address(&dummy,&base_address); 
+	// MPI_Get_address(&dummy.m_index, &displacements[0]);
+    // MPI_Get_address(&dummy.m_cellType, &displacements[1]);
+    // MPI_Get_address(&dummy.m_coords[0], &displacements[2]);
+
+	// displacements[0] = MPI_Aint_diff(displacements[0], base_address);
+    // displacements[1] = MPI_Aint_diff(displacements[1], base_address);
+    // displacements[2] = MPI_Aint_diff(displacements[2], base_address);
+
+	displacements[0]=offsetof(CellPartData,m_index); 
+	displacements[1]=offsetof(CellPartData,m_cellType);
+	displacements[2]=offsetof(CellPartData,m_coords);
+
+	MPI_Datatype types[3] = { MPI_INT32_T, MPI_INT32_T, MPI_DOUBLE };
+	MPI_Datatype type; 
+    MPI_Type_create_struct(lengths,block_length, displacements, types, &type);
+    MPI_Type_commit(&type);
+	return type; 
 }
