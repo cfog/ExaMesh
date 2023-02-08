@@ -54,3 +54,5 @@ autoscan.log
 *.sh 
 # txt files 
 *.txt
+# pdf files 
+*.pdf 
