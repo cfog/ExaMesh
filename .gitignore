@@ -35,8 +35,11 @@ test-exa
 refine
 
 # Files produced during configure / build
+Makefile.bak 
+Makefile.in
 Makefile
 configure
+configure~
 exa_config.h
 config.status
 config.log
@@ -56,3 +59,5 @@ autoscan.log
 *.txt
 # pdf files 
 *.pdf 
+# python files 
+*.py 
