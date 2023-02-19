@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.69])
-AC_INIT([examesh], [1.0], [cfog@mech.ubc.ca])
+AC_PREREQ([2.71])
+AC_INIT([examesh],[1.0],[cfog@mech.ubc.ca])
 AC_CONFIG_AUX_DIR([conf])
 AC_CONFIG_MACRO_DIR([conf])
 AC_CONFIG_SRCDIR([ExaMesh.h])
@@ -36,8 +36,7 @@ AC_CHECK_LIB(m, sqrt)
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lMeshIO':
 AC_ARG_WITH( MeshIO-path,
-	     [AC_HELP_STRING([--with-MeshIO-path=PATH],
-		[specify installed location for the MeshIO library])],
+	     [AS_HELP_STRING([--with-MeshIO-path=PATH],[specify installed location for the MeshIO library])],
 		[CPPFLAGS="$CPPFLAGS -I$with_MeshIO_path"])
 AC_CHECK_LIB([MeshIO], [libMeshIO_is_present],
 		       [LDFLAGS="-Wl,-rpath -Wl,$with_MeshIO_path -L$with_MeshIO_path $LDFLAGS"
@@ -51,15 +50,14 @@ AC_CHECK_LIB([boost_unit_test_framework], [main])
 AC_CHECK_LIB([sz], [SZ_encoder_enabled])
 
 AC_ARG_WITH( HDF5-path,
-	     [AC_HELP_STRING([--with-HDF5-path=PATH],[specify installed location for the HDF5 library])],,
+	     [AS_HELP_STRING([--with-HDF5-path=PATH],[specify installed location for the HDF5 library])],,
 	     [with_HDF5_path="/usr/include/hdf5/serial"] )
 
 CPPFLAGS_tmp=$CPPFLAGS
 CPPFLAGS="$CPPFLAGS -I$with_HDF5_path"
 AC_CHECK_HEADER(hdf5.h,
-	[ AC_DEFINE([HAVE_HDF5],[1],["Have HDF5 headers"])],
-	CGNS_INCLUDES=-I$with_HDF5_path
-)
+	[ AC_DEFINE([HAVE_HDF5],[1],["Have HDF5 headers"])])
+CGNS_INCLUDES=-I$with_HDF5_path
 AC_CHECK_LIB([hdf5_serial], [H5Ecreate_stack],
 			    [LDFLAGS="-L$with_HDF5_path $LDFLAGS"
 			     LIBS="-lhdf5_serial $LIBS"],,
@@ -69,7 +67,7 @@ CPPFLAGS=$CPPFLAGS_tmp
 AC_SUBST(HAVE_LIBHDF5_SERIAL)
 
 AC_ARG_WITH( CGNS-path,
-	     [AC_HELP_STRING([--with-CGNS-path=PATH],[specify installed location for the CGNS file format library])],,
+	     [AS_HELP_STRING([--with-CGNS-path=PATH],[specify installed location for the CGNS file format library])],,
 	     [with_CGNS_path="no"] )
 
 if (test "x$with_CGNS_path" == "xno") ; then
@@ -81,10 +79,10 @@ else
    CPPFLAGS_tmp=$CPPFLAGS
    CPPFLAGS="$CPPFLAGS -I$with_CGNS_path/include"
    AC_CHECK_HEADER(cgnslib.h,
-	[ AC_DEFINE([HAVE_CGNS],[1],["Have CGNS headers"])],
-	CGNS_INCLUDES+=-I$with_CGNS_path/include
-	)
-   AC_CHECK_LIB([cgns], [cg_set_file_type],,,[$with_CGNS_path])
+	[ AC_DEFINE([HAVE_CGNS],[1],["Have CGNS headers"])])
+   CGNS_INCLUDES+=" -I$with_CGNS_path/include"
+   AC_CHECK_LIB([cgns], [cg_set_file_type],[LDFLAGS="-L$with_CGNS_path/lib $LDFLAGS"
+			     LIBS="-lcgns $LIBS"],,[-L$with_CGNS_path/lib])
    CPPFLAGS=$CPPFLAGS_tmp
 fi
 CPPFLAGS+=" $CGNS_INCLUDES"
