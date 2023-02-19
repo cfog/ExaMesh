@@ -86,10 +86,10 @@ int main(int argc, char* const argv[]) {
 		CubicMesh CMorig(cgnsFileName);
 		if (isParallel){
 			if(isMPI){
-				UMorig.refineForMPI(nDivs,maxCellsPerPart); 
+				CMorig.refineForMPI(nDivs,maxCellsPerPart); 
 			}
 			else{
-				UMorig.refineForParallel(nDivs, maxCellsPerPart);
+				CMorig.refineForParallel(nDivs, maxCellsPerPart);
 			}
 		}else {
 			double start = exaTime();
