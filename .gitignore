@@ -61,3 +61,5 @@ autoscan.log
 *.pdf 
 # python files 
 *.py 
+# dat files 
+*.dat 
