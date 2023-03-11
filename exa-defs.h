@@ -25,14 +25,13 @@
 
 #ifndef SRC_EXA_DEFS_H_
 #define SRC_EXA_DEFS_H_
-
+#include <iostream> 
 #include <cmath>
 #include <stdint.h>
 #include <limits.h>
 #include <assert.h>
-
+#include <algorithm>
 #include "exa_config.h"
-
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -144,6 +143,7 @@ struct EdgeVerts {
 
 class FaceVerts {
 protected:
+	emInt global_corners [4], global_sorted [4]; 
 	emInt m_corners[4], m_sorted[4];
 	double m_cornerUVW[4][3];
 	int m_nCorners, m_nDivs;
@@ -152,6 +152,8 @@ protected:
 	double m_param_uvw[MAX_DIVS + 1][MAX_DIVS + 1][3];
 	emInt m_volElem, m_volElemType;
 	bool m_bothSidesDone;
+	emInt partid; 
+	emInt remotePartid; 
 public:
 	FaceVerts(const int nDivs, const emInt NC = 0) :
 		m_nCorners(NC), m_nDivs(nDivs), m_volElem(EMINT_MAX), m_volElemType(0),
@@ -228,6 +230,10 @@ public:
 		assert(ii >= 0 && ii < m_nCorners);
 		return m_corners[ii];
 	}
+	emInt getGlobalCorner(const int ii) const{
+		assert(ii >= 0 && ii < m_nCorners);
+		return global_corners[ii];
+	}
 	virtual void computeParaCoords(const int ii, const int jj,
 			double st[2]) const = 0;
 	emInt getVolElement() const {
@@ -237,6 +243,15 @@ public:
 	emInt getVolElementType() const {
 		return m_volElemType;
 	}
+	emInt getPartid () const {
+		return partid; 
+	}
+	void setRemotePartID (const emInt remotePartid_){
+		remotePartid=remotePartid_; 
+	}
+	emInt getRemotePartid ()const{
+		return remotePartid; 
+	}
 };
 
 class TriFaceVerts : public FaceVerts {
@@ -245,9 +260,13 @@ class TriFaceVerts : public FaceVerts {
 //	double (*m_intParam_st)[MAX_DIVS-2];
 //	emInt volElement, volElementType;
 public:
-	TriFaceVerts(const int nDivs) : FaceVerts(nDivs, 3) {}
+	TriFaceVerts(const int nDivs,const emInt partID=-1) : FaceVerts(nDivs, 3) {}
 	TriFaceVerts(const int nDivs, emInt v0, const emInt v1, const emInt v2,
-			const emInt type = 0, const emInt elemInd = EMINT_MAX);
+			const emInt partID=-1,const emInt type = 0, const emInt elemInd = EMINT_MAX);
+
+	TriFaceVerts(const int nDivs, const emInt local[3], 
+	const emInt global[3],const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 ,const emInt elemInd=EMINT_MAX);
+
 	virtual ~TriFaceVerts() {}
 //	void allocVertMemory() {
 //		m_intVerts = new emInt[MAX_DIVS - 2][MAX_DIVS - 2];

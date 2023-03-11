@@ -25,12 +25,12 @@
 
 #include <iostream>
 #include <cmath>
-
+#include <fstream>
 #include <algorithm>
 #include <memory>
 #include <set>
 #include <vector>
-
+//#include <execution>
 #include <string.h>
 
 // This include file is deliberately before ExaMesh headers so
@@ -1096,4 +1096,366 @@ void UMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 //
 //	return true;
 //}
+void UMesh::TestMPI(const emInt &n){
 
+	struct RefineStats RS;
+	std::ofstream out; 
+	
+	emInt nParts =n ;
+	// Partition the mesh
+	std::vector<Part>             parts;
+	std::vector<CellPartData>     vecCPD; 
+	std::vector<emInt>            sizeTis; 
+
+	partitionCells(this, nParts, parts, vecCPD);
+	emInt ii=0; 
+
+	//auto coarsePart = this->extractCoarseMesh(parts[ii],vecCPD,1);
+
+	FaceMatch(this,parts,vecCPD);
+
+		for(emInt ii=0; ii<nParts ; ii++){
+			auto coarsePart= this->extractCoarseMesh(parts[ii],vecCPD,1);
+	
+			char fileName [100]; 
+			sprintf(fileName, "TestCases/submesh%03d.vtk",ii);
+			coarsePart->writeVTKFile(fileName); 
+		}
+
+}
+void UMesh:: FaceMatch(const ExaMesh* const pEM,
+		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD){
+
+	exa_set<TriFaceVerts>  InteriorpartBdryTris;
+	std::vector<TriFaceVerts> vectorTriPartbdry; 
+	exa_set<QuadFaceVerts> InteriorpartBdryQuads;	
+
+	exa_set<TriFaceVerts>  ExternalpartBdryTris;
+	exa_set<QuadFaceVerts> ExternalpartBdryQuads;
+
+
+	emInt numDivs=1; 	
+
+	for(emInt iPart=0 ; iPart<parts.size(); iPart++){
+		
+
+		
+
+		const emInt first = parts[iPart].getFirst();
+		const emInt last =  parts[iPart].getLast();
+
+		exa_set<TriFaceVerts>  partBdryTris;
+		exa_set<QuadFaceVerts> partBdryQuads;
+
+		emInt nTris(0), nQuads(0), nTets(0), nPyrs(0), nPrisms(0), nHexes(0);
+		const emInt *conn;
+
+		std::vector<bool> isBdryVert(numVerts(), false);
+		std::vector<bool> isVertUsed(numVerts(), false);
+
+		for (emInt ii = first; ii < last; ii++) {
+			emInt type = vecCPD[ii].getCellType();
+			emInt ind =  vecCPD[ii].getIndex();
+			switch (type) {
+				default:
+					// Panic! Should never get here.
+					assert(0);
+					break;
+				case TETRA_4: {
+					nTets++;
+					conn = getTetConn(ind);
+					TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2]);
+					TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3]);
+					TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3]);
+					TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3]);
+					addUniquely(partBdryTris, TFV012);
+					addUniquely(partBdryTris, TFV013);
+					addUniquely(partBdryTris, TFV123);
+					addUniquely(partBdryTris, TFV203);
+					isVertUsed[conn[0]] = true;
+					isVertUsed[conn[1]] = true;
+					isVertUsed[conn[2]] = true;
+					isVertUsed[conn[3]] = true;
+					break;
+				}
+				case PYRA_5: {
+					nPyrs++;
+					conn = getPyrConn(ind);
+					QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3]);
+					TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4]);
+					TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4]);
+					TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4]);
+					TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4]);
+					addUniquely(partBdryQuads, QFV0123);
+					addUniquely(partBdryTris, TFV014);
+					addUniquely(partBdryTris, TFV124);
+					addUniquely(partBdryTris, TFV234);
+					addUniquely(partBdryTris, TFV304);
+					isVertUsed[conn[0]] = true;
+					isVertUsed[conn[1]] = true;
+					isVertUsed[conn[2]] = true;
+					isVertUsed[conn[3]] = true;
+					isVertUsed[conn[4]] = true;
+					break;
+				}
+				case PENTA_6: {
+					nPrisms++;
+					conn = getPrismConn(ind);
+					QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3]);
+					QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4]);
+					QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5]);
+					TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2]);
+					TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5]);
+					addUniquely(partBdryQuads, QFV0143);
+					addUniquely(partBdryQuads, QFV1254);
+					addUniquely(partBdryQuads, QFV2035);
+					addUniquely(partBdryTris, TFV012);
+					addUniquely(partBdryTris, TFV345);
+					isVertUsed[conn[0]] = true;
+					isVertUsed[conn[1]] = true;
+					isVertUsed[conn[2]] = true;
+					isVertUsed[conn[3]] = true;
+					isVertUsed[conn[4]] = true;
+					isVertUsed[conn[5]] = true;
+					break;
+				}
+				case HEXA_8: {
+					nHexes++;
+					conn = getHexConn(ind);
+					QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4]);
+					QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5]);
+					QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6]);
+					QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7]);
+					QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3]);
+					QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7]);
+					addUniquely(partBdryQuads, QFV0154);
+					addUniquely(partBdryQuads, QFV1265);
+					addUniquely(partBdryQuads, QFV2376);
+					addUniquely(partBdryQuads, QFV3047);
+					addUniquely(partBdryQuads, QFV0123);
+					addUniquely(partBdryQuads, QFV4567);
+					isVertUsed[conn[0]] = true;
+					isVertUsed[conn[1]] = true;
+					isVertUsed[conn[2]] = true;
+					isVertUsed[conn[3]] = true;
+					isVertUsed[conn[4]] = true;
+					isVertUsed[conn[5]] = true;
+					isVertUsed[conn[6]] = true;
+					isVertUsed[conn[7]] = true;
+					break;
+				}
+			} // end switch
+		} // end loop to gather information
+
+		// Now check to see which bdry entities are in this part.  That'll be the
+		// ones whose verts are all marked as used.  Unfortunately, this requires
+		// searching through -all- the bdry entities for each part.
+		std::vector<emInt> realBdryTris;
+		std::vector<emInt> realBdryQuads;
+		for (emInt ii = 0; ii < numBdryTris(); ii++) {
+			conn = getBdryTriConn(ii);
+			if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]) {
+				TriFaceVerts TFV(numDivs, conn[0], conn[1], conn[2]);
+				auto iter = partBdryTris.find(TFV);
+				// If this bdry tri is an unmatched tri from this part, match it, and
+				// add the bdry tri to the list of things to copy to the part coarse
+				// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
+				// bdry face from slipping through.
+				if (iter != partBdryTris.end()) {
+					partBdryTris.erase(iter);
+					isBdryVert[conn[0]] = true;
+					isBdryVert[conn[1]] = true;
+					isBdryVert[conn[2]] = true;
+					realBdryTris.push_back(ii);
+					nTris++;
+				}
+			}
+		}
+		for (emInt ii = 0; ii < numBdryQuads(); ii++) {
+			conn = getBdryQuadConn(ii);
+			if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]
+					&& isVertUsed[conn[3]]) {
+				QuadFaceVerts QFV(numDivs, conn[0], conn[1], conn[2], conn[3]);
+				auto iter = partBdryQuads.find(QFV);
+				// If this bdry tri is an unmatched tri from this part, match it, and
+				// add the bdry tri to the list of things to copy to the part coarse
+				// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
+				// bdry face from slipping through.
+				if (iter != partBdryQuads.end()) {
+					partBdryQuads.erase(iter);
+					isBdryVert[conn[0]] = true;
+					isBdryVert[conn[1]] = true;
+					isBdryVert[conn[2]] = true;
+					isBdryVert[conn[3]] = true;
+					realBdryQuads.push_back(ii);
+					nQuads++;
+				}
+			}
+		}
+
+		emInt nPartBdryTris = partBdryTris.size();
+		emInt nPartBdryQuads = partBdryQuads.size();
+
+		for (auto tri : partBdryTris) {
+			isBdryVert[tri.getCorner(0)] = true;
+			isBdryVert[tri.getCorner(1)] = true;
+			isBdryVert[tri.getCorner(2)] = true;
+		}
+
+		for (auto quad : partBdryQuads) {
+			isBdryVert[quad.getCorner(0)] = true;
+			isBdryVert[quad.getCorner(1)] = true;
+			isBdryVert[quad.getCorner(2)] = true;
+			isBdryVert[quad.getCorner(3)] = true;
+		}
+		emInt nBdryVerts = 0, nVerts = 0;
+		for (emInt ii = 0; ii < numVerts(); ii++) {
+			if (isBdryVert[ii]) nBdryVerts++;
+			if (isVertUsed[ii]) nVerts++;
+		}
+
+		// Now set up the data structures for the new coarse UMesh
+		auto UUM = std::make_unique<UMesh>(nVerts, nBdryVerts, nTris + nPartBdryTris,
+																				nQuads + nPartBdryQuads, nTets, nPyrs,
+																				nPrisms, nHexes);
+
+		// Store the vertices, while keeping a mapping from the full list of verts
+		// to the restricted list so the connectivity can be copied properly.
+		std::vector<emInt> newIndices(numVerts(), EMINT_MAX);
+		for (emInt ii = 0; ii < numVerts(); ii++) {
+			if (isVertUsed[ii]) {
+				double coords[3];
+				getCoords(ii, coords);
+				newIndices[ii] = UUM->addVert(coords);
+				// Copy length scale for vertices from the parent; otherwise, there will be
+				// mismatches in the refined meshes.
+				UUM->setLengthScale(newIndices[ii], getLengthScale(ii));
+			}
+		}
+
+		// Now copy connectivity.
+		emInt newConn[8];
+		for (emInt ii = first; ii < last; ii++) {
+			emInt type = vecCPD[ii].getCellType();
+			emInt ind = vecCPD[ii].getIndex();
+			switch (type) {
+				default:
+					// Panic! Should never get here.
+					assert(0);
+					break;
+				case TETRA_4: {
+					conn = getTetConn(ind);
+					remapIndices(4, newIndices, conn, newConn);
+					UUM->addTet(newConn);
+					break;
+				}
+				case PYRA_5: {
+					conn = getPyrConn(ind);
+					remapIndices(5, newIndices, conn, newConn);
+					UUM->addPyramid(newConn);
+					break;
+				}
+				case PENTA_6: {
+					conn = getPrismConn(ind);
+					remapIndices(6, newIndices, conn, newConn);
+					UUM->addPrism(newConn);
+					break;
+				}
+				case HEXA_8: {
+					conn = getHexConn(ind);
+					remapIndices(8, newIndices, conn, newConn);
+					UUM->addHex(newConn);
+					break;
+				}
+			} // end switch
+		} // end loop to copy most connectivity
+
+		for (emInt ii = 0; ii < realBdryTris.size(); ii++){
+			conn = getBdryTriConn(realBdryTris[ii]);
+			remapIndices(3, newIndices, conn, newConn);
+			UUM->addBdryTri(newConn);
+		}
+		for (emInt ii = 0; ii < realBdryQuads.size(); ii++) {
+			conn = getBdryQuadConn(realBdryQuads[ii]);
+			remapIndices(4, newIndices, conn, newConn);
+			UUM->addBdryQuad(newConn);
+		}
+
+		// Now, finally, the part bdry connectivity.
+		// TODO: Currently, there's nothing in the data structure that marks which
+		// are part bdry faces.
+		for (auto tri : partBdryTris){
+			emInt global [3] = {tri.getCorner(0),tri.getCorner(1),
+			tri.getCorner(2)}; 
+			emInt conn[] = { newIndices[tri.getCorner(0)],
+					newIndices[tri.getCorner(1)],
+					newIndices[tri.getCorner(2)] };
+			TriFaceVerts tripart(numDivs,conn,global,iPart);
+			vectorTriPartbdry.push_back(tripart); 
+
+			addUniquely(InteriorpartBdryTris,tripart); 	
+			UUM->addBdryTri(conn);
+		}
+
+		for (auto quad : partBdryQuads) {
+			emInt conn[] = { newIndices[quad.getCorner(0)],
+					newIndices[quad.getCorner(1)],
+					newIndices[quad.getCorner(2)],
+					newIndices[quad.getCorner(3)] };
+			double coords[4][3]; 
+			for(auto i=0 ; i<4 ; i++){
+				coords[i][0]= UUM->getX(conn[i]); 
+				coords[i][1]= UUM->getY(conn[i]); 
+				coords[i][2]= UUM->getZ(conn[i]); 
+			}		 		
+			UUM->addBdryQuad(conn);
+		}
+
+	}
+
+	for(auto itr=vectorTriPartbdry.begin();
+	 	itr!=vectorTriPartbdry.end();itr++){
+
+		cout<<"part: "<< itr->getPartid()<<
+		" local: "<<itr->getSorted(0)<<" "<<
+		itr->getSorted(1)<<" "<<itr->getSorted(2)<<
+		" global: "<<itr->getGlobalCorner(0)<<" "<<
+		itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<
+		" Remote ID: "<<itr->getRemotePartid()<<  endl; 
+
+	}		
+
+	
+
+
+	
+
+
+	for(auto it= vectorTriPartbdry.begin();it!=vectorTriPartbdry.end();++it){
+		if(it->getRemotePartid()==-1){
+			auto itfind= std::find(vectorTriPartbdry.begin(),
+			vectorTriPartbdry.end(),*it); 
+			if(itfind!=vectorTriPartbdry.end()){
+				it->setRemotePartID(itfind->getPartid()); 
+				itfind->setRemotePartID(it->getPartid());  
+
+			}
+		}
+
+ 	}
+	cout<<"---------------"<<endl; 
+
+	for(auto itr=vectorTriPartbdry.begin();
+	 	itr!=vectorTriPartbdry.end();itr++){
+
+		cout<<"part: "<< itr->getPartid()<<
+		" local: "<<itr->getSorted(0)<<" "<<
+		itr->getSorted(1)<<" "<<itr->getSorted(2)<<
+		" global: "<<itr->getGlobalCorner(0)<<" "<<
+		itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<
+		" Remote ID: "<<itr->getRemotePartid()<<  endl; 
+
+	}
+
+
+}

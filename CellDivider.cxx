@@ -52,13 +52,29 @@ void sortVerts3(const emInt input[3], emInt output[3]) {
 }
 
 TriFaceVerts::TriFaceVerts(const int nDivs, const emInt v0, const emInt v1,
-		const emInt v2, const emInt type, const emInt elemInd) :
+		const emInt v2,const emInt partID ,const emInt type, const emInt elemInd) :
 		FaceVerts(nDivs, 3) {
 	m_volElem = elemInd;
 	m_volElemType = type;
+	partid=partID; 
 	setCorners(v0, v1, v2);
 }
 
+TriFaceVerts::TriFaceVerts(const int nDivs, const emInt local[3], 
+	const emInt global[3],const emInt partid_,const emInt remoteID_, 
+	const emInt type ,const emInt elemInd):FaceVerts(nDivs,3){
+		m_volElem = elemInd;
+		m_volElemType = type;
+		partid=partid_; 
+		remotePartid=remoteID_; 
+		setCorners(local[0],local[1],local[2]); 
+		emInt output [3]; 
+		sortVerts3(global,output);
+		for(auto i=0 ; i<3; i++){
+			global_corners[i]=global[i]; 
+			global_sorted[i]= output[i];
+		}	 
+}
 void TriFaceVerts::setupSorted() {
 	sortVerts3(m_corners, m_sorted);
 }
@@ -135,15 +151,39 @@ void TriFaceVerts::getVertAndST(const int ii, const int jj, emInt& vert,
 }
 
 bool operator==(const TriFaceVerts &a, const TriFaceVerts &b) {
-	return (a.m_sorted[0] == b.m_sorted[0] && a.m_sorted[1] == b.m_sorted[1]
-			&& a.m_sorted[2] == b.m_sorted[2]);
+	//return (a.m_sorted[0] == b.m_sorted[0] && a.m_sorted[1] == b.m_sorted[1]
+		//	&& a.m_sorted[2] == b.m_sorted[2] && a.partid==b.partid);
+	// bool result=false; 
+	//std::cout<<" a id: "<<a.partid<<" b part id: "<<b.partid<<std::endl;
+	if(a.partid==-1 &&b.partid==-1){
+		return (a.m_sorted[0] == b.m_sorted[0] && a.m_sorted[1] == b.m_sorted[1]
+			&& a.m_sorted[2] == b.m_sorted[2] && a.partid==b.partid);
+		
+	}
+	else{
+		return(a.global_sorted[0]==b.global_sorted[0]&&
+		a.global_sorted[1]==b.global_sorted[1]&&
+		a.global_sorted[2]==b.global_sorted[2]);
+	}
+	 
+	
+	
 }
 
 bool operator<(const TriFaceVerts &a, const TriFaceVerts &b) {
-	return (a.m_sorted[0] < b.m_sorted[0]
+	if(a.partid==-1 &&b.partid==-1){
+		return (a.m_sorted[0] < b.m_sorted[0]
 			|| (a.m_sorted[0] == b.m_sorted[0] && a.m_sorted[1] < b.m_sorted[1])
 			|| (a.m_sorted[0] == b.m_sorted[0] && a.m_sorted[1] == b.m_sorted[1]
 					&& a.m_sorted[2] < b.m_sorted[2]));
+	}
+	else{
+		return (a.global_sorted[0] < b.global_sorted[0]
+		|| (a.global_sorted[0] == b.global_sorted[0] && a.global_sorted[1] < b.global_sorted[1])
+		|| (a.global_sorted[0] == b.global_sorted[0] && a.global_sorted[1] == b.global_sorted[1]
+		&& a.global_sorted[2] < b.global_sorted[2]));
+
+	}
 }
 
 void TriFaceVerts::computeParaCoords(const int ii, const int jj,

@@ -53,6 +53,8 @@ class UMesh: public ExaMesh {
 	UMesh& operator=(const UMesh&);
 
 public:
+	void FaceMatch(const ExaMesh* const pEM,
+		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD);	
 	UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
@@ -179,6 +181,7 @@ public:
 
 	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs) const;
+	virtual void TestMPI(const emInt &n);
 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
