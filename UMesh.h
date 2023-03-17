@@ -49,12 +49,55 @@ class UMesh: public ExaMesh {
 	emInt (*m_PrismConn)[6];
 	emInt (*m_HexConn)[8];
 	char *m_buffer, *m_fileImage;
+	std::set<QuadFaceVerts> partQuads; 
+	std::set<TriFaceVerts>  partTris; 
 	UMesh(const UMesh&);
 	UMesh& operator=(const UMesh&);
 
 public:
+	void insertPartTris(const TriFaceVerts &obj){
+		auto iter = partTris.find(obj);
+	
+		if (iter != partTris.end()) {
+			partTris.erase(iter);
+		}
+		else {
+			partTris.insert(obj);
+		}
+
+	}
+	void insertPartQuads(const QuadFaceVerts &obj){
+		auto iter = partQuads.find(obj);
+	
+		if (iter != partQuads.end()) {
+			partQuads.erase(iter);
+		}
+		else {
+			partQuads.insert(obj);
+		}
+
+	}
+	emInt getSizePartTris(){
+		return partTris.size();
+	}
+	emInt getSizePartQuads(){
+		return partQuads.size();
+	}
+	std::set<QuadFaceVerts> getQuadPart() const{
+		return partQuads; 
+	}
+	std::set<TriFaceVerts> getTriPart() const {
+		return partTris; 
+	}
+
 	void FaceMatch(const ExaMesh* const pEM,
-		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD);	
+		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
+		 std::vector<std::vector<TriFaceVerts>>  &tris,
+		 std::vector<std::vector<QuadFaceVerts>> &quads );	
+	void partFaceMatching(const ExaMesh* const pEM,
+		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
+		 std::vector<std::set<TriFaceVerts>>  &tris,
+		 std::vector<std::set<QuadFaceVerts>> &quads );		 
 	UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
@@ -181,6 +224,15 @@ public:
 
 	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs) const;
+
+	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
+			std::vector<CellPartData>& vecCPD, const int numDivs,
+			const std::set<TriFaceVerts> &tris, 
+			const std::set<QuadFaceVerts> &quads, const emInt partID) const;
+	// std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
+	// 		std::vector<CellPartData>& vecCPD, const int numDivs,
+	// 		const std::vector<TriFaceVerts> &tris, 
+	// 		const std::vector<QuadFaceVerts> &quads, const emInt partID) const;				
 	virtual void TestMPI(const emInt &n);
 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,

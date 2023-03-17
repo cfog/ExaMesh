@@ -33,7 +33,7 @@
 #include "Mapping.h"
 #include "Part.h"
 #include "exa-defs.h"
-
+#include <set>
 class UMesh;
 
 struct MeshSize {
@@ -135,6 +135,17 @@ private:
 template<typename T>
 void addUniquely(exa_set<T>& mySet, T& val) {
 	auto iter = mySet.find(val);
+	if (iter != mySet.end()) {
+		mySet.erase(iter);
+	}
+	else {
+		mySet.insert(val);
+	}
+}
+template<typename T>
+void addUniquely(std::set<T> &mySet, T& val) {
+	auto iter = mySet.find(val);
+	
 	if (iter != mySet.end()) {
 		mySet.erase(iter);
 	}

@@ -154,6 +154,7 @@ protected:
 	bool m_bothSidesDone;
 	emInt partid; 
 	emInt remotePartid; 
+	bool m_globalComparison; 
 public:
 	FaceVerts(const int nDivs, const emInt NC = 0) :
 		m_nCorners(NC), m_nDivs(nDivs), m_volElem(EMINT_MAX), m_volElemType(0),
@@ -234,6 +235,10 @@ public:
 		assert(ii >= 0 && ii < m_nCorners);
 		return global_corners[ii];
 	}
+	emInt getGlobalSorted(const int ii) const{
+		assert(ii >= 0 && ii < m_nCorners);
+		return global_sorted[ii];
+	}
 	virtual void computeParaCoords(const int ii, const int jj,
 			double st[2]) const = 0;
 	emInt getVolElement() const {
@@ -260,12 +265,18 @@ class TriFaceVerts : public FaceVerts {
 //	double (*m_intParam_st)[MAX_DIVS-2];
 //	emInt volElement, volElementType;
 public:
-	TriFaceVerts(const int nDivs,const emInt partID=-1) : FaceVerts(nDivs, 3) {}
+	TriFaceVerts(const int nDivs,const emInt partID=-1,bool globalComparison=false) : FaceVerts(nDivs, 3) {}
 	TriFaceVerts(const int nDivs, emInt v0, const emInt v1, const emInt v2,
-			const emInt partID=-1,const emInt type = 0, const emInt elemInd = EMINT_MAX);
+			const emInt partID=-1,const emInt type = 0, 
+			const emInt elemInd = EMINT_MAX,bool globalComparison=false);
 
 	TriFaceVerts(const int nDivs, const emInt local[3], 
-	const emInt global[3],const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 ,const emInt elemInd=EMINT_MAX);
+	const emInt global[3],const emInt partid_=-1, const emInt remoteID=-1 ,
+	const emInt type=0 ,const emInt elemInd=EMINT_MAX,bool globalComparison=false);
+
+	TriFaceVerts(const int nDivs,const emInt global[3],
+	const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 ,
+	const emInt elemInd=EMINT_MAX,bool globalComparison=false);
 
 	virtual ~TriFaceVerts() {}
 //	void allocVertMemory() {
@@ -288,9 +299,21 @@ struct QuadFaceVerts : public FaceVerts {
 //	emInt m_intVerts[MAX_DIVS - 1][MAX_DIVS - 1];
 //	emInt volElement, volElementType;
 public:
-	QuadFaceVerts(const int nDivs) : FaceVerts(nDivs, 4) {}
+	QuadFaceVerts(const int nDivs, const emInt partID=-1,
+	const emInt remotePartid=-1, bool globalCompare=false) : FaceVerts(nDivs, 4) {}
 	QuadFaceVerts(const int nDivs, const emInt v0, const emInt v1, const emInt v2, const emInt v3,
-			const emInt type = 0, const emInt elemInd = EMINT_MAX);
+	const emInt partID=-1, const emInt remoteID=-1, 
+			const emInt type = 0, const emInt elemInd = EMINT_MAX,
+			bool globalCompare=false);
+
+	QuadFaceVerts(const int nDivs, const emInt local[4], 
+	const emInt global[4],const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 
+	,const emInt elemInd=EMINT_MAX,
+	bool globalCompare=false);
+	QuadFaceVerts(const int nDivs,const emInt global[4],const emInt partid_=-1, const emInt remoteID=-1 
+	,const emInt type=0 ,const emInt elemInd=EMINT_MAX,
+	bool globalCompare=false);
+
 	virtual ~QuadFaceVerts() {}
 	virtual void computeParaCoords(const int ii, const int jj,
 			double st[2]) const;
