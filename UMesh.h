@@ -90,10 +90,7 @@ public:
 		return partTris; 
 	}
 
-	void FaceMatch(const ExaMesh* const pEM,
-		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
-		 std::vector<std::vector<TriFaceVerts>>  &tris,
-		 std::vector<std::vector<QuadFaceVerts>> &quads );	
+
 	void partFaceMatching(const ExaMesh* const pEM,
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::set<TriFaceVerts>>  &tris,
