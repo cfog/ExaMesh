@@ -230,7 +230,7 @@ public:
 	// 		std::vector<CellPartData>& vecCPD, const int numDivs,
 	// 		const std::vector<TriFaceVerts> &tris, 
 	// 		const std::vector<QuadFaceVerts> &quads, const emInt partID) const;				
-	virtual void TestMPI(const emInt &n);
+	virtual void TestMPI(const emInt &nDivs);
 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,

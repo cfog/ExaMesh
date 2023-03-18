@@ -1209,38 +1209,26 @@ void UMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 //
 //	return true;
 //}
-void UMesh::TestMPI(const emInt &n){
+void UMesh::TestMPI(const emInt &nDivs){
 
 	struct RefineStats RS;
 	std::ofstream out; 
 	
-	emInt nParts =n ;
-	// Partition the mesh
+	emInt nParts =4;
+	
 	std::vector<Part>             parts;
 	std::vector<CellPartData>     vecCPD; 
-	std::vector<emInt>            sizeTis; 
+	
 
 	partitionCells(this, nParts, parts, vecCPD);
-	emInt ii=0; 
-
-	//auto coarsePart = this->extractCoarseMesh(parts[ii],vecCPD,1);
-	std::vector<std::vector<TriFaceVerts>>  trisVector; 
-
-	std::vector<std::vector<QuadFaceVerts>> quadsVector;
-
+	
 	std::vector<std::set<TriFaceVerts>>  tris; 
 
 	std::vector<std::set<QuadFaceVerts>> quads;
 
-	//FaceMatch(this,parts,vecCPD,trisVector,quadsVector);
-
 	partFaceMatching(this,parts,vecCPD,tris,quads); 
 	 
 	
-	//printTris(tris); 
-	//printQuads(Setquads); 
-	
-
 	for(auto i=0 ; i<nParts; i++){
  
 	
@@ -1249,45 +1237,9 @@ void UMesh::TestMPI(const emInt &n){
 		char fileName [100]; 
 		sprintf(fileName, "TestCases/submesh%03d.vtk", i);
 		coarse->writeVTKFile(fileName);
-
+		
 	
 	}
-	
-
-
-
-	//printTris(Settris); 
-	//printQuads(Setquads); 
-
-	 
-	//printTris(tris,nParts); 
-	//printQuads(quads,nParts); 
-
-	for(auto i=0 ; i<nParts; i++){
-
-	}
-	
-
-
-
-
-	// cout<<" checking quads: "<<endl; 
-	// for(auto i=0 ; i< quads.size(); i++){
-	// 	cout<<"part id: "<< i<<endl; 
-	// 	for(auto j=0; j<quads[i].size(); j++){
-	// 		cout<<"part: "<< quads[i][j].getPartid()<<
-	// 		" local: "<<quads[i][j].getSorted(0)<<" "<<
-	// 		quads[i][j].getSorted(1)<<" "<<quads[i][j].getSorted(2)<<" "<<
-	// 		quads[i][j].getSorted(3)<<
-	// 		" global: "<<quads[i][j].getGlobalSorted(0)<<" "<<
-	// 		quads[i][j].getGlobalSorted(1)<<" "<<quads[i][j].getGlobalSorted(2)<<
-	// 		" "<<quads[i][j].getGlobalSorted(3)<<" "<< 
-	// 	 	" Remote ID: "<<quads[i][j].getRemotePartid()<<endl;
-
-	// 	}
-
-	// }
-
 
 
 
