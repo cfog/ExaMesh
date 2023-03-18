@@ -77,10 +77,10 @@ public:
 		}
 
 	}
-	emInt getSizePartTris(){
+	emInt getSizePartTris()const{
 		return partTris.size();
 	}
-	emInt getSizePartQuads(){
+	emInt getSizePartQuads()const{
 		return partQuads.size();
 	}
 	std::set<QuadFaceVerts> getQuadPart() const{

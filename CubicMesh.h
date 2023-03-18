@@ -43,6 +43,8 @@ class CubicMesh: public ExaMesh {
 	emInt (*m_Pyr30Conn)[30];
 	emInt (*m_Prism40Conn)[40];
 	emInt (*m_Hex64Conn)[64];
+	std::set<TriFaceVerts> partTris;;
+	std::set<QuadFaceVerts> partQuads; 
 
 	CubicMesh(const CubicMesh&);
 	CubicMesh& operator=(const CubicMesh&);
@@ -160,6 +162,19 @@ public:
 
 	Mapping::MappingType getDefaultMappingType() const {
 		return Mapping::Lagrange;
+	}
+	// TODO ; NOT SET FOR CUBIC MESH 
+	emInt getSizePartTris()const{
+		return partTris.size();
+	}
+	emInt getSizePartQuads()const{
+		return partQuads.size();
+	}
+	std::set<QuadFaceVerts> getQuadPart() const{
+		return partQuads; 
+	}
+	std::set<TriFaceVerts> getTriPart() const {
+		return partTris; 
 	}
 
 	std::unique_ptr<CubicMesh> extractCoarseMesh(Part& P,
