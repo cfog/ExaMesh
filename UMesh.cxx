@@ -1230,13 +1230,25 @@ void UMesh::TestMPI(const emInt &nDivs){
 	 
 	
 	for(auto i=0 ; i<nParts; i++){
+		//emInt i=0; 
  
 	
 		auto coarse= this->extractCoarseMesh
-		(parts[i],vecCPD,2,tris[i],quads[i],i);
+		(parts[i],vecCPD,nDivs,tris[i],quads[i],i);
 		char fileName [100]; 
 		sprintf(fileName, "TestCases/submesh%03d.vtk", i);
+		emInt Btris= coarse->numBdryTris(); 
+		emInt Bquds= coarse->numBdryQuads(); 
+		cout<<"N B tris: "<<Btris<<" N B quads: "<<Bquds<<endl; 
 		coarse->writeVTKFile(fileName);
+		auto UUM = std::make_unique<UMesh>(*coarse, nDivs);
+		
+		sprintf(fileName, "TestCases/finemesh%03d.vtk", i);
+		UUM->writeVTKFile(fileName);
+		
+
+
+	
 		
 	
 	}

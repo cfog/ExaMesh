@@ -116,9 +116,9 @@ int main(int argc, char* const argv[]) {
 			if(isMPI){
 				UMorig.refineForMPI(nDivs,maxCellsPerPart); 
 			}
-			else{
-				UMorig.refineForParallel(nDivs, maxCellsPerPart);
-			}
+			//else{
+				//UMorig.refineForParallel(nDivs, maxCellsPerPart);
+			//}
 
 		}
 		if (!isParallel) {
