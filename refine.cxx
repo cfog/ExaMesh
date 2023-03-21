@@ -114,7 +114,8 @@ int main(int argc, char* const argv[]) {
 		UMesh UMorig(inFileBaseName, type, infix);
 		if (isParallel){
 			if(isMPI){
-				UMorig.refineForMPI(nDivs,maxCellsPerPart); 
+				//UMorig.refineForMPI(nDivs,maxCellsPerPart); 
+				UMorig.TestMPI(nDivs); 
 			}
 			//else{
 				//UMorig.refineForParallel(nDivs, maxCellsPerPart);

@@ -1227,11 +1227,16 @@ void UMesh::TestMPI(const emInt &nDivs){
 	std::vector<std::set<QuadFaceVerts>> quads;
 
 	partFaceMatching(this,parts,vecCPD,tris,quads); 
+
+	
 	 
 	
-	for(auto i=0 ; i<nParts; i++){
-		//emInt i=0; 
- 
+	//for(auto i=0 ; i<nParts; i++){
+		emInt i=0; 
+		std::set<emInt> vertsonFaces; 
+		
+		std::set<QuadFaceVerts> coarsequads;
+		std::set<TriFaceVerts>  coarsetris; 
 	
 		auto coarse= this->extractCoarseMesh
 		(parts[i],vecCPD,nDivs,tris[i],quads[i],i);
@@ -1239,19 +1244,53 @@ void UMesh::TestMPI(const emInt &nDivs){
 		sprintf(fileName, "TestCases/submesh%03d.vtk", i);
 		emInt Btris= coarse->numBdryTris(); 
 		emInt Bquds= coarse->numBdryQuads(); 
-		cout<<"N B tris: "<<Btris<<" N B quads: "<<Bquds<<endl; 
+		coarsequads= coarse->getQuadPart(); 
+		coarsetris = coarse->getTriPart(); 
+		
 		coarse->writeVTKFile(fileName);
 		auto UUM = std::make_unique<UMesh>(*coarse, nDivs);
 		
 		sprintf(fileName, "TestCases/finemesh%03d.vtk", i);
 		UUM->writeVTKFile(fileName);
 		
+		for(auto itr=coarsequads.begin(); itr!=coarsequads.end();itr++){
+			emInt v0= itr->getCorner(0);
+			emInt v1= itr->getCorner(1); 
+			emInt v2= itr->getCorner(2); 
+			emInt v3= itr->getCorner(3); 
+			vertsonFaces.insert(v0);
+			vertsonFaces.insert(v1);
+			vertsonFaces.insert(v2);
+			vertsonFaces.insert(v3);
+
+
+
+		}
+		for(auto itr=coarsetris.begin(); itr!=coarsetris.end();itr++){
+			emInt v0= itr->getCorner(0);
+			emInt v1= itr->getCorner(1); 
+			emInt v2= itr->getCorner(2); 
+			
+			vertsonFaces.insert(v0);
+			vertsonFaces.insert(v1);
+			vertsonFaces.insert(v2);
+			
+
+
+
+		}
+		for(auto itr=vertsonFaces.begin(); itr!=vertsonFaces.end();
+		itr++){
+			assert(coarse->getX(*itr)==UUM->getX(*itr)); 
+			assert(coarse->getY(*itr)==UUM->getY(*itr)); 
+			assert(coarse->getZ(*itr)==UUM->getZ(*itr)); 
+		}
 
 
 	
 		
 	
-	}
+	//}
 
 
 
