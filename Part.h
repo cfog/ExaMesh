@@ -29,11 +29,13 @@
 #include <vector>
 
 #include <values.h>
-
+#include "mpi.h"
 class CellPartData {
 	emInt m_index, m_cellType;
 	double m_coords[3];
 public:
+	// for registering MPI-type-CAUTION 
+	CellPartData(){}; 
 	CellPartData(const emInt ind, const emInt type, const double x,
 			const double y, const double z) :
 			m_index(ind), m_cellType(type) {
@@ -53,6 +55,8 @@ public:
 	emInt getIndex() const {
 		return m_index;
 	}
+	friend MPI_Datatype register_mpi_type(CellPartData const&);
+
 };
 
 class Part {
@@ -117,6 +121,8 @@ public:
 	double getZmin() const {
 		return m_zmin;
 	}
+	
+	friend MPI_Datatype register_mpi_type(Part const&);
 };
 
 

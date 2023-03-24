@@ -32,10 +32,14 @@
 *.app
 examesh
 test-exa
+refine
 
 # Files produced during configure / build
+Makefile.bak 
+Makefile.in
 Makefile
 configure
+configure~
 exa_config.h
 config.status
 config.log
@@ -43,3 +47,19 @@ autom4te.cache
 autoscan.log
 *.gcda
 *.gcno
+
+# vtk file
+*.vtk
+*.vtu 
+# vs code files
+*.json 
+# bash files 
+*.sh 
+# txt files 
+*.txt
+# pdf files 
+*.pdf 
+# python files 
+*.py 
+# dat files 
+*.dat 

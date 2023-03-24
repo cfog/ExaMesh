@@ -33,7 +33,7 @@
 #include "Mapping.h"
 #include "Part.h"
 #include "exa-defs.h"
-
+#include <set>
 class UMesh;
 
 struct MeshSize {
@@ -114,7 +114,7 @@ public:
 
 	virtual void refineForParallel(const emInt numDivs,
 			const emInt maxCellsPerPart) const;
-
+	virtual void refineForMPI(const emInt numDivs, const emInt maxCellsPerPart) const; 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const = 0;
 
@@ -135,6 +135,17 @@ private:
 template<typename T>
 void addUniquely(exa_set<T>& mySet, T& val) {
 	auto iter = mySet.find(val);
+	if (iter != mySet.end()) {
+		mySet.erase(iter);
+	}
+	else {
+		mySet.insert(val);
+	}
+}
+template<typename T>
+void addUniquely(std::set<T> &mySet, T& val) {
+	auto iter = mySet.find(val);
+	
 	if (iter != mySet.end()) {
 		mySet.erase(iter);
 	}
