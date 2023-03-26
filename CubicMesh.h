@@ -43,8 +43,8 @@ class CubicMesh: public ExaMesh {
 	emInt (*m_Pyr30Conn)[30];
 	emInt (*m_Prism40Conn)[40];
 	emInt (*m_Hex64Conn)[64];
-	std::set<TriFaceVerts> partTris;;
-	std::set<QuadFaceVerts> partQuads; 
+	exa_set <TriFaceVerts> TemppartTris;;
+	exa_set <QuadFaceVerts> TemppartQuads; 
 
 	CubicMesh(const CubicMesh&);
 	CubicMesh& operator=(const CubicMesh&);
@@ -165,16 +165,16 @@ public:
 	}
 	// TODO ; NOT SET FOR CUBIC MESH 
 	emInt getSizePartTris()const{
-		return partTris.size();
+		return TemppartTris.size();
 	}
 	emInt getSizePartQuads()const{
-		return partQuads.size();
+		return TemppartQuads.size();
 	}
-	std::set<QuadFaceVerts> getQuadPart() const{
-		return partQuads; 
+	exa_set <QuadFaceVerts> getTempQuadPart() const{
+		return TemppartQuads; 
 	}
-	std::set<TriFaceVerts> getTriPart() const {
-		return partTris; 
+	exa_set <TriFaceVerts> getTempTriPart() const {
+		return TemppartTris; 
 	}
 
 	std::unique_ptr<CubicMesh> extractCoarseMesh(Part& P,

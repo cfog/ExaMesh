@@ -49,13 +49,37 @@ class UMesh: public ExaMesh {
 	emInt (*m_PrismConn)[6];
 	emInt (*m_HexConn)[8];
 	char *m_buffer, *m_fileImage;
-	std::set<QuadFaceVerts> partQuads; 
-	std::set<TriFaceVerts>  partTris; 
+	exa_set<QuadFaceVerts> TemppartQuads; 
+	exa_set<TriFaceVerts>  TemppartTris; 
+	exa_set<TriFaceVerts>  partTris; 
+	exa_set<QuadFaceVerts> partQuads; 
 	UMesh(const UMesh&);
 	UMesh& operator=(const UMesh&);
 
 public:
-	void insertPartTris(const TriFaceVerts &obj){
+	void insertTempPartTris(const TriFaceVerts &obj){
+		auto iter = TemppartTris.find(obj);
+	
+		if (iter != TemppartTris.end()) {
+			TemppartTris.erase(iter);
+		}
+		else {
+			TemppartTris.insert(obj);
+		}
+
+	}
+	void insertTempPartQuads(const QuadFaceVerts &obj){
+		auto iter = TemppartQuads.find(obj);
+	
+		if (iter != TemppartQuads.end()) {
+			TemppartQuads.erase(iter);
+		}
+		else {
+			TemppartQuads.insert(obj);
+		}
+
+	}
+	void updatePartTris(const TriFaceVerts &obj){
 		auto iter = partTris.find(obj);
 	
 		if (iter != partTris.end()) {
@@ -66,7 +90,7 @@ public:
 		}
 
 	}
-	void insertPartQuads(const QuadFaceVerts &obj){
+	void updatePartQuads(const QuadFaceVerts &obj){
 		auto iter = partQuads.find(obj);
 	
 		if (iter != partQuads.end()) {
@@ -78,17 +102,26 @@ public:
 
 	}
 	emInt getSizePartTris()const{
-		return partTris.size();
+		return TemppartTris.size();
 	}
 	emInt getSizePartQuads()const{
-		return partQuads.size();
+		return TemppartQuads.size();
 	}
-	std::set<QuadFaceVerts> getQuadPart() const{
+	exa_set<QuadFaceVerts> getTempQuadPart() const{
+		return TemppartQuads; 
+	}
+	exa_set<TriFaceVerts> getTempTriPart() const {
+		return TemppartTris; 
+	}
+	exa_set<QuadFaceVerts> getQuadPart() const{
 		return partQuads; 
 	}
-	std::set<TriFaceVerts> getTriPart() const {
+	exa_set<TriFaceVerts> getTriPart() const {
 		return partTris; 
 	}
+	// bool getBolean()const {
+	// 	return globa
+	// }
 
 
 	void partFaceMatching(const ExaMesh* const pEM,
@@ -222,7 +255,7 @@ public:
 	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs) const;
 
-	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
+	std::shared_ptr<UMesh> extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs,
 			const std::set<TriFaceVerts> &tris, 
 			const std::set<QuadFaceVerts> &quads, const emInt partID) const;

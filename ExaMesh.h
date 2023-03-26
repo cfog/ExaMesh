@@ -92,8 +92,8 @@ public:
 	virtual emInt getSizePartTris()const =0 ; 
 	virtual emInt getSizePartQuads()const=0 ;
 		
-	virtual std::set<QuadFaceVerts> getQuadPart() const=0; 
-	virtual std::set<TriFaceVerts> getTriPart() const=0;
+	virtual exa_set<QuadFaceVerts> getTempQuadPart() const=0; 
+	virtual exa_set <TriFaceVerts> getTempTriPart() const=0;
 
 	void printMeshSizeStats();
 	double getLengthScale(const emInt vert) const {
