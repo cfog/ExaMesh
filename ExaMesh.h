@@ -94,6 +94,8 @@ public:
 		
 	virtual exa_set<QuadFaceVerts> getTempQuadPart() const=0; 
 	virtual exa_set <TriFaceVerts> getTempTriPart() const=0;
+	virtual exa_set<QuadFaceVerts> getQuadPart() const=0; 
+	virtual exa_set<TriFaceVerts> getTriPart() const=0; 
 
 	void printMeshSizeStats();
 	double getLengthScale(const emInt vert) const {

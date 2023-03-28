@@ -45,6 +45,8 @@ class CubicMesh: public ExaMesh {
 	emInt (*m_Hex64Conn)[64];
 	exa_set <TriFaceVerts> TemppartTris;;
 	exa_set <QuadFaceVerts> TemppartQuads; 
+	exa_set<TriFaceVerts>  partTris; 
+	exa_set<QuadFaceVerts> partQuads;
 
 	CubicMesh(const CubicMesh&);
 	CubicMesh& operator=(const CubicMesh&);
@@ -175,6 +177,12 @@ public:
 	}
 	exa_set <TriFaceVerts> getTempTriPart() const {
 		return TemppartTris; 
+	}
+	exa_set<QuadFaceVerts> getQuadPart() const{
+		return partQuads; 
+	}
+	exa_set<TriFaceVerts> getTriPart() const {
+		return partTris; 
 	}
 
 	std::unique_ptr<CubicMesh> extractCoarseMesh(Part& P,
