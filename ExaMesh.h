@@ -91,6 +91,7 @@ public:
 
 	virtual emInt getSizePartTris()const =0 ; 
 	virtual emInt getSizePartQuads()const=0 ;
+	virtual exa_set<TriFaceVerts> getRefinedPartTris() const=0; 
 		
 	virtual exa_set<QuadFaceVerts> getTempQuadPart() const=0; 
 	virtual exa_set <TriFaceVerts> getTempTriPart() const=0;
@@ -168,7 +169,7 @@ bool computeMeshSize(const struct MeshSize& MSIn, const emInt nDivs,
 // Defined elsewhere.
 emInt subdividePartMesh(const ExaMesh * const pVM_input,
 		UMesh * const pVM_output,
-		const int nDivs);
+		const int nDivs, const emInt partID=-1);
 
 bool partitionCells(const ExaMesh* const pEM, const emInt nPartsToMake,
 		std::vector<Part>& parts, std::vector<CellPartData>& vecCPD);

@@ -197,7 +197,42 @@ void TriFaceVerts::getVertAndST(const int ii, const int jj, emInt& vert,
 	assert(isValidParam(st[1]));
 	vert = getIntVertInd(trueI, trueJ);
 }
+void TriFaceVerts:: getTrueIJ(const int ii, const int jj,
+			int &trueI, int &trueJ , const int rotCase )const{
+	trueI = -1, trueJ = -1;
+	switch (rotCase) {
+	case 1:
+		// Just reversed orientation, no rotation
+		trueI = ii;
+		trueJ = jj;
+		break;
+	case 2:
+		trueI = jj;
+		trueJ = m_nDivs - ii - jj;
+		break;
+	case 3:
+		trueI = m_nDivs - jj - ii;
+		trueJ = ii;
+		break;
+	case -1:
+		// Just reversed orientation, no rotation
+		trueI = jj;
+		trueJ = ii;
+		break;
+	case -2:
+		trueI = m_nDivs - ii - jj;
+		trueJ = jj;
+		break;
+	case -3:
+		trueI = ii;
+		trueJ = m_nDivs - jj - ii;
+		break;
+	default:
+		assert(0);
+		break;
+	}
 
+}
 bool operator==(const TriFaceVerts &a, const TriFaceVerts &b) {
 
 		if(a.m_globalComparison==false && b.m_globalComparison==false){

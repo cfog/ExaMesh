@@ -55,3 +55,13 @@ void BdryTriDivider::createNewCells() {
 	} // Done with this row (constant j)
 }
 
+void BdryTriDivider::setRefinedVerts(TriFaceVerts &TF){
+	for (int ii = 0; ii <= nDivs ; ii++) {
+	 	for (int jj = 0; jj <= nDivs-ii ; jj++) {
+			int trueI;
+			int trueJ;
+			emInt vert= localVerts[ii][jj][0]; 
+			TF.setIntVertInd(ii,jj,vert); 
+		}
+	}	
+}

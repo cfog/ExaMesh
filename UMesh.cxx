@@ -34,6 +34,7 @@
 #include <string.h>
 #include <set>
 #include <fstream> 
+#include "BdryTriDivider.h"
 // This include file is deliberately before ExaMesh headers so
 // there aren't warnings about standard autoconf things being
 // redefined.
@@ -81,25 +82,148 @@ using std::endl;
 
 // 	}
 // }
-void printTris(const exa_set<TriFaceVerts>  &tris){
+emInt getRotation(const TriFaceVerts &localTri, 
+const exa_set<TriFaceVerts> &remote,emInt nDivs){
 
-	cout<<"checking for tris: "<<endl; 
+	emInt Lvert0 = localTri.getRemoteIndices(0);
+	emInt Lvert1 = localTri.getRemoteIndices(1);
+	emInt Lvert2 = localTri.getRemoteIndices(2);
+	TriFaceVerts TF(nDivs,Lvert0,Lvert1,Lvert2);
+	auto iterTris=remote.find(TF); 
+	assert(iterTris!=remote.end()); 
+	emInt vert0= localTri.getGlobalCorner(0); 
+	emInt vert1= localTri.getGlobalCorner(1); 
+	emInt vert2= localTri.getGlobalCorner(2); 
+	emInt globalIterTris [3]={
+		iterTris->getGlobalCorner(0),
+		iterTris->getGlobalCorner(1),
+		iterTris->getGlobalCorner(2)
+
+	};
+
+
+
+
+	int rotCase = 0;
+		for (int cc = 0; cc < 3; cc++) {
+			if (vert0 == iterTris->getGlobalCorner(cc)) {
+				if (vert1 == iterTris->getGlobalCorner((cc+1)%3)){
+					assert(vert2 == iterTris->getGlobalCorner((cc+2)%3));
+					rotCase = cc+1;
+				}
+				else {
+					assert(vert1 == iterTris->getGlobalCorner((cc+2)%3));
+					assert(vert2 == iterTris->getGlobalCorner((cc+1)%3));
+					rotCase = -(cc+1);
+				}
+			}
+		}
+		assert(rotCase != 0);
+		return rotCase; 
+
+}
+void comPare(std::shared_ptr<UMesh> local, 
+std::shared_ptr<UMesh> remote,const TriFaceVerts &localTri, 
+const emInt rotation, const emInt nDivs, 
+const exa_set<TriFaceVerts> &remoteTriSet ){
+	//exa_set<TriFaceVerts> remoteTriSet= remote->getRefinedPartTris();
+
+	emInt vert0 = localTri.getRemoteIndices(0);
+	emInt vert1 = localTri.getRemoteIndices(1);
+	emInt vert2 = localTri.getRemoteIndices(2);
+
+	TriFaceVerts TF(nDivs,vert0,vert1,vert2);
+
+	auto itRemote= remoteTriSet.find(TF); 
+	assert(itRemote!=remoteTriSet.end()); 
+	assert(localTri.getPartid()==itRemote->getRemotePartid()); 
+	assert(localTri.getRemotePartid()==itRemote->getPartid()); 
+	for(auto i=0; i<3; i++){
+		assert(localTri.getCorner(i)==
+		itRemote->getRemoteIndices(i)); 
+		assert(itRemote->getCorner(i)==localTri.getRemoteIndices(i)); 
+	}
+	std::cout<<" local Part "<<" Remote Part "<<std::endl; 
+	std::cout<<localTri.getPartid()<<" "<<itRemote->getPartid()<<std::endl; 
+	//std::cout<<"Local refined verts "<<" Remote refined verts "<<std::endl; 
+	for (int ii = 0; ii <= nDivs ; ii++) {
+	 	for (int jj = 0; jj <= nDivs-ii ; jj++) {
+
+			int trueI; 
+			int trueJ; 
+			itRemote->getTrueIJ(ii,jj,trueI,trueJ,rotation); 
+			// emInt vertLocal=localTri.getIntVertInd(ii,jj); 
+			// emInt vertRemote=itRemote->getIntVertInd(trueI,trueJ); 
+			emInt vertLocal=localTri.getIntVertInd(trueI,trueJ); 
+			 emInt vertRemote=itRemote->getIntVertInd(ii,jj); 
+			
+			std::cout<<"ii: "<<ii<<" jj: "<<jj<<"--- ( "<<
+			vertLocal<<" "<<
+			vertRemote<<" )"
+			<<"-> ("<<local->getX(vertLocal)<<", "<<
+			local->getY(vertLocal)<<", "<<local->getZ(vertLocal)<<" ) "<<" ( "<<
+			remote->getX(vertRemote)<<", "<<remote->getY(vertRemote)<<", "<<
+			remote->getZ(vertRemote)<<" ) "
+			  <<std::endl; 
+			///assert(local->getX(vertLocal)==remote->getX(vertRemote)); 
+			//assert(local->getY(vertLocal)==remote->getY(vertRemote)); 
+			//assert(local->getZ(vertLocal)==remote->getZ(vertRemote)); 
+			assert(abs(local->getX(vertLocal)-
+			remote->getX(vertRemote))<1e-10); 
+			assert(abs(local->getY(vertLocal)-
+			remote->getY(vertRemote))<1e-10);
+			assert(abs(local->getZ(vertLocal)-
+			remote->getZ(vertRemote))<1e-10);
+
+			// std::cout<<"ii: "<<ii<<" jj: "<<jj<<"---  "<<
+			// (local->getX(vertLocal)-remote->getX(vertRemote))<<
+			// "  "<< (local->getY(vertLocal)-remote->getY(vertRemote))<<
+			// "   "<<(local->getZ(vertLocal)-remote->getZ(vertRemote))<<
+			// std::endl; 
+			
+		
+			
+
+
+	 		
+	 			
+		}
+	}
+	std::cout<<std::endl; 
+
+
+
+}
+void printTris(const exa_set<TriFaceVerts>  &tris, emInt nDivs){
+	
+	//cout<<"checking for tris: "<<endl; 
 	//for(auto i=0 ; i<tris.size(); i++){
 		
-		cout<<" size of set: "<< tris.size()<<endl; 
+		cout<<"size of set: "<< tris.size()<<endl; 
+		std::cout<<"-----------------------------------------------------------"<<std::endl; 
 		for(auto itr=tris.begin(); itr!=tris.end();itr++){
-			std::cout<<"part: "<< itr->getPartid()<<
-			" local: "<<itr->getSorted(0)<<" "<<
-			itr->getSorted(1)<<" "<<itr->getSorted(2)<<
-			" global: "<<itr->getGlobalSorted(0)<<" "<<
-			itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
+			std::cout<<"Part: "<< itr->getPartid()<<
+			" local indices: "<<itr->getCorner(0)<<" "<<
+			itr->getCorner(1)<<" "<<itr->getCorner(2)<<
+			// " global: "<<itr->getGlobalSorted(0)<<" "<<
+			// itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
 			" Unsorted global: "<<itr->getGlobalCorner(0)<<" "<<
-			itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<
+			 itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<
 		 	" Remote ID: "<<itr->getRemotePartid()<<
-			" Get Corner: "<<itr->getCorner(0)<<" "<<itr->getCorner(1)<<" "<<
-			itr->getCorner(2)<<" boolean value: "<<itr->getGlobalCompare()<<
+			" Remote Indices: "<<itr->getRemoteIndices(0)<<" "<<
+			itr->getRemoteIndices(1)<<" "<<
+			itr->getRemoteIndices(2)<<
+			//" boolean value: "<<itr->getGlobalCompare()<<
 			std::endl;
+			std::cout<<"Refined verts: "<<std::endl; 
+			for (int ii = 0; ii <= nDivs ; ii++) {
+	 			for (int jj = 0; jj <= nDivs-ii ; jj++) {
 
+	 				 std::cout<<itr->getIntVertInd(ii,jj)<<" "; 
+	 			}
+			}
+			
+			std::cout<<std::endl;
 		}
 	//}
 
@@ -170,7 +294,25 @@ void printQuads(const exa_set<QuadFaceVerts> quads){
 	//}
 
 }
+void printMapFaceVerts(const std::unordered_map<TriFaceVerts,std::set<emInt>>
+ &map){
+	for(auto itr=map.begin(); itr!=map.end(); itr++){
+		std::cout<<"Face from part ID "<<
+		(itr->first).getPartid()<<": "<<(itr->first).getCorner(0)<<" "<<
+		(itr->first).getCorner(1)<<" "<<(itr->first).getCorner(2)<<
+		" Remote from Remote ID "<<(itr->first).getRemotePartid()<<
+		": "<<(itr->first).getRemoteIndices(0)<<" "<<
+		(itr->first).getRemoteIndices(1)<<" "<<
+		(itr->first).getRemoteIndices(2)<< std::endl;
+		for(auto itset=(itr->second).begin(); itset!=(itr->second).end();
+		itset++){
+			std::cout<<*itset<<" ";
+		}
+		std::cout<<std::endl; 
+	
 
+	}
+ }
 
 static bool memoryCheck(void* address, int nBytes) {
 	char* checkPtr = reinterpret_cast<char*>(address);
@@ -628,7 +770,7 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	setupLengthScales();
 }
 
-UMesh::UMesh(const UMesh& UMIn, const int nDivs) :
+UMesh::UMesh(const UMesh& UMIn, const int nDivs, const emInt partID) :
 		m_nVerts(0), m_nBdryVerts(0), m_nTris(0), m_nQuads(0), m_nTets(0),
 				m_nPyrs(0), m_nPrisms(0), m_nHexes(0), m_fileImageSize(0),
 				m_header(nullptr), m_coords(nullptr), m_TriConn(nullptr),
@@ -653,7 +795,7 @@ UMesh::UMesh(const UMesh& UMIn, const int nDivs) :
 		m_lenScale[vv] = UMIn.m_lenScale[vv];
 	}
 
-	subdividePartMesh(&UMIn, this, nDivs);
+	subdividePartMesh(&UMIn, this, nDivs,partID);
 	setlocale(LC_ALL, "");
 	fprintf(
 			stderr,
@@ -1214,7 +1356,7 @@ void UMesh::TestMPI(const emInt &nDivs){
 	struct RefineStats RS;
 	std::ofstream out; 
 	
-	emInt nParts =20;
+	emInt nParts = 4;
 	
 	std::vector<Part>             parts;
 	std::vector<CellPartData>     vecCPD; 
@@ -1233,6 +1375,9 @@ void UMesh::TestMPI(const emInt &nDivs){
 		auto coarse= this->extractCoarseMesh
 		(parts[i],vecCPD,nDivs,tris[i],quads[i],i);
 		submeshes.push_back(coarse); 
+		char filename[100];
+	//	sprintf(filename, "TestCases/Testsubmesh%03d.vtk", i);
+	//	coarse->writeVTKFile(filename);
 	}
 
 	assert(submeshes.size()==nParts); 
@@ -1298,123 +1443,45 @@ void UMesh::TestMPI(const emInt &nDivs){
 
 
 	}
-
-	for(auto ipart=0; ipart<nParts; ipart++){
-	 
-		exa_set<TriFaceVerts> tris= submeshes[ipart]->getTriPart();
-		exa_set<QuadFaceVerts> quads=submeshes[ipart]->getQuadPart(); 
-
-		for(auto itr=tris.begin(); itr!=tris.end(); itr++){
-				emInt global [3]= {
-					itr->getGlobalCorner(0),
-					itr->getGlobalCorner(1), 
-					itr->getGlobalCorner(2)
-				};
-				emInt RemoteIndices[3]= {
-					itr->getRemoteIndices(0),
-					itr->getRemoteIndices(1), 
-					itr->getRemoteIndices(2)
-				};
-				emInt remoteID= itr->getRemotePartid(); 
-				exa_set<TriFaceVerts> othertris=
-				submeshes[remoteID]->getTriPart(); 
-
-				
-				TriFaceVerts TF(nDivs,RemoteIndices,global);
-				auto itfind= othertris.find(TF);
-				assert(itfind!=othertris.end()); 
-				for(auto i=0; i<3; i++){
-					assert(itfind->getGlobalSorted(i)==
-					itr->getGlobalSorted(i)); 
-				}
- 
-		}		
-		for(auto itr=quads.begin(); itr!=quads.end(); itr++){
-				emInt global [4]= {
-					itr->getGlobalCorner(0),
-					itr->getGlobalCorner(1), 
-					itr->getGlobalCorner(2),
-					itr->getGlobalCorner(3)
-				};
-				emInt RemoteIndices[4]= {
-					itr->getRemoteIndices(0),
-					itr->getRemoteIndices(1), 
-					itr->getRemoteIndices(2),
-					itr->getRemoteIndices(3)
-				};
-				emInt remoteID= itr->getRemotePartid(); 
-				exa_set<QuadFaceVerts> otherquads=
-				submeshes[remoteID]->getQuadPart(); 
-
-				
-				QuadFaceVerts QF(nDivs,RemoteIndices,global);
-				auto itfind= otherquads.find(QF);
-				assert(itfind!=otherquads.end()); 
-				for(auto i=0; i<4; i++){
-					assert(itfind->getGlobalSorted(i)==
-					itr->getGlobalSorted(i)); 
-				}
- 
-		}
+	
+	// // Refine the mesh 
+	std::vector<std::shared_ptr<UMesh>> refinedUMeshes; 
+	for(auto i=0 ; i<nParts; i++)
+	{
+	//  	//emInt i=3; 
+	 	auto refineUmesh= std::make_shared<UMesh>(
+	 		*(submeshes[i].get()),nDivs,i
+	 	);
+	 	refinedUMeshes.push_back(refineUmesh); 
+	 	char filename[100];
+	 	sprintf(filename, "TestCases/TestFinesubmesh%03d.vtk", i);
+	 	refineUmesh->writeVTKFile(filename);
+	}
+	// std::cout<<" Printing Tris: "<<std::endl; 
+	for(auto i=0; i<nParts; i++)
+	{	//emInt i=3; 
+		exa_set<TriFaceVerts> tris=
+		refinedUMeshes[i]->getRefinedPartTris(); 
+		//printTris(tris,nDivs);
 		
 	}
+	
+	for(auto iPart=0; iPart<nParts ; iPart++){
+	 	exa_set<TriFaceVerts> tri=
+		refinedUMeshes[iPart]->getRefinedPartTris(); 
+		for(auto it=tri.begin(); it!=tri.end();it++){
+			emInt whereToLook= it->getRemotePartid(); 
+			exa_set<TriFaceVerts> remoteTriSet= 
+			refinedUMeshes[whereToLook]->getRefinedPartTris(); 
+			emInt rotation= getRotation(*it,remoteTriSet,nDivs); 
+			std::cout<<" ROTATION: " <<rotation<<std::endl; 
+			comPare(refinedUMeshes[iPart],
+			refinedUMeshes[whereToLook],*it,rotation,nDivs,remoteTriSet);
 
-	// for(auto ipart=0; ipart<nParts; ipart++){
-	 
-	// 	exa_set<TriFaceVerts> tris= submeshes[ipart]->getTriPart();
+		}
 
-	// 	for(auto itr=tris.begin(); itr!=tris.end(); itr++){
-
-	// 		emInt local [3] = {itr->getCorner(0),itr->getCorner(1),
-	// 		itr->getCorner(2)}; 
-	// 		emInt localRemote[3]={itr->getRemoteIndices(0),
-	// 		itr->getRemoteIndices(1),itr->getRemoteIndices(2)};
-	// 		emInt remotePart= itr->getRemotePartid(); 
-	// 		double Allcoords[3][3]; 
-	// 		double AllRemoteCoords[3][3]; 
-	// 		for(auto i=0; i<3; i++){
-	// 			double coords[3]; 
-	// 			double remoteCoords[3]; 
-	// 			submeshes[ipart]->getCoords(local[i],coords); 
-	// 			submeshes[remotePart]->getCoords(localRemote[i],remoteCoords);
-	// 			for(auto j=0; j<3; j++){
-	// 				Allcoords[i][j]=coords[j]; 
-	// 				AllRemoteCoords[i][j]=remoteCoords[j]; 
-	// 			}
-	// 		}
-	// 		double v0x= Allcoords[0][0]; 
-	// 		double v0y= Allcoords[0][1];
-	// 		double v0z= Allcoords[0][2]; 
-
-	// 		double v1x= Allcoords[1][0]; 
-	// 		double v1y= Allcoords[1][1];
-	// 		double v1z= Allcoords[1][2]; 
-
-	// 		double v2x= Allcoords[2][0]; 
-	// 		double v2y= Allcoords[2][1];
-	// 		double v2z= Allcoords[2][2]; 
-
-	// 		double Rv0x= AllRemoteCoords[0][0]; 
-	// 		double Rv0y= AllRemoteCoords[0][1];
-	// 		double Rv0z= AllRemoteCoords[0][2]; 
-
-	// 		double Rv1x= AllRemoteCoords[1][0]; 
-	// 		double Rv1y= AllRemoteCoords[1][1];
-	// 		double Rv1z= AllRemoteCoords[1][2]; 
-
-	// 		double Rv2x= AllRemoteCoords[2][0]; 
-	// 		double Rv2y= AllRemoteCoords[2][1];
-	// 		double Rv2z= AllRemoteCoords[2][2]; 
-
-
-			 
-			
-			
-			
-	// 	}
-		
-	// }
-
+	}
+	
 
 }
 

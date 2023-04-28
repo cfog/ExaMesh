@@ -52,6 +52,7 @@ class UMesh: public ExaMesh {
 	exa_set<QuadFaceVerts> TemppartQuads; 
 	exa_set<TriFaceVerts>  TemppartTris; 
 	exa_set<TriFaceVerts>  partTris; 
+	exa_set<TriFaceVerts>  refinedPartTris; 
 	exa_set<QuadFaceVerts> partQuads; 
 	UMesh(const UMesh&);
 	UMesh& operator=(const UMesh&);
@@ -90,6 +91,17 @@ public:
 		}
 
 	}
+	void updateRefinedPartTris(const TriFaceVerts &obj){
+		auto iter = refinedPartTris.find(obj);
+	
+		if (iter != refinedPartTris.end()) {
+			refinedPartTris.erase(iter);
+		}
+		else {
+			refinedPartTris.insert(obj);
+		}
+
+	}
 	void updatePartQuads(const QuadFaceVerts &obj){
 		auto iter = partQuads.find(obj);
 	
@@ -119,6 +131,13 @@ public:
 	exa_set<TriFaceVerts> getTriPart() const {
 		return partTris; 
 	}
+	exa_set<TriFaceVerts> getRefinedPartTris() const{
+		return refinedPartTris; 
+	}
+	//emInt getRotation(const TriFaceVerts &Remotetri,const emInt nDivs); 
+
+
+	
 	// bool getBolean()const {
 	// 	return globa
 	// }
@@ -132,7 +151,7 @@ public:
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
 	UMesh(const char baseFileName[], const char type[], const char ugridInfix[]);
-	UMesh(const UMesh& UM_in, const int nDivs);
+	UMesh(const UMesh& UM_in, const int nDivs, const emInt partID=-1);
 	UMesh(const CubicMesh& CM, const int nDivs);
 	~UMesh();
 	emInt maxNVerts() const {

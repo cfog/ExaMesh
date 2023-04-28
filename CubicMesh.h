@@ -47,6 +47,7 @@ class CubicMesh: public ExaMesh {
 	exa_set <QuadFaceVerts> TemppartQuads; 
 	exa_set<TriFaceVerts>  partTris; 
 	exa_set<QuadFaceVerts> partQuads;
+	exa_set<TriFaceVerts>  refinedPartTris;
 
 	CubicMesh(const CubicMesh&);
 	CubicMesh& operator=(const CubicMesh&);
@@ -184,6 +185,10 @@ public:
 	exa_set<TriFaceVerts> getTriPart() const {
 		return partTris; 
 	}
+	exa_set<TriFaceVerts> getRefinedPartTris() const{
+		return refinedPartTris; 
+	}
+
 
 	std::unique_ptr<CubicMesh> extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs) const;

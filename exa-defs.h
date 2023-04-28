@@ -228,6 +228,14 @@ public:
 		m_corners[3] = cD;
 		setupSorted();
 	}
+	void setGlobalCorners(const emInt cA, const emInt cB, const emInt cC,
+			const emInt cD = EMINT_MAX) {
+		global_corners[0] = cA;
+		global_corners[1] = cB;
+		global_corners[2] = cC;
+		global_corners[3] = cD;
+		//setupSorted();
+	}
 	emInt getCorner(const int ii) const {
 		assert(ii >= 0 && ii < m_nCorners);
 		return m_corners[ii];
@@ -263,9 +271,19 @@ public:
 	void setRemotePartID (const emInt remotePartid_){
 		remotePartid=remotePartid_; 
 	}
+	void setPartID(const emInt partID_){
+		partid=partID_; 
+	}
+	void setRemoteIndices(const emInt remote[3]){
+		for(auto i=0; i<3; i++){
+			remoteIndices[i]=remote[i]; 
+		}
+
+	}
 	emInt getRemotePartid ()const{
 		return remotePartid; 
 	}
+
 	bool getGlobalCompare() const {
 		return m_globalComparison; 
 	}
@@ -310,6 +328,8 @@ public:
 	virtual void setupSorted();
 	void getVertAndST(const int ii, const int jj, emInt& vert,
 			double st[2], const int rotCase = 0) const;
+	void getTrueIJ(const int ii, const int jj,
+			int &trueI, int &trueJ , const int rotCase = 0 ) const; 	
 	friend bool operator<(const TriFaceVerts& a, const TriFaceVerts& b);
 	friend bool operator==(const TriFaceVerts& a, const TriFaceVerts& b);
 };
