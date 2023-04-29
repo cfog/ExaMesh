@@ -575,6 +575,51 @@ void QuadFaceVerts::getVertAndST(const int ii, const int jj, emInt& vert,
 	assert(isValidParam(st[1]));
 	vert = getIntVertInd(trueI, trueJ);
 }
+void QuadFaceVerts::getTrueIJ(const int ii, const int jj,
+			int &trueI, int &trueJ, const int rotCase) const{
+assert(isValidIJ(ii, jj));
+	trueI = -1, trueJ = -1;
+	switch (rotCase) {
+	case 1:
+		// No change from the original
+		trueI = ii;
+		trueJ = jj;
+		break;
+	case 2:
+		trueI = jj;
+		trueJ = m_nDivs - ii;
+		break;
+	case 3:
+		trueI = m_nDivs - ii;
+		trueJ = m_nDivs - jj;
+		break;
+	case 4:
+		trueI = m_nDivs - jj;
+		trueJ = ii;
+		break;
+	case -1:
+		// Just reversed orientation, no rotation
+		trueI = jj;
+		trueJ = ii;
+		break;
+	case -2:
+		trueI = m_nDivs - ii;
+		trueJ = jj;
+		break;
+	case -3:
+		trueI = m_nDivs - jj;
+		trueJ = m_nDivs - ii;
+		break;
+	case -4:
+		trueI = ii;
+		trueJ = m_nDivs - jj;
+		break;
+	default:
+		assert(0);
+		break;
+	}
+
+} 
 
 int CellDivider::checkOrient3D(const emInt verts[4]) const {
 	double coords0[3], coords1[3], coords2[3], coords3[3];

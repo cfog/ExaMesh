@@ -82,7 +82,7 @@ using std::endl;
 
 // 	}
 // }
-emInt getRotation(const TriFaceVerts &localTri, 
+emInt getTriRotation(const TriFaceVerts &localTri, 
 const exa_set<TriFaceVerts> &remote,emInt nDivs){
 
 	emInt Lvert0 = localTri.getRemoteIndices(0);
@@ -122,7 +122,55 @@ const exa_set<TriFaceVerts> &remote,emInt nDivs){
 		return rotCase; 
 
 }
-void comPare(std::shared_ptr<UMesh> local, 
+emInt getQuadRotation(const QuadFaceVerts &localQuad, 
+const exa_set<QuadFaceVerts> &remote,emInt nDivs){
+
+	emInt Lvert0 = localQuad.getRemoteIndices(0);
+	emInt Lvert1 = localQuad.getRemoteIndices(1);
+	emInt Lvert2 = localQuad.getRemoteIndices(2);
+	emInt Lvert3 = localQuad.getRemoteIndices(3); 
+
+	QuadFaceVerts QF(nDivs,Lvert0,Lvert1,Lvert2,Lvert3);
+
+	auto iterQuads=remote.find(QF); 
+
+	assert(iterQuads!=remote.end()); 
+
+	emInt vert0= localQuad.getGlobalCorner(0); 
+	emInt vert1= localQuad.getGlobalCorner(1); 
+	emInt vert2= localQuad.getGlobalCorner(2); 
+	emInt vert3= localQuad.getGlobalCorner(3); 
+	emInt globalIterTris [4]={
+		iterQuads->getGlobalCorner(0),
+		iterQuads->getGlobalCorner(1),
+		iterQuads->getGlobalCorner(2),
+		iterQuads->getGlobalCorner(3)
+
+	};
+	int rotCase = 0;
+	
+	for (int cc = 0; cc < 4; cc++){
+		if (vert0 == iterQuads->getGlobalCorner(cc)) {
+			if (vert1 == iterQuads->getGlobalCorner((cc+1)%4)) {
+				// Oriented forward; bdry quad
+				assert(vert2 == iterQuads->getGlobalCorner((cc+2)%4));
+				assert(vert3 == iterQuads->getGlobalCorner((cc+3)%4));
+				rotCase = cc+1;
+			}
+			else {
+				assert(vert1 == iterQuads->getGlobalCorner((cc+3)%4));
+				assert(vert2 == iterQuads->getGlobalCorner((cc+2)%4));
+				assert(vert3 == iterQuads->getGlobalCorner((cc+1)%4));
+				rotCase = -(cc+1);
+			}
+		}
+	}
+	assert(rotCase != 0);
+
+	return rotCase; 
+
+}
+void comPareTri(std::shared_ptr<UMesh> local, 
 std::shared_ptr<UMesh> remote,const TriFaceVerts &localTri, 
 const emInt rotation, const emInt nDivs, 
 const exa_set<TriFaceVerts> &remoteTriSet ){
@@ -143,31 +191,28 @@ const exa_set<TriFaceVerts> &remoteTriSet ){
 		itRemote->getRemoteIndices(i)); 
 		assert(itRemote->getCorner(i)==localTri.getRemoteIndices(i)); 
 	}
-	std::cout<<" local Part "<<" Remote Part "<<std::endl; 
-	std::cout<<localTri.getPartid()<<" "<<itRemote->getPartid()<<std::endl; 
-	//std::cout<<"Local refined verts "<<" Remote refined verts "<<std::endl; 
+	//std::cout<<" local Part "<<" Remote Part "<<std::endl; 
+	//std::cout<<localTri.getPartid()<<" "<<itRemote->getPartid()<<std::endl; 
+
 	for (int ii = 0; ii <= nDivs ; ii++) {
 	 	for (int jj = 0; jj <= nDivs-ii ; jj++) {
 
 			int trueI; 
 			int trueJ; 
 			itRemote->getTrueIJ(ii,jj,trueI,trueJ,rotation); 
-			// emInt vertLocal=localTri.getIntVertInd(ii,jj); 
-			// emInt vertRemote=itRemote->getIntVertInd(trueI,trueJ); 
-			emInt vertLocal=localTri.getIntVertInd(trueI,trueJ); 
-			 emInt vertRemote=itRemote->getIntVertInd(ii,jj); 
 			
-			std::cout<<"ii: "<<ii<<" jj: "<<jj<<"--- ( "<<
-			vertLocal<<" "<<
-			vertRemote<<" )"
-			<<"-> ("<<local->getX(vertLocal)<<", "<<
-			local->getY(vertLocal)<<", "<<local->getZ(vertLocal)<<" ) "<<" ( "<<
-			remote->getX(vertRemote)<<", "<<remote->getY(vertRemote)<<", "<<
-			remote->getZ(vertRemote)<<" ) "
-			  <<std::endl; 
-			///assert(local->getX(vertLocal)==remote->getX(vertRemote)); 
-			//assert(local->getY(vertLocal)==remote->getY(vertRemote)); 
-			//assert(local->getZ(vertLocal)==remote->getZ(vertRemote)); 
+			emInt vertLocal=localTri.getIntVertInd(trueI,trueJ); 
+			emInt vertRemote=itRemote->getIntVertInd(ii,jj); 
+			
+			// std::cout<<"ii: "<<ii<<" jj: "<<jj<<"--- ( "<<
+			// vertLocal<<" "<<
+			// vertRemote<<" )"
+			// <<"-> ("<<local->getX(vertLocal)<<", "<<
+			// local->getY(vertLocal)<<", "<<local->getZ(vertLocal)<<" ) "<<" ( "<<
+			// remote->getX(vertRemote)<<", "<<remote->getY(vertRemote)<<", "<<
+			// remote->getZ(vertRemote)<<" ) "
+			//   <<std::endl; 
+
 			assert(abs(local->getX(vertLocal)-
 			remote->getX(vertRemote))<1e-10); 
 			assert(abs(local->getY(vertLocal)-
@@ -175,11 +220,6 @@ const exa_set<TriFaceVerts> &remoteTriSet ){
 			assert(abs(local->getZ(vertLocal)-
 			remote->getZ(vertRemote))<1e-10);
 
-			// std::cout<<"ii: "<<ii<<" jj: "<<jj<<"---  "<<
-			// (local->getX(vertLocal)-remote->getX(vertRemote))<<
-			// "  "<< (local->getY(vertLocal)-remote->getY(vertRemote))<<
-			// "   "<<(local->getZ(vertLocal)-remote->getZ(vertRemote))<<
-			// std::endl; 
 			
 		
 			
@@ -189,7 +229,71 @@ const exa_set<TriFaceVerts> &remoteTriSet ){
 	 			
 		}
 	}
-	std::cout<<std::endl; 
+	//std::cout<<std::endl; 
+
+
+
+}
+void comPareQuad(std::shared_ptr<UMesh> local, 
+std::shared_ptr<UMesh> remote,const QuadFaceVerts &localQuad, 
+const emInt rotation, const emInt nDivs, 
+const exa_set<QuadFaceVerts> &remoteQuadSet ){
+	//exa_set<TriFaceVerts> remoteTriSet= remote->getRefinedPartTris();
+
+	emInt vert0 = localQuad.getRemoteIndices(0);
+	emInt vert1 = localQuad.getRemoteIndices(1);
+	emInt vert2 = localQuad.getRemoteIndices(2);
+	emInt vert3 = localQuad.getRemoteIndices(3); 
+
+	QuadFaceVerts QF(nDivs,vert0,vert1,vert2,vert3);
+
+	auto itRemote= remoteQuadSet.find(QF); 
+	assert(itRemote!=remoteQuadSet.end()); 
+	assert(localQuad.getPartid()==itRemote->getRemotePartid()); 
+	assert(localQuad.getRemotePartid()==itRemote->getPartid()); 
+	for(auto i=0; i<4; i++){
+		assert(localQuad.getCorner(i)==
+		itRemote->getRemoteIndices(i)); 
+		assert(itRemote->getCorner(i)==localQuad.getRemoteIndices(i)); 
+	}
+	for (int ii = 0; ii <= nDivs ; ii++) {
+	 	for (int jj = 0; jj <= nDivs ; jj++) {
+
+			int trueI; 
+			int trueJ; 
+			itRemote->getTrueIJ(ii,jj,trueI,trueJ,rotation); 
+			//emInt vertLocal=localQuad.getIntVertInd(ii,jj); 
+			//emInt vertRemote=itRemote->getIntVertInd(trueI,trueJ); 
+			emInt vertLocal  = localQuad.getIntVertInd(trueI,trueJ); 
+			emInt vertRemote = itRemote->getIntVertInd(ii,jj); 
+			
+			// std::cout<<"ii: "<<ii<<" jj: "<<jj<<"--- ( "<<
+			// vertLocal<<" "<<
+			// vertRemote<<" )"
+			// <<"-> ("<<local->getX(vertLocal)<<", "<<
+			// local->getY(vertLocal)<<", "<<local->getZ(vertLocal)<<" ) "<<" ( "<<
+			// remote->getX(vertRemote)<<", "<<remote->getY(vertRemote)<<", "<<
+			// remote->getZ(vertRemote)<<" ) "
+			//   <<std::endl; 
+
+			assert(abs(local->getX(vertLocal)-
+			remote->getX(vertRemote))<1e-10); 
+			assert(abs(local->getY(vertLocal)-
+			remote->getY(vertRemote))<1e-10);
+			assert(abs(local->getZ(vertLocal)-
+			remote->getZ(vertRemote))<1e-10);
+
+
+			
+		
+			
+
+
+	 		
+	 			
+		}
+	}
+	//std::cout<<std::endl; 
 
 
 
@@ -218,6 +322,42 @@ void printTris(const exa_set<TriFaceVerts>  &tris, emInt nDivs){
 			std::cout<<"Refined verts: "<<std::endl; 
 			for (int ii = 0; ii <= nDivs ; ii++) {
 	 			for (int jj = 0; jj <= nDivs-ii ; jj++) {
+
+	 				 std::cout<<itr->getIntVertInd(ii,jj)<<" "; 
+	 			}
+			}
+			
+			std::cout<<std::endl;
+		}
+	//}
+
+	
+}
+void printQuads(const exa_set<QuadFaceVerts>  &quads, emInt nDivs){
+	
+	//cout<<"checking for tris: "<<endl; 
+	//for(auto i=0 ; i<tris.size(); i++){
+		
+		cout<<"size of set: "<< quads.size()<<endl; 
+		std::cout<<"-----------------------------------------------------------"<<std::endl; 
+		for(auto itr=quads.begin(); itr!=quads.end();itr++){
+			std::cout<<"Part: "<< itr->getPartid()<<
+			" local indices: "<<itr->getCorner(0)<<" "<<
+			itr->getCorner(1)<<" "<<itr->getCorner(2)<<" "<<itr->getCorner(3)<<
+			
+			// " global: "<<itr->getGlobalSorted(0)<<" "<<
+			// itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
+			" Unsorted global: "<<itr->getGlobalCorner(0)<<" "<<
+			 itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<" "<<itr->getGlobalCorner(3)<<
+		 	" Remote ID: "<<itr->getRemotePartid()<<
+			" Remote Indices: "<<itr->getRemoteIndices(0)<<" "<<
+			itr->getRemoteIndices(1)<<" "<<
+			itr->getRemoteIndices(2)<<" "<<itr->getRemoteIndices(3)<<
+			//" boolean value: "<<itr->getGlobalCompare()<<
+			std::endl;
+			std::cout<<"Refined verts: "<<std::endl; 
+			for (int ii = 0; ii <= nDivs ; ii++) {
+	 			for (int jj = 0; jj <= nDivs ; jj++) {
 
 	 				 std::cout<<itr->getIntVertInd(ii,jj)<<" "; 
 	 			}
@@ -275,25 +415,7 @@ void printTrisSet(const std::set<TriFaceVerts>  &tris, std::string fileName){
 
 
 // }
-void printQuads(const exa_set<QuadFaceVerts> quads){
 
-	cout<<"checking for quads: "<<endl; 
-	//for(auto i=0 ; i<quads.size(); i++){
-		for(auto itr=quads.begin(); itr!=quads.end(); itr++){
-
-			cout<<"part: "<< itr->getPartid()<<
-			" local: "<<itr->getSorted(0)<<" "<<
-			itr->getSorted(1)<<" "<<itr->getSorted(2)<<" "<<
-			itr->getSorted(3)<<
-			" global: "<<itr->getGlobalSorted(0)<<" "<<
-			itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
-			" "<<itr->getGlobalSorted(3)<<" "<< 
-		 	" Remote ID: "<<itr->getRemotePartid()<<endl;
-
-		}
-	//}
-
-}
 void printMapFaceVerts(const std::unordered_map<TriFaceVerts,std::set<emInt>>
  &map){
 	for(auto itr=map.begin(); itr!=map.end(); itr++){
@@ -1354,9 +1476,8 @@ void UMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 void UMesh::TestMPI(const emInt &nDivs){
 
 	struct RefineStats RS;
-	std::ofstream out; 
-	
-	emInt nParts = 4;
+
+ 	emInt nParts = 4;
 	
 	std::vector<Part>             parts;
 	std::vector<CellPartData>     vecCPD; 
@@ -1448,7 +1569,7 @@ void UMesh::TestMPI(const emInt &nDivs){
 	std::vector<std::shared_ptr<UMesh>> refinedUMeshes; 
 	for(auto i=0 ; i<nParts; i++)
 	{
-	//  	//emInt i=3; 
+	
 	 	auto refineUmesh= std::make_shared<UMesh>(
 	 		*(submeshes[i].get()),nDivs,i
 	 	);
@@ -1457,30 +1578,63 @@ void UMesh::TestMPI(const emInt &nDivs){
 	 	sprintf(filename, "TestCases/TestFinesubmesh%03d.vtk", i);
 	 	refineUmesh->writeVTKFile(filename);
 	}
-	// std::cout<<" Printing Tris: "<<std::endl; 
+
 	for(auto i=0; i<nParts; i++)
-	{	//emInt i=3; 
-		exa_set<TriFaceVerts> tris=
-		refinedUMeshes[i]->getRefinedPartTris(); 
+	{	
+		exa_set<QuadFaceVerts> quads=
+		refinedUMeshes[i]->getRefinedPartQuads(); 
+		//printQuads(quads,nDivs);
+
+
 		//printTris(tris,nDivs);
 		
 	}
+	std::set<int> triRotations; 
+	std::set<int> quadRotations; 
 	
 	for(auto iPart=0; iPart<nParts ; iPart++){
 	 	exa_set<TriFaceVerts> tri=
 		refinedUMeshes[iPart]->getRefinedPartTris(); 
+		exa_set<QuadFaceVerts> quads= refinedUMeshes[iPart]->
+		getRefinedPartQuads(); 
 		for(auto it=tri.begin(); it!=tri.end();it++){
 			emInt whereToLook= it->getRemotePartid(); 
 			exa_set<TriFaceVerts> remoteTriSet= 
 			refinedUMeshes[whereToLook]->getRefinedPartTris(); 
-			emInt rotation= getRotation(*it,remoteTriSet,nDivs); 
-			std::cout<<" ROTATION: " <<rotation<<std::endl; 
-			comPare(refinedUMeshes[iPart],
+			emInt rotation= getTriRotation(*it,remoteTriSet,nDivs); 
+			triRotations.insert(rotation); 
+			 
+			comPareTri(refinedUMeshes[iPart],
 			refinedUMeshes[whereToLook],*it,rotation,nDivs,remoteTriSet);
+
+		}
+		for(auto it=quads.begin(); it!=quads.end();it++){
+			emInt whereToLook= it->getRemotePartid(); 
+			exa_set<QuadFaceVerts> remoteQuadSet= 
+			refinedUMeshes[whereToLook]->getRefinedPartQuads(); 
+			emInt rotation= getQuadRotation(*it,remoteQuadSet,nDivs); 
+			quadRotations.insert(rotation); 
+			 
+			comPareQuad(refinedUMeshes[iPart],
+			refinedUMeshes[whereToLook],*it,rotation,nDivs,remoteQuadSet);
 
 		}
 
 	}
+	// Which rotation cases are covered? 
+	std::cout<<"Covered Tri Rotations: "<<std::endl; 
+	for(auto it=triRotations.begin();
+	it!=triRotations.end(); it++){
+		std::cout<<*it<<" "; 
+	}; 
+	std::cout<<std::endl; 
+	std::cout<<"Covered Quad Rotations: "<<std::endl; 
+	for(auto it=quadRotations.begin();
+	it!=quadRotations.end(); it++){
+		std::cout<<*it<<" "; 
+	}; 
+	std::cout<<std::endl; 
+	
 	
 
 }

@@ -53,6 +53,7 @@ class UMesh: public ExaMesh {
 	exa_set<TriFaceVerts>  TemppartTris; 
 	exa_set<TriFaceVerts>  partTris; 
 	exa_set<TriFaceVerts>  refinedPartTris; 
+	exa_set<QuadFaceVerts> refinedPartQuads; 
 	exa_set<QuadFaceVerts> partQuads; 
 	UMesh(const UMesh&);
 	UMesh& operator=(const UMesh&);
@@ -102,6 +103,17 @@ public:
 		}
 
 	}
+	void updateRefinedPartQuads(const QuadFaceVerts &obj){
+		auto iter = refinedPartQuads.find(obj);
+	
+		if (iter != refinedPartQuads.end()) {
+			refinedPartQuads.erase(iter);
+		}
+		else {
+			refinedPartQuads.insert(obj);
+		}
+
+	}
 	void updatePartQuads(const QuadFaceVerts &obj){
 		auto iter = partQuads.find(obj);
 	
@@ -134,7 +146,10 @@ public:
 	exa_set<TriFaceVerts> getRefinedPartTris() const{
 		return refinedPartTris; 
 	}
-	//emInt getRotation(const TriFaceVerts &Remotetri,const emInt nDivs); 
+	exa_set<QuadFaceVerts> getRefinedPartQuads() const {
+		return refinedPartQuads; 
+	}
+	//emInt getTriRotation(const TriFaceVerts &Remotetri,const emInt nDivs); 
 
 
 	

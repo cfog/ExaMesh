@@ -229,9 +229,12 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input,
 	fprintf(stderr, "\nDone with bdry tris\n");
 #endif
 
+	exa_set<QuadFaceVerts> quads= pVM_input->getQuadPart(); 
 	BdryQuadDivider BQD(pVM_output, nDivs);
 	for (emInt iBQ = 0; iBQ < pVM_input->numBdryQuads(); iBQ++) {
 		const emInt *const thisBdryQuad = pVM_input->getBdryQuadConn(iBQ);
+		QuadFaceVerts QFV(nDivs,thisBdryQuad[0],thisBdryQuad[1],
+		thisBdryQuad[2],thisBdryQuad[3]); 
 		BQD.setupCoordMapping(thisBdryQuad);
 
 		// Shouldn't need to divide anything at all here, but this function
@@ -245,6 +248,30 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input,
 					"Refined %'12d bdry quads.  Tree sizes: %'12lu %'12lu %'12lu\r",
 					iBQ + 1, vertsOnEdges.size(), vertsOnTris.size(),
 					vertsOnQuads.size());
+
+		auto it=quads.find(QFV); 
+		if(it!=quads.end()){
+			QFV.setPartID(it->getPartid()); 
+			QFV.setRemotePartID(it->getRemotePartid()); 
+			emInt remoteIndices [4]={
+				it->getRemoteIndices(0),
+				it->getRemoteIndices(1),
+				it->getRemoteIndices(2),
+				it->getRemoteIndices(3)
+			}; 
+			emInt global[4]={
+				it->getGlobalCorner(0),
+				it->getGlobalCorner(1),
+				it->getGlobalCorner(2),
+				it->getGlobalCorner(3)
+
+			}; 
+			QFV.setGlobalCorners(global[0],global[1],global[2],global[3]); 
+			QFV.setRemoteIndices(remoteIndices); 
+			BQD.setRefinedVerts(QFV);
+			pVM_output->updateRefinedPartQuads(QFV);
+
+		}
 	}
 #ifndef NDEBUG
 	fprintf(stderr, "\nDone with bdry quads\n");

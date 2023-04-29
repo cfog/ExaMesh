@@ -274,9 +274,15 @@ public:
 	void setPartID(const emInt partID_){
 		partid=partID_; 
 	}
-	void setRemoteIndices(const emInt remote[3]){
-		for(auto i=0; i<3; i++){
-			remoteIndices[i]=remote[i]; 
+	// void setRemoteIndices(const emInt remote[3]){
+	// 	for(auto i=0; i<3; i++){
+	// 		remoteIndices[i]=remote[i]; 
+	// 	}
+
+	// }
+	void setRemoteIndices(const emInt* remote){
+		for(auto i=0; i<4; i++){
+			remoteIndices[i]=*(remote + i); 
 		}
 
 	}
@@ -364,6 +370,8 @@ public:
 	virtual void setupSorted();
 	void getVertAndST(const int ii, const int jj, emInt& vert,
 			double st[2], const int rotCase = 0) const;
+	void getTrueIJ(const int ii, const int jj,
+			int &trueI, int &trueJ, const int rotCase = 0) const; 
 	friend bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b);
 	friend bool operator==(const QuadFaceVerts& a, const QuadFaceVerts& b);
 };
