@@ -49,13 +49,39 @@ class UMesh: public ExaMesh {
 	emInt (*m_PrismConn)[6];
 	emInt (*m_HexConn)[8];
 	char *m_buffer, *m_fileImage;
-	std::set<QuadFaceVerts> partQuads; 
-	std::set<TriFaceVerts>  partTris; 
+	exa_set<QuadFaceVerts> TemppartQuads; 
+	exa_set<TriFaceVerts>  TemppartTris; 
+	exa_set<TriFaceVerts>  partTris; 
+	exa_set<TriFaceVerts>  refinedPartTris; 
+	exa_set<QuadFaceVerts> refinedPartQuads; 
+	exa_set<QuadFaceVerts> partQuads; 
 	UMesh(const UMesh&);
 	UMesh& operator=(const UMesh&);
 
 public:
-	void insertPartTris(const TriFaceVerts &obj){
+	void insertTempPartTris(const TriFaceVerts &obj){
+		auto iter = TemppartTris.find(obj);
+	
+		if (iter != TemppartTris.end()) {
+			TemppartTris.erase(iter);
+		}
+		else {
+			TemppartTris.insert(obj);
+		}
+
+	}
+	void insertTempPartQuads(const QuadFaceVerts &obj){
+		auto iter = TemppartQuads.find(obj);
+	
+		if (iter != TemppartQuads.end()) {
+			TemppartQuads.erase(iter);
+		}
+		else {
+			TemppartQuads.insert(obj);
+		}
+
+	}
+	void updatePartTris(const TriFaceVerts &obj){
 		auto iter = partTris.find(obj);
 	
 		if (iter != partTris.end()) {
@@ -66,7 +92,29 @@ public:
 		}
 
 	}
-	void insertPartQuads(const QuadFaceVerts &obj){
+	void updateRefinedPartTris(const TriFaceVerts &obj){
+		auto iter = refinedPartTris.find(obj);
+	
+		if (iter != refinedPartTris.end()) {
+			refinedPartTris.erase(iter);
+		}
+		else {
+			refinedPartTris.insert(obj);
+		}
+
+	}
+	void updateRefinedPartQuads(const QuadFaceVerts &obj){
+		auto iter = refinedPartQuads.find(obj);
+	
+		if (iter != refinedPartQuads.end()) {
+			refinedPartQuads.erase(iter);
+		}
+		else {
+			refinedPartQuads.insert(obj);
+		}
+
+	}
+	void updatePartQuads(const QuadFaceVerts &obj){
 		auto iter = partQuads.find(obj);
 	
 		if (iter != partQuads.end()) {
@@ -77,18 +125,37 @@ public:
 		}
 
 	}
-	emInt getSizePartTris(){
-		return partTris.size();
+	emInt getSizePartTris()const{
+		return TemppartTris.size();
 	}
-	emInt getSizePartQuads(){
-		return partQuads.size();
+	emInt getSizePartQuads()const{
+		return TemppartQuads.size();
 	}
-	std::set<QuadFaceVerts> getQuadPart() const{
+	exa_set<QuadFaceVerts> getTempQuadPart() const{
+		return TemppartQuads; 
+	}
+	exa_set<TriFaceVerts> getTempTriPart() const {
+		return TemppartTris; 
+	}
+	exa_set<QuadFaceVerts> getQuadPart() const{
 		return partQuads; 
 	}
-	std::set<TriFaceVerts> getTriPart() const {
+	exa_set<TriFaceVerts> getTriPart() const {
 		return partTris; 
 	}
+	exa_set<TriFaceVerts> getRefinedPartTris() const{
+		return refinedPartTris; 
+	}
+	exa_set<QuadFaceVerts> getRefinedPartQuads() const {
+		return refinedPartQuads; 
+	}
+	//emInt getTriRotation(const TriFaceVerts &Remotetri,const emInt nDivs); 
+
+
+	
+	// bool getBolean()const {
+	// 	return globa
+	// }
 
 
 	void partFaceMatching(const ExaMesh* const pEM,
@@ -99,7 +166,7 @@ public:
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
 	UMesh(const char baseFileName[], const char type[], const char ugridInfix[]);
-	UMesh(const UMesh& UM_in, const int nDivs);
+	UMesh(const UMesh& UM_in, const int nDivs, const emInt partID=-1);
 	UMesh(const CubicMesh& CM, const int nDivs);
 	~UMesh();
 	emInt maxNVerts() const {
@@ -222,7 +289,7 @@ public:
 	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs) const;
 
-	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
+	std::shared_ptr<UMesh> extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs,
 			const std::set<TriFaceVerts> &tris, 
 			const std::set<QuadFaceVerts> &quads, const emInt partID) const;
@@ -230,7 +297,7 @@ public:
 	// 		std::vector<CellPartData>& vecCPD, const int numDivs,
 	// 		const std::vector<TriFaceVerts> &tris, 
 	// 		const std::vector<QuadFaceVerts> &quads, const emInt partID) const;				
-	virtual void TestMPI(const emInt &n);
+	virtual void TestMPI(const emInt &nDivs);
 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,

@@ -43,6 +43,11 @@ class CubicMesh: public ExaMesh {
 	emInt (*m_Pyr30Conn)[30];
 	emInt (*m_Prism40Conn)[40];
 	emInt (*m_Hex64Conn)[64];
+	exa_set <TriFaceVerts> TemppartTris;;
+	exa_set <QuadFaceVerts> TemppartQuads; 
+	exa_set<TriFaceVerts>  partTris; 
+	exa_set<QuadFaceVerts> partQuads;
+	exa_set<TriFaceVerts>  refinedPartTris;
 
 	CubicMesh(const CubicMesh&);
 	CubicMesh& operator=(const CubicMesh&);
@@ -161,6 +166,29 @@ public:
 	Mapping::MappingType getDefaultMappingType() const {
 		return Mapping::Lagrange;
 	}
+	// TODO ; NOT SET FOR CUBIC MESH 
+	emInt getSizePartTris()const{
+		return TemppartTris.size();
+	}
+	emInt getSizePartQuads()const{
+		return TemppartQuads.size();
+	}
+	exa_set <QuadFaceVerts> getTempQuadPart() const{
+		return TemppartQuads; 
+	}
+	exa_set <TriFaceVerts> getTempTriPart() const {
+		return TemppartTris; 
+	}
+	exa_set<QuadFaceVerts> getQuadPart() const{
+		return partQuads; 
+	}
+	exa_set<TriFaceVerts> getTriPart() const {
+		return partTris; 
+	}
+	exa_set<TriFaceVerts> getRefinedPartTris() const{
+		return refinedPartTris; 
+	}
+
 
 	std::unique_ptr<CubicMesh> extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs) const;

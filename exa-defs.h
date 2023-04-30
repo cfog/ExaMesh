@@ -144,6 +144,7 @@ struct EdgeVerts {
 class FaceVerts {
 protected:
 	emInt global_corners [4], global_sorted [4]; 
+	emInt remoteIndices[4], sortedRemoteIndices[4]; 
 	emInt m_corners[4], m_sorted[4];
 	double m_cornerUVW[4][3];
 	int m_nCorners, m_nDivs;
@@ -227,6 +228,14 @@ public:
 		m_corners[3] = cD;
 		setupSorted();
 	}
+	void setGlobalCorners(const emInt cA, const emInt cB, const emInt cC,
+			const emInt cD = EMINT_MAX) {
+		global_corners[0] = cA;
+		global_corners[1] = cB;
+		global_corners[2] = cC;
+		global_corners[3] = cD;
+		//setupSorted();
+	}
 	emInt getCorner(const int ii) const {
 		assert(ii >= 0 && ii < m_nCorners);
 		return m_corners[ii];
@@ -238,6 +247,14 @@ public:
 	emInt getGlobalSorted(const int ii) const{
 		assert(ii >= 0 && ii < m_nCorners);
 		return global_sorted[ii];
+	}
+	emInt getRemoteIndices(const int ii) const{
+		assert(ii >= 0 && ii < m_nCorners);
+		return remoteIndices[ii];
+	}
+	emInt getSortedRemoteIndices(const int ii) const {
+		assert(ii >= 0 && ii < m_nCorners);
+		return sortedRemoteIndices[ii]; 
 	}
 	virtual void computeParaCoords(const int ii, const int jj,
 			double st[2]) const = 0;
@@ -254,8 +271,27 @@ public:
 	void setRemotePartID (const emInt remotePartid_){
 		remotePartid=remotePartid_; 
 	}
+	void setPartID(const emInt partID_){
+		partid=partID_; 
+	}
+	// void setRemoteIndices(const emInt remote[3]){
+	// 	for(auto i=0; i<3; i++){
+	// 		remoteIndices[i]=remote[i]; 
+	// 	}
+
+	// }
+	void setRemoteIndices(const emInt* remote){
+		for(auto i=0; i<4; i++){
+			remoteIndices[i]=*(remote + i); 
+		}
+
+	}
 	emInt getRemotePartid ()const{
 		return remotePartid; 
+	}
+
+	bool getGlobalCompare() const {
+		return m_globalComparison; 
 	}
 };
 
@@ -274,9 +310,17 @@ public:
 	const emInt global[3],const emInt partid_=-1, const emInt remoteID=-1 ,
 	const emInt type=0 ,const emInt elemInd=EMINT_MAX,bool globalComparison=false);
 
+
 	TriFaceVerts(const int nDivs,const emInt global[3],
 	const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 ,
-	const emInt elemInd=EMINT_MAX,bool globalComparison=false);
+	const emInt elemInd=EMINT_MAX,const bool globalComparison=false);
+
+	TriFaceVerts(const int nDivs, const emInt local[3], 
+	const emInt global[3], const emInt remoteIndices_ [3] ,const emInt partid_, 
+	const emInt remoteID ,
+	const emInt type=0 ,const emInt elemInd=EMINT_MAX,bool globalComparison=false);
+
+	
 
 	virtual ~TriFaceVerts() {}
 //	void allocVertMemory() {
@@ -290,6 +334,8 @@ public:
 	virtual void setupSorted();
 	void getVertAndST(const int ii, const int jj, emInt& vert,
 			double st[2], const int rotCase = 0) const;
+	void getTrueIJ(const int ii, const int jj,
+			int &trueI, int &trueJ , const int rotCase = 0 ) const; 	
 	friend bool operator<(const TriFaceVerts& a, const TriFaceVerts& b);
 	friend bool operator==(const TriFaceVerts& a, const TriFaceVerts& b);
 };
@@ -313,6 +359,10 @@ public:
 	QuadFaceVerts(const int nDivs,const emInt global[4],const emInt partid_=-1, const emInt remoteID=-1 
 	,const emInt type=0 ,const emInt elemInd=EMINT_MAX,
 	bool globalCompare=false);
+	QuadFaceVerts(const int nDivs, const emInt local[4], 
+	const emInt global[4], const emInt remotelocal[4] ,const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 
+	,const emInt elemInd=EMINT_MAX,
+	bool globalCompare=false);
 
 	virtual ~QuadFaceVerts() {}
 	virtual void computeParaCoords(const int ii, const int jj,
@@ -320,6 +370,8 @@ public:
 	virtual void setupSorted();
 	void getVertAndST(const int ii, const int jj, emInt& vert,
 			double st[2], const int rotCase = 0) const;
+	void getTrueIJ(const int ii, const int jj,
+			int &trueI, int &trueJ, const int rotCase = 0) const; 
 	friend bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b);
 	friend bool operator==(const QuadFaceVerts& a, const QuadFaceVerts& b);
 };
@@ -331,10 +383,19 @@ namespace std {
 		typedef std::size_t result_type;
 		result_type operator()(const argument_type& TFV) const noexcept
 		{
-			const result_type h0 = TFV.getSorted(0);
-			const result_type h1 = TFV.getSorted(1);
-			const result_type h2 = TFV.getSorted(2);
-			return (h0 ^ (h1 << 1)) ^ (h2 << 2);
+			if(TFV.getGlobalCompare()==false){
+				const result_type h0 = TFV.getSorted(0);
+				const result_type h1 = TFV.getSorted(1);
+				const result_type h2 = TFV.getSorted(2);
+				return (h0 ^ (h1 << 1)) ^ (h2 << 2);
+			}if(TFV.getGlobalCompare()==true){
+				const result_type h0 = TFV.getGlobalSorted(0);
+				const result_type h1 = TFV.getGlobalSorted(1);
+				const result_type h2 = TFV.getGlobalSorted(2);
+				return (h0 ^ (h1 << 1)) ^ (h2 << 2);
+			}
+
+			
 		}
 	};
 
@@ -343,11 +404,21 @@ namespace std {
 		typedef std::size_t result_type;
 		result_type operator()(const argument_type& QFV) const noexcept
 		{
-			const result_type h0 = QFV.getSorted(0);
-			const result_type h1 = QFV.getSorted(1);
-			const result_type h2 = QFV.getSorted(2);
-			const result_type h3 = QFV.getSorted(3);
-			return h0 ^ (h1 << 1) ^ (h2 << 2) ^ (h3 << 3);
+			if(QFV.getGlobalCompare()==false){
+				const result_type h0 = QFV.getSorted(0);
+				const result_type h1 = QFV.getSorted(1);
+				const result_type h2 = QFV.getSorted(2);
+				const result_type h3 = QFV.getSorted(3);
+				return h0 ^ (h1 << 1) ^ (h2 << 2) ^ (h3 << 3);
+			}else{
+				const result_type h0 = QFV.getGlobalSorted(0);
+				const result_type h1 = QFV.getGlobalSorted(1);
+				const result_type h2 = QFV.getGlobalSorted(2);
+				const result_type h3 = QFV.getGlobalSorted(3);
+				return h0 ^ (h1 << 1) ^ (h2 << 2) ^ (h3 << 3);
+
+			}
+
 		}
 	};
 

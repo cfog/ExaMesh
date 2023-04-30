@@ -103,6 +103,7 @@ public:
 	}
 	void divideInterior();
 	void createNewCells();
+	void setRefinedVerts(QuadFaceVerts &QFV); 
 
 	// TODO: Currently, there's no coord mapping set up for bdry faces
 	void setupCoordMapping(const emInt verts[]) {

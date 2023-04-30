@@ -81,8 +81,10 @@ public:
 	}
 	void divideInterior();
 	void createNewCells();
+  
+    void setRefinedVerts(TriFaceVerts &TF);
 
-	// TODO: Currently, there's no coord mapping set up for bdry faces
+    // TODO: Currently, there's no coord mapping set up for bdry faces
 	void setupCoordMapping(const emInt verts[]) {
 		for (int ii = 0; ii < 3; ii++) {
 			cellVerts[ii] = verts[ii];

@@ -42,4 +42,16 @@ void BdryQuadDivider::createNewCells() {
 		} // Done with all quads for this row.
 	} // Done with this row (constant j)
 }
-
+void BdryQuadDivider::setRefinedVerts(QuadFaceVerts &QFV){
+	//std::cout<<"My part id is: "<<QFV.getPartid()<<std::endl; 
+	for (int ii = 0; ii <= nDivs ; ii++) {
+	 	for (int jj = 0; jj <= nDivs; jj++) {
+			int trueI;
+			int trueJ;
+			emInt vert= localVerts[ii][jj][0]; 
+			//std::cout<<"Local verts for quads: "<<vert<<std::endl; 
+			QFV.setIntVertInd(ii,jj,vert); 
+		}
+	}
+	//std::cout<<"-----------------------------"<<std::endl; 
+}
