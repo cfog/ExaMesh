@@ -926,7 +926,7 @@ UMesh::UMesh(const UMesh& UMIn, const int nDivs, const emInt partID) :
 			numCells());
 }
 
-UMesh::UMesh(const CubicMesh& CMIn, const int nDivs) :
+UMesh::UMesh(const CubicMesh& CMIn, const int nDivs, const emInt partID) :
 		m_nVerts(0), m_nBdryVerts(0), m_nTris(0), m_nQuads(0), m_nTets(0),
 				m_nPyrs(0), m_nPrisms(0), m_nHexes(0), m_fileImageSize(0),
 				m_header(nullptr), m_coords(nullptr), m_TriConn(nullptr),
@@ -965,7 +965,7 @@ UMesh::UMesh(const CubicMesh& CMIn, const int nDivs) :
 		m_lenScale[vv] = CMIn.getLengthScale(vv);
 	}
 
-	subdividePartMesh(&CMIn, this, nDivs);
+	subdividePartMesh(&CMIn, this, nDivs,partID);
 
 #ifndef NDEBUG
 	setlocale(LC_ALL, "");

@@ -49,106 +49,107 @@ class UMesh: public ExaMesh {
 	emInt (*m_PrismConn)[6];
 	emInt (*m_HexConn)[8];
 	char *m_buffer, *m_fileImage;
-	exa_set<QuadFaceVerts> TemppartQuads; 
-	exa_set<TriFaceVerts>  TemppartTris; 
-	exa_set<TriFaceVerts>  partTris; 
-	exa_set<TriFaceVerts>  refinedPartTris; 
-	exa_set<QuadFaceVerts> refinedPartQuads; 
-	exa_set<QuadFaceVerts> partQuads; 
+	// exa_set<QuadFaceVerts> TemppartQuads; 
+	// exa_set<TriFaceVerts>  TemppartTris; 
+	// exa_set<TriFaceVerts>  partTris; 
+	// exa_set<TriFaceVerts>  refinedPartTris; 
+	// exa_set<QuadFaceVerts> refinedPartQuads; 
+	// exa_set<QuadFaceVerts> partQuads; 
 	UMesh(const UMesh&);
 	UMesh& operator=(const UMesh&);
 
 public:
-	void insertTempPartTris(const TriFaceVerts &obj){
-		auto iter = TemppartTris.find(obj);
-	
-		if (iter != TemppartTris.end()) {
-			TemppartTris.erase(iter);
-		}
-		else {
-			TemppartTris.insert(obj);
-		}
 
-	}
-	void insertTempPartQuads(const QuadFaceVerts &obj){
-		auto iter = TemppartQuads.find(obj);
+	// void insertTempPartTris(const TriFaceVerts &obj){
+	// 	auto iter = TemppartTris.find(obj);
 	
-		if (iter != TemppartQuads.end()) {
-			TemppartQuads.erase(iter);
-		}
-		else {
-			TemppartQuads.insert(obj);
-		}
+	// 	if (iter != TemppartTris.end()) {
+	// 		TemppartTris.erase(iter);
+	// 	}
+	// 	else {
+	// 		TemppartTris.insert(obj);
+	// 	}
 
-	}
-	void updatePartTris(const TriFaceVerts &obj){
-		auto iter = partTris.find(obj);
+	// }
+	// void insertTempPartQuads(const QuadFaceVerts &obj){
+	// 	auto iter = TemppartQuads.find(obj);
 	
-		if (iter != partTris.end()) {
-			partTris.erase(iter);
-		}
-		else {
-			partTris.insert(obj);
-		}
+	// 	if (iter != TemppartQuads.end()) {
+	// 		TemppartQuads.erase(iter);
+	// 	}
+	// 	else {
+	// 		TemppartQuads.insert(obj);
+	// 	}
 
-	}
-	void updateRefinedPartTris(const TriFaceVerts &obj){
-		auto iter = refinedPartTris.find(obj);
+	// }
+	// void updatePartTris(const TriFaceVerts &obj){
+	// 	auto iter = partTris.find(obj);
 	
-		if (iter != refinedPartTris.end()) {
-			refinedPartTris.erase(iter);
-		}
-		else {
-			refinedPartTris.insert(obj);
-		}
+	// 	if (iter != partTris.end()) {
+	// 		partTris.erase(iter);
+	// 	}
+	// 	else {
+	// 		partTris.insert(obj);
+	// 	}
 
-	}
-	void updateRefinedPartQuads(const QuadFaceVerts &obj){
-		auto iter = refinedPartQuads.find(obj);
+	// }
+	// void updateRefinedPartTris(const TriFaceVerts &obj){
+	// 	auto iter = refinedPartTris.find(obj);
 	
-		if (iter != refinedPartQuads.end()) {
-			refinedPartQuads.erase(iter);
-		}
-		else {
-			refinedPartQuads.insert(obj);
-		}
+	// 	if (iter != refinedPartTris.end()) {
+	// 		refinedPartTris.erase(iter);
+	// 	}
+	// 	else {
+	// 		refinedPartTris.insert(obj);
+	// 	}
 
-	}
-	void updatePartQuads(const QuadFaceVerts &obj){
-		auto iter = partQuads.find(obj);
+	// }
+	// void updateRefinedPartQuads(const QuadFaceVerts &obj){
+	// 	auto iter = refinedPartQuads.find(obj);
 	
-		if (iter != partQuads.end()) {
-			partQuads.erase(iter);
-		}
-		else {
-			partQuads.insert(obj);
-		}
+	// 	if (iter != refinedPartQuads.end()) {
+	// 		refinedPartQuads.erase(iter);
+	// 	}
+	// 	else {
+	// 		refinedPartQuads.insert(obj);
+	// 	}
 
-	}
-	emInt getSizePartTris()const{
-		return TemppartTris.size();
-	}
-	emInt getSizePartQuads()const{
-		return TemppartQuads.size();
-	}
-	exa_set<QuadFaceVerts> getTempQuadPart() const{
-		return TemppartQuads; 
-	}
-	exa_set<TriFaceVerts> getTempTriPart() const {
-		return TemppartTris; 
-	}
-	exa_set<QuadFaceVerts> getQuadPart() const{
-		return partQuads; 
-	}
-	exa_set<TriFaceVerts> getTriPart() const {
-		return partTris; 
-	}
-	exa_set<TriFaceVerts> getRefinedPartTris() const{
-		return refinedPartTris; 
-	}
-	exa_set<QuadFaceVerts> getRefinedPartQuads() const {
-		return refinedPartQuads; 
-	}
+	// }
+	// void updatePartQuads(const QuadFaceVerts &obj){
+	// 	auto iter = partQuads.find(obj);
+	
+	// 	if (iter != partQuads.end()) {
+	// 		partQuads.erase(iter);
+	// 	}
+	// 	else {
+	// 		partQuads.insert(obj);
+	// 	}
+
+	// }
+	// emInt getSizePartTris()const{
+	// 	return TemppartTris.size();
+	// }
+	// emInt getSizePartQuads()const{
+	// 	return TemppartQuads.size();
+	// }
+	// exa_set<QuadFaceVerts> getTempQuadPart() const{
+	// 	return TemppartQuads; 
+	// }
+	// exa_set<TriFaceVerts> getTempTriPart() const {
+	// 	return TemppartTris; 
+	// }
+	// exa_set<QuadFaceVerts> getQuadPart() const{
+	// 	return partQuads; 
+	// }
+	// exa_set<TriFaceVerts> getTriPart() const {
+	// 	return partTris; 
+	// }
+	// exa_set<TriFaceVerts> getRefinedPartTris() const{
+	// 	return refinedPartTris; 
+	// }
+	// exa_set<QuadFaceVerts> getRefinedPartQuads() const {
+	// 	return refinedPartQuads; 
+	// }
 	//emInt getTriRotation(const TriFaceVerts &Remotetri,const emInt nDivs); 
 
 
@@ -167,7 +168,7 @@ public:
 			const emInt nPrisms, const emInt nHexes);
 	UMesh(const char baseFileName[], const char type[], const char ugridInfix[]);
 	UMesh(const UMesh& UM_in, const int nDivs, const emInt partID=-1);
-	UMesh(const CubicMesh& CM, const int nDivs);
+	UMesh(const CubicMesh& CM, const int nDivs, const emInt partID=-1);
 	~UMesh();
 	emInt maxNVerts() const {
 		return m_nVerts;

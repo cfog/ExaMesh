@@ -167,27 +167,27 @@ public:
 		return Mapping::Lagrange;
 	}
 	// TODO ; NOT SET FOR CUBIC MESH 
-	emInt getSizePartTris()const{
-		return TemppartTris.size();
-	}
-	emInt getSizePartQuads()const{
-		return TemppartQuads.size();
-	}
-	exa_set <QuadFaceVerts> getTempQuadPart() const{
-		return TemppartQuads; 
-	}
-	exa_set <TriFaceVerts> getTempTriPart() const {
-		return TemppartTris; 
-	}
-	exa_set<QuadFaceVerts> getQuadPart() const{
-		return partQuads; 
-	}
-	exa_set<TriFaceVerts> getTriPart() const {
-		return partTris; 
-	}
-	exa_set<TriFaceVerts> getRefinedPartTris() const{
-		return refinedPartTris; 
-	}
+	// emInt getSizePartTris()const{
+	// 	return TemppartTris.size();
+	// }
+	// emInt getSizePartQuads()const{
+	// 	return TemppartQuads.size();
+	// }
+	// exa_set <QuadFaceVerts> getTempQuadPart() const{
+	// 	return TemppartQuads; 
+	// }
+	// exa_set <TriFaceVerts> getTempTriPart() const {
+	// 	return TemppartTris; 
+	// }
+	// exa_set<QuadFaceVerts> getQuadPart() const{
+	// 	return partQuads; 
+	// }
+	// exa_set<TriFaceVerts> getTriPart() const {
+	// 	return partTris; 
+	// }
+	// exa_set<TriFaceVerts> getRefinedPartTris() const{
+	// 	return refinedPartTris; 
+	// }
 
 
 	std::unique_ptr<CubicMesh> extractCoarseMesh(Part& P,

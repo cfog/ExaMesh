@@ -44,6 +44,12 @@ struct MeshSize {
 class ExaMesh {
 protected:
 	double *m_lenScale;
+	exa_set<QuadFaceVerts> TemppartQuads; 
+	exa_set<TriFaceVerts>  TemppartTris; 
+	exa_set<TriFaceVerts>  partTris; 
+	exa_set<TriFaceVerts>  refinedPartTris; 
+	exa_set<QuadFaceVerts> refinedPartQuads; 
+	exa_set<QuadFaceVerts> partQuads; 
 
 	void setupLengthScales();
 
@@ -89,14 +95,14 @@ public:
 
 	virtual Mapping::MappingType getDefaultMappingType() const = 0;
 
-	virtual emInt getSizePartTris()const =0 ; 
-	virtual emInt getSizePartQuads()const=0 ;
-	virtual exa_set<TriFaceVerts> getRefinedPartTris() const=0; 
+	//virtual emInt getSizePartTris()const =0 ; 
+	//virtual emInt getSizePartQuads()const=0 ;
+	//virtual exa_set<TriFaceVerts> getRefinedPartTris() const=0; 
 		
-	virtual exa_set<QuadFaceVerts> getTempQuadPart() const=0; 
-	virtual exa_set <TriFaceVerts> getTempTriPart() const=0;
-	virtual exa_set<QuadFaceVerts> getQuadPart() const=0; 
-	virtual exa_set<TriFaceVerts> getTriPart() const=0; 
+	//virtual exa_set<QuadFaceVerts> getTempQuadPart() const=0; 
+	//virtual exa_set <TriFaceVerts> getTempTriPart() const=0;
+	//virtual exa_set<QuadFaceVerts> getQuadPart() const=0; 
+	//virtual exa_set<TriFaceVerts> getTriPart() const=0; 
 
 	void printMeshSizeStats();
 	double getLengthScale(const emInt vert) const {
@@ -126,11 +132,111 @@ public:
 	virtual void refineForMPI(const emInt numDivs, const emInt maxCellsPerPart) const; 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const = 0;
+	//virtual void TestMPI(const emInt &nDivs)=0; 
+	///virtual void partFaceMatching(const ExaMesh* const pEM,
+		// std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
+		// std::vector<std::set<TriFaceVerts>>  &tris,
+		// std::vector<std::set<QuadFaceVerts>> &quads )=0;
+	// virtual std::shared_ptr<UMesh> extractCoarseMesh(Part& P,
+	// 		std::vector<CellPartData>& vecCPD, const int numDivs,
+	// 		const std::set<TriFaceVerts> &tris, 
+	// 		const std::set<QuadFaceVerts> &quads, const emInt partID) const=0;	 			
 
 	virtual void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
 			double& zmax) const = 0;
 	void prettyPrintCellCount(size_t cells, const char* prefix) const;
+
+		void insertTempPartTris(const TriFaceVerts &obj){
+		auto iter = TemppartTris.find(obj);
+	
+		if (iter != TemppartTris.end()) {
+			TemppartTris.erase(iter);
+		}
+		else {
+			TemppartTris.insert(obj);
+		}
+
+	}
+	void insertTempPartQuads(const QuadFaceVerts &obj){
+		auto iter = TemppartQuads.find(obj);
+	
+		if (iter != TemppartQuads.end()) {
+			TemppartQuads.erase(iter);
+		}
+		else {
+			TemppartQuads.insert(obj);
+		}
+
+	}
+	void updatePartTris(const TriFaceVerts &obj){
+		auto iter = partTris.find(obj);
+	
+		if (iter != partTris.end()) {
+			partTris.erase(iter);
+		}
+		else {
+			partTris.insert(obj);
+		}
+
+	}
+	void updateRefinedPartTris(const TriFaceVerts &obj){
+		auto iter = refinedPartTris.find(obj);
+	
+		if (iter != refinedPartTris.end()) {
+			refinedPartTris.erase(iter);
+		}
+		else {
+			refinedPartTris.insert(obj);
+		}
+
+	}
+	void updateRefinedPartQuads(const QuadFaceVerts &obj){
+		auto iter = refinedPartQuads.find(obj);
+	
+		if (iter != refinedPartQuads.end()) {
+			refinedPartQuads.erase(iter);
+		}
+		else {
+			refinedPartQuads.insert(obj);
+		}
+
+	}
+	void updatePartQuads(const QuadFaceVerts &obj){
+		auto iter = partQuads.find(obj);
+	
+		if (iter != partQuads.end()) {
+			partQuads.erase(iter);
+		}
+		else {
+			partQuads.insert(obj);
+		}
+
+	}
+	emInt getSizePartTris()const{
+		return TemppartTris.size();
+	}
+	emInt getSizePartQuads()const{
+		return TemppartQuads.size();
+	}
+	exa_set<QuadFaceVerts> getTempQuadPart() const{
+		return TemppartQuads; 
+	}
+	exa_set<TriFaceVerts> getTempTriPart() const {
+		return TemppartTris; 
+	}
+	exa_set<QuadFaceVerts> getQuadPart() const{
+		return partQuads; 
+	}
+	exa_set<TriFaceVerts> getTriPart() const {
+		return partTris; 
+	}
+	exa_set<TriFaceVerts> getRefinedPartTris() const{
+		return refinedPartTris; 
+	}
+	exa_set<QuadFaceVerts> getRefinedPartQuads() const {
+		return refinedPartQuads; 
+	}
 
 protected:
 	void addCellToPartitionData(const emInt* verts, emInt nPts, emInt ii,
