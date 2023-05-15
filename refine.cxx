@@ -33,6 +33,7 @@
 int main(int argc, char* const argv[]) {
 	char opt = EOF;
 	emInt nDivs = 1;
+	emInt nTestParts=2; 
 	emInt maxCellsPerPart = 1000000;
 	char type[10];
 	char infix[10];
@@ -47,8 +48,11 @@ int main(int argc, char* const argv[]) {
 	sprintf(inFileBaseName, "/need/a/file/name");
 	sprintf(cgnsFileName, "/need/a/file/name");
 
-	while ((opt = getopt(argc, argv, "c:i:m:n:o:pt:u:q")) != EOF) {
+	while ((opt = getopt(argc, argv, "s:c:i:m:n:o:pt:u:q")) != EOF) {
 		switch (opt) {
+			case 's':
+				sscanf(optarg, "%d", &nTestParts);
+				break;
 			case 'c':
 				sscanf(optarg, "%1023s", cgnsFileName);
 				isInputCGNS = true;
@@ -86,7 +90,9 @@ int main(int argc, char* const argv[]) {
 		CubicMesh CMorig(cgnsFileName);
 		if (isParallel){
 			if(isMPI){
-				CMorig.refineForMPI(nDivs,maxCellsPerPart); 
+				//CMorig.refineForMPI(nDivs,maxCellsPerPart); 
+				CMorig.TestMPI(nDivs,nTestParts); 
+				//CMorig.refineForParallel(nDivs, maxCellsPerPart);
 			}
 			else{
 				CMorig.refineForParallel(nDivs, maxCellsPerPart);
@@ -115,7 +121,7 @@ int main(int argc, char* const argv[]) {
 		if (isParallel){
 			if(isMPI){
 				//UMorig.refineForMPI(nDivs,maxCellsPerPart); 
-				UMorig.TestMPI(nDivs); 
+				UMorig.TestMPI(nDivs,nTestParts); 
 			}
 			//else{
 				//UMorig.refineForParallel(nDivs, maxCellsPerPart);

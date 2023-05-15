@@ -61,314 +61,44 @@ using std::cout;
 using std::endl;
 
 #ifndef NDEBUG
-// void printTris(const std::vector<std::vector<TriFaceVerts>>  &tris, emInt nParts){
 
-// 		cout<<"Checking tris: "<<endl; 
 
-// 		for(emInt i=0; i<nParts ; i++){
-
-// 		//cout<<"Part ID: "<<i<<endl; 
-// 		for(auto j=0 ; j< tris[i].size(); j++){
+// void printTris(const exa_set<TriFaceVerts>  &tris, emInt nDivs){
 	
-	
-// 			std::cout<<"part: "<< tris[i][j].getPartid()<<
-// 			" local: "<<tris[i][j].getSorted(0)<<" "<<
-// 			tris[i][j].getSorted(1)<<" "<<tris[i][j].getSorted(2)<<
-// 			" global: "<<tris[i][j].getGlobalSorted(0)<<" "<<
-// 			tris[i][j].getGlobalSorted(1)<<" "<<tris[i][j].getGlobalSorted(2)<<
-// 		 	" Remote ID: "<<tris[i][j].getRemotePartid()<<std::endl;
+// 	//cout<<"checking for tris: "<<endl; 
+// 	//for(auto i=0 ; i<tris.size(); i++){
+		
+// 		cout<<"size of set: "<< tris.size()<<endl; 
+// 		std::cout<<"-----------------------------------------------------------"<<std::endl; 
+// 		for(auto itr=tris.begin(); itr!=tris.end();itr++){
+// 			std::cout<<"Part: "<< itr->getPartid()<<
+// 			" local indices: "<<itr->getCorner(0)<<" "<<
+// 			itr->getCorner(1)<<" "<<itr->getCorner(2)<<
+// 			// " global: "<<itr->getGlobalSorted(0)<<" "<<
+// 			// itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
+// 			" Unsorted global: "<<itr->getGlobalCorner(0)<<" "<<
+// 			 itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<
+// 		 	" Remote ID: "<<itr->getRemotePartid()<<
+// 			" Remote Indices: "<<itr->getRemoteIndices(0)<<" "<<
+// 			itr->getRemoteIndices(1)<<" "<<
+// 			itr->getRemoteIndices(2)<<
+// 			//" boolean value: "<<itr->getGlobalCompare()<<
+// 			std::endl;
+// 			std::cout<<"Refined verts: "<<std::endl; 
+// 			for (int ii = 0; ii <= nDivs ; ii++) {
+// 	 			for (int jj = 0; jj <= nDivs-ii ; jj++) {
 
+// 	 				 std::cout<<itr->getIntVertInd(ii,jj)<<" "; 
+// 	 			}
+// 			}
+			
+// 			std::cout<<std::endl;
 // 		}
+// 	//}
 
-// 	}
+	
 // }
-emInt getTriRotation(const TriFaceVerts &localTri, 
-const exa_set<TriFaceVerts> &remote,emInt nDivs){
 
-	emInt Lvert0 = localTri.getRemoteIndices(0);
-	emInt Lvert1 = localTri.getRemoteIndices(1);
-	emInt Lvert2 = localTri.getRemoteIndices(2);
-	TriFaceVerts TF(nDivs,Lvert0,Lvert1,Lvert2);
-	auto iterTris=remote.find(TF); 
-	assert(iterTris!=remote.end()); 
-	emInt vert0= localTri.getGlobalCorner(0); 
-	emInt vert1= localTri.getGlobalCorner(1); 
-	emInt vert2= localTri.getGlobalCorner(2); 
-	emInt globalIterTris [3]={
-		iterTris->getGlobalCorner(0),
-		iterTris->getGlobalCorner(1),
-		iterTris->getGlobalCorner(2)
-
-	};
-
-
-
-
-	int rotCase = 0;
-		for (int cc = 0; cc < 3; cc++) {
-			if (vert0 == iterTris->getGlobalCorner(cc)) {
-				if (vert1 == iterTris->getGlobalCorner((cc+1)%3)){
-					assert(vert2 == iterTris->getGlobalCorner((cc+2)%3));
-					rotCase = cc+1;
-				}
-				else {
-					assert(vert1 == iterTris->getGlobalCorner((cc+2)%3));
-					assert(vert2 == iterTris->getGlobalCorner((cc+1)%3));
-					rotCase = -(cc+1);
-				}
-			}
-		}
-		assert(rotCase != 0);
-		return rotCase; 
-
-}
-emInt getQuadRotation(const QuadFaceVerts &localQuad, 
-const exa_set<QuadFaceVerts> &remote,emInt nDivs){
-
-	emInt Lvert0 = localQuad.getRemoteIndices(0);
-	emInt Lvert1 = localQuad.getRemoteIndices(1);
-	emInt Lvert2 = localQuad.getRemoteIndices(2);
-	emInt Lvert3 = localQuad.getRemoteIndices(3); 
-
-	QuadFaceVerts QF(nDivs,Lvert0,Lvert1,Lvert2,Lvert3);
-
-	auto iterQuads=remote.find(QF); 
-
-	assert(iterQuads!=remote.end()); 
-
-	emInt vert0= localQuad.getGlobalCorner(0); 
-	emInt vert1= localQuad.getGlobalCorner(1); 
-	emInt vert2= localQuad.getGlobalCorner(2); 
-	emInt vert3= localQuad.getGlobalCorner(3); 
-	emInt globalIterTris [4]={
-		iterQuads->getGlobalCorner(0),
-		iterQuads->getGlobalCorner(1),
-		iterQuads->getGlobalCorner(2),
-		iterQuads->getGlobalCorner(3)
-
-	};
-	int rotCase = 0;
-	
-	for (int cc = 0; cc < 4; cc++){
-		if (vert0 == iterQuads->getGlobalCorner(cc)) {
-			if (vert1 == iterQuads->getGlobalCorner((cc+1)%4)) {
-				// Oriented forward; bdry quad
-				assert(vert2 == iterQuads->getGlobalCorner((cc+2)%4));
-				assert(vert3 == iterQuads->getGlobalCorner((cc+3)%4));
-				rotCase = cc+1;
-			}
-			else {
-				assert(vert1 == iterQuads->getGlobalCorner((cc+3)%4));
-				assert(vert2 == iterQuads->getGlobalCorner((cc+2)%4));
-				assert(vert3 == iterQuads->getGlobalCorner((cc+1)%4));
-				rotCase = -(cc+1);
-			}
-		}
-	}
-	assert(rotCase != 0);
-
-	return rotCase; 
-
-}
-void comPareTri(std::shared_ptr<UMesh> local, 
-std::shared_ptr<UMesh> remote,const TriFaceVerts &localTri, 
-const emInt rotation, const emInt nDivs, 
-const exa_set<TriFaceVerts> &remoteTriSet ){
-	//exa_set<TriFaceVerts> remoteTriSet= remote->getRefinedPartTris();
-
-	emInt vert0 = localTri.getRemoteIndices(0);
-	emInt vert1 = localTri.getRemoteIndices(1);
-	emInt vert2 = localTri.getRemoteIndices(2);
-
-	TriFaceVerts TF(nDivs,vert0,vert1,vert2);
-
-	auto itRemote= remoteTriSet.find(TF); 
-	assert(itRemote!=remoteTriSet.end()); 
-	assert(localTri.getPartid()==itRemote->getRemotePartid()); 
-	assert(localTri.getRemotePartid()==itRemote->getPartid()); 
-	for(auto i=0; i<3; i++){
-		assert(localTri.getCorner(i)==
-		itRemote->getRemoteIndices(i)); 
-		assert(itRemote->getCorner(i)==localTri.getRemoteIndices(i)); 
-	}
-	//std::cout<<" local Part "<<" Remote Part "<<std::endl; 
-	//std::cout<<localTri.getPartid()<<" "<<itRemote->getPartid()<<std::endl; 
-
-	for (int ii = 0; ii <= nDivs ; ii++) {
-	 	for (int jj = 0; jj <= nDivs-ii ; jj++) {
-
-			int trueI; 
-			int trueJ; 
-			itRemote->getTrueIJ(ii,jj,trueI,trueJ,rotation); 
-			
-			emInt vertLocal=localTri.getIntVertInd(trueI,trueJ); 
-			emInt vertRemote=itRemote->getIntVertInd(ii,jj); 
-			
-			// std::cout<<"ii: "<<ii<<" jj: "<<jj<<"--- ( "<<
-			// vertLocal<<" "<<
-			// vertRemote<<" )"
-			// <<"-> ("<<local->getX(vertLocal)<<", "<<
-			// local->getY(vertLocal)<<", "<<local->getZ(vertLocal)<<" ) "<<" ( "<<
-			// remote->getX(vertRemote)<<", "<<remote->getY(vertRemote)<<", "<<
-			// remote->getZ(vertRemote)<<" ) "
-			//   <<std::endl; 
-
-			assert(abs(local->getX(vertLocal)-
-			remote->getX(vertRemote))<1e-10); 
-			assert(abs(local->getY(vertLocal)-
-			remote->getY(vertRemote))<1e-10);
-			assert(abs(local->getZ(vertLocal)-
-			remote->getZ(vertRemote))<1e-10);
-
-			
-		
-			
-
-
-	 		
-	 			
-		}
-	}
-	//std::cout<<std::endl; 
-
-
-
-}
-void comPareQuad(std::shared_ptr<UMesh> local, 
-std::shared_ptr<UMesh> remote,const QuadFaceVerts &localQuad, 
-const emInt rotation, const emInt nDivs, 
-const exa_set<QuadFaceVerts> &remoteQuadSet ){
-	//exa_set<TriFaceVerts> remoteTriSet= remote->getRefinedPartTris();
-
-	emInt vert0 = localQuad.getRemoteIndices(0);
-	emInt vert1 = localQuad.getRemoteIndices(1);
-	emInt vert2 = localQuad.getRemoteIndices(2);
-	emInt vert3 = localQuad.getRemoteIndices(3); 
-
-	QuadFaceVerts QF(nDivs,vert0,vert1,vert2,vert3);
-
-	auto itRemote= remoteQuadSet.find(QF); 
-	assert(itRemote!=remoteQuadSet.end()); 
-	assert(localQuad.getPartid()==itRemote->getRemotePartid()); 
-	assert(localQuad.getRemotePartid()==itRemote->getPartid()); 
-	for(auto i=0; i<4; i++){
-		assert(localQuad.getCorner(i)==
-		itRemote->getRemoteIndices(i)); 
-		assert(itRemote->getCorner(i)==localQuad.getRemoteIndices(i)); 
-	}
-	for (int ii = 0; ii <= nDivs ; ii++) {
-	 	for (int jj = 0; jj <= nDivs ; jj++) {
-
-			int trueI; 
-			int trueJ; 
-			itRemote->getTrueIJ(ii,jj,trueI,trueJ,rotation); 
-			//emInt vertLocal=localQuad.getIntVertInd(ii,jj); 
-			//emInt vertRemote=itRemote->getIntVertInd(trueI,trueJ); 
-			emInt vertLocal  = localQuad.getIntVertInd(trueI,trueJ); 
-			emInt vertRemote = itRemote->getIntVertInd(ii,jj); 
-			
-			// std::cout<<"ii: "<<ii<<" jj: "<<jj<<"--- ( "<<
-			// vertLocal<<" "<<
-			// vertRemote<<" )"
-			// <<"-> ("<<local->getX(vertLocal)<<", "<<
-			// local->getY(vertLocal)<<", "<<local->getZ(vertLocal)<<" ) "<<" ( "<<
-			// remote->getX(vertRemote)<<", "<<remote->getY(vertRemote)<<", "<<
-			// remote->getZ(vertRemote)<<" ) "
-			//   <<std::endl; 
-
-			assert(abs(local->getX(vertLocal)-
-			remote->getX(vertRemote))<1e-10); 
-			assert(abs(local->getY(vertLocal)-
-			remote->getY(vertRemote))<1e-10);
-			assert(abs(local->getZ(vertLocal)-
-			remote->getZ(vertRemote))<1e-10);
-
-
-			
-		
-			
-
-
-	 		
-	 			
-		}
-	}
-	//std::cout<<std::endl; 
-
-
-
-}
-void printTris(const exa_set<TriFaceVerts>  &tris, emInt nDivs){
-	
-	//cout<<"checking for tris: "<<endl; 
-	//for(auto i=0 ; i<tris.size(); i++){
-		
-		cout<<"size of set: "<< tris.size()<<endl; 
-		std::cout<<"-----------------------------------------------------------"<<std::endl; 
-		for(auto itr=tris.begin(); itr!=tris.end();itr++){
-			std::cout<<"Part: "<< itr->getPartid()<<
-			" local indices: "<<itr->getCorner(0)<<" "<<
-			itr->getCorner(1)<<" "<<itr->getCorner(2)<<
-			// " global: "<<itr->getGlobalSorted(0)<<" "<<
-			// itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
-			" Unsorted global: "<<itr->getGlobalCorner(0)<<" "<<
-			 itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<
-		 	" Remote ID: "<<itr->getRemotePartid()<<
-			" Remote Indices: "<<itr->getRemoteIndices(0)<<" "<<
-			itr->getRemoteIndices(1)<<" "<<
-			itr->getRemoteIndices(2)<<
-			//" boolean value: "<<itr->getGlobalCompare()<<
-			std::endl;
-			std::cout<<"Refined verts: "<<std::endl; 
-			for (int ii = 0; ii <= nDivs ; ii++) {
-	 			for (int jj = 0; jj <= nDivs-ii ; jj++) {
-
-	 				 std::cout<<itr->getIntVertInd(ii,jj)<<" "; 
-	 			}
-			}
-			
-			std::cout<<std::endl;
-		}
-	//}
-
-	
-}
-void printQuads(const exa_set<QuadFaceVerts>  &quads, emInt nDivs){
-	
-	//cout<<"checking for tris: "<<endl; 
-	//for(auto i=0 ; i<tris.size(); i++){
-		
-		cout<<"size of set: "<< quads.size()<<endl; 
-		std::cout<<"-----------------------------------------------------------"<<std::endl; 
-		for(auto itr=quads.begin(); itr!=quads.end();itr++){
-			std::cout<<"Part: "<< itr->getPartid()<<
-			" local indices: "<<itr->getCorner(0)<<" "<<
-			itr->getCorner(1)<<" "<<itr->getCorner(2)<<" "<<itr->getCorner(3)<<
-			
-			// " global: "<<itr->getGlobalSorted(0)<<" "<<
-			// itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
-			" Unsorted global: "<<itr->getGlobalCorner(0)<<" "<<
-			 itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<" "<<itr->getGlobalCorner(3)<<
-		 	" Remote ID: "<<itr->getRemotePartid()<<
-			" Remote Indices: "<<itr->getRemoteIndices(0)<<" "<<
-			itr->getRemoteIndices(1)<<" "<<
-			itr->getRemoteIndices(2)<<" "<<itr->getRemoteIndices(3)<<
-			//" boolean value: "<<itr->getGlobalCompare()<<
-			std::endl;
-			std::cout<<"Refined verts: "<<std::endl; 
-			for (int ii = 0; ii <= nDivs ; ii++) {
-	 			for (int jj = 0; jj <= nDivs ; jj++) {
-
-	 				 std::cout<<itr->getIntVertInd(ii,jj)<<" "; 
-	 			}
-			}
-			
-			std::cout<<std::endl;
-		}
-	//}
-
-	
-}
 void printTrisSet(const std::set<TriFaceVerts>  &tris, std::string fileName){
 	std::ofstream out; 
 	out.open(fileName); 
@@ -1141,269 +871,269 @@ static void remapIndices(const emInt nPts, const std::vector<emInt>& newIndices,
 	}
 }
 
-std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
-		std::vector<CellPartData>& vecCPD, const int numDivs) const {
-	// Count the number of tris, quads, tets, pyrs, prisms and hexes.
-	const emInt first = P.getFirst();
-	const emInt last = P.getLast();
+// std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
+// 		std::vector<CellPartData>& vecCPD, const int numDivs) const {
+// 	// Count the number of tris, quads, tets, pyrs, prisms and hexes.
+// 	const emInt first = P.getFirst();
+// 	const emInt last = P.getLast();
 
-	exa_set<TriFaceVerts> partBdryTris;
-	exa_set<QuadFaceVerts> partBdryQuads;
+// 	exa_set<TriFaceVerts> partBdryTris;
+// 	exa_set<QuadFaceVerts> partBdryQuads;
 
-	emInt nTris(0), nQuads(0), nTets(0), nPyrs(0), nPrisms(0), nHexes(0);
-	const emInt *conn;
+// 	emInt nTris(0), nQuads(0), nTets(0), nPyrs(0), nPrisms(0), nHexes(0);
+// 	const emInt *conn;
 
-	std::vector<bool> isBdryVert(numVerts(), false);
-	std::vector<bool> isVertUsed(numVerts(), false);
+// 	std::vector<bool> isBdryVert(numVerts(), false);
+// 	std::vector<bool> isVertUsed(numVerts(), false);
 
-	for (emInt ii = first; ii < last; ii++) {
-		emInt type = vecCPD[ii].getCellType();
-		emInt ind = vecCPD[ii].getIndex();
-		switch (type) {
-			default:
-				// Panic! Should never get here.
-				assert(0);
-				break;
-			case TETRA_4: {
-				nTets++;
-				conn = getTetConn(ind);
-				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2]);
-				TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3]);
-				TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3]);
-				TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3]);
-				addUniquely(partBdryTris, TFV012);
-				addUniquely(partBdryTris, TFV013);
-				addUniquely(partBdryTris, TFV123);
-				addUniquely(partBdryTris, TFV203);
-				isVertUsed[conn[0]] = true;
-				isVertUsed[conn[1]] = true;
-				isVertUsed[conn[2]] = true;
-				isVertUsed[conn[3]] = true;
-				break;
-			}
-			case PYRA_5: {
-				nPyrs++;
-				conn = getPyrConn(ind);
-				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3]);
-				TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4]);
-				TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4]);
-				TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4]);
-				TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4]);
-				addUniquely(partBdryQuads, QFV0123);
-				addUniquely(partBdryTris, TFV014);
-				addUniquely(partBdryTris, TFV124);
-				addUniquely(partBdryTris, TFV234);
-				addUniquely(partBdryTris, TFV304);
-				isVertUsed[conn[0]] = true;
-				isVertUsed[conn[1]] = true;
-				isVertUsed[conn[2]] = true;
-				isVertUsed[conn[3]] = true;
-				isVertUsed[conn[4]] = true;
-				break;
-			}
-			case PENTA_6: {
-				nPrisms++;
-				conn = getPrismConn(ind);
-				QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3]);
-				QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4]);
-				QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5]);
-				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2]);
-				TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5]);
-				addUniquely(partBdryQuads, QFV0143);
-				addUniquely(partBdryQuads, QFV1254);
-				addUniquely(partBdryQuads, QFV2035);
-				addUniquely(partBdryTris, TFV012);
-				addUniquely(partBdryTris, TFV345);
-				isVertUsed[conn[0]] = true;
-				isVertUsed[conn[1]] = true;
-				isVertUsed[conn[2]] = true;
-				isVertUsed[conn[3]] = true;
-				isVertUsed[conn[4]] = true;
-				isVertUsed[conn[5]] = true;
-				break;
-			}
-			case HEXA_8: {
-				nHexes++;
-				conn = getHexConn(ind);
-				QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4]);
-				QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5]);
-				QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6]);
-				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7]);
-				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3]);
-				QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7]);
-				addUniquely(partBdryQuads, QFV0154);
-				addUniquely(partBdryQuads, QFV1265);
-				addUniquely(partBdryQuads, QFV2376);
-				addUniquely(partBdryQuads, QFV3047);
-				addUniquely(partBdryQuads, QFV0123);
-				addUniquely(partBdryQuads, QFV4567);
-				isVertUsed[conn[0]] = true;
-				isVertUsed[conn[1]] = true;
-				isVertUsed[conn[2]] = true;
-				isVertUsed[conn[3]] = true;
-				isVertUsed[conn[4]] = true;
-				isVertUsed[conn[5]] = true;
-				isVertUsed[conn[6]] = true;
-				isVertUsed[conn[7]] = true;
-				break;
-			}
-		} // end switch
-	} // end loop to gather information
+// 	for (emInt ii = first; ii < last; ii++) {
+// 		emInt type = vecCPD[ii].getCellType();
+// 		emInt ind = vecCPD[ii].getIndex();
+// 		switch (type) {
+// 			default:
+// 				// Panic! Should never get here.
+// 				assert(0);
+// 				break;
+// 			case TETRA_4: {
+// 				nTets++;
+// 				conn = getTetConn(ind);
+// 				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2]);
+// 				TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3]);
+// 				TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3]);
+// 				TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3]);
+// 				addUniquely(partBdryTris, TFV012);
+// 				addUniquely(partBdryTris, TFV013);
+// 				addUniquely(partBdryTris, TFV123);
+// 				addUniquely(partBdryTris, TFV203);
+// 				isVertUsed[conn[0]] = true;
+// 				isVertUsed[conn[1]] = true;
+// 				isVertUsed[conn[2]] = true;
+// 				isVertUsed[conn[3]] = true;
+// 				break;
+// 			}
+// 			case PYRA_5: {
+// 				nPyrs++;
+// 				conn = getPyrConn(ind);
+// 				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3]);
+// 				TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4]);
+// 				TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4]);
+// 				TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4]);
+// 				TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4]);
+// 				addUniquely(partBdryQuads, QFV0123);
+// 				addUniquely(partBdryTris, TFV014);
+// 				addUniquely(partBdryTris, TFV124);
+// 				addUniquely(partBdryTris, TFV234);
+// 				addUniquely(partBdryTris, TFV304);
+// 				isVertUsed[conn[0]] = true;
+// 				isVertUsed[conn[1]] = true;
+// 				isVertUsed[conn[2]] = true;
+// 				isVertUsed[conn[3]] = true;
+// 				isVertUsed[conn[4]] = true;
+// 				break;
+// 			}
+// 			case PENTA_6: {
+// 				nPrisms++;
+// 				conn = getPrismConn(ind);
+// 				QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3]);
+// 				QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4]);
+// 				QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5]);
+// 				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2]);
+// 				TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5]);
+// 				addUniquely(partBdryQuads, QFV0143);
+// 				addUniquely(partBdryQuads, QFV1254);
+// 				addUniquely(partBdryQuads, QFV2035);
+// 				addUniquely(partBdryTris, TFV012);
+// 				addUniquely(partBdryTris, TFV345);
+// 				isVertUsed[conn[0]] = true;
+// 				isVertUsed[conn[1]] = true;
+// 				isVertUsed[conn[2]] = true;
+// 				isVertUsed[conn[3]] = true;
+// 				isVertUsed[conn[4]] = true;
+// 				isVertUsed[conn[5]] = true;
+// 				break;
+// 			}
+// 			case HEXA_8: {
+// 				nHexes++;
+// 				conn = getHexConn(ind);
+// 				QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4]);
+// 				QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5]);
+// 				QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6]);
+// 				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7]);
+// 				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3]);
+// 				QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7]);
+// 				addUniquely(partBdryQuads, QFV0154);
+// 				addUniquely(partBdryQuads, QFV1265);
+// 				addUniquely(partBdryQuads, QFV2376);
+// 				addUniquely(partBdryQuads, QFV3047);
+// 				addUniquely(partBdryQuads, QFV0123);
+// 				addUniquely(partBdryQuads, QFV4567);
+// 				isVertUsed[conn[0]] = true;
+// 				isVertUsed[conn[1]] = true;
+// 				isVertUsed[conn[2]] = true;
+// 				isVertUsed[conn[3]] = true;
+// 				isVertUsed[conn[4]] = true;
+// 				isVertUsed[conn[5]] = true;
+// 				isVertUsed[conn[6]] = true;
+// 				isVertUsed[conn[7]] = true;
+// 				break;
+// 			}
+// 		} // end switch
+// 	} // end loop to gather information
 
-	// Now check to see which bdry entities are in this part.  That'll be the
-	// ones whose verts are all marked as used.  Unfortunately, this requires
-	// searching through -all- the bdry entities for each part.
-	std::vector<emInt> realBdryTris;
-	std::vector<emInt> realBdryQuads;
-	for (emInt ii = 0; ii < numBdryTris(); ii++) {
-		conn = getBdryTriConn(ii);
-		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]) {
-			TriFaceVerts TFV(numDivs, conn[0], conn[1], conn[2]);
-			auto iter = partBdryTris.find(TFV);
-			// If this bdry tri is an unmatched tri from this part, match it, and
-			// add the bdry tri to the list of things to copy to the part coarse
-			// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
-			// bdry face from slipping through.
-			if (iter != partBdryTris.end()) {
-				partBdryTris.erase(iter);
-				isBdryVert[conn[0]] = true;
-				isBdryVert[conn[1]] = true;
-				isBdryVert[conn[2]] = true;
-				realBdryTris.push_back(ii);
-				nTris++;
-			}
-		}
-	}
-	for (emInt ii = 0; ii < numBdryQuads(); ii++) {
-		conn = getBdryQuadConn(ii);
-		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]
-				&& isVertUsed[conn[3]]) {
-			QuadFaceVerts QFV(numDivs, conn[0], conn[1], conn[2], conn[3]);
-			auto iter = partBdryQuads.find(QFV);
-			// If this bdry tri is an unmatched tri from this part, match it, and
-			// add the bdry tri to the list of things to copy to the part coarse
-			// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
-			// bdry face from slipping through.
-			if (iter != partBdryQuads.end()) {
-				partBdryQuads.erase(iter);
-				isBdryVert[conn[0]] = true;
-				isBdryVert[conn[1]] = true;
-				isBdryVert[conn[2]] = true;
-				isBdryVert[conn[3]] = true;
-				realBdryQuads.push_back(ii);
-				nQuads++;
-			}
-		}
-	}
+// 	// Now check to see which bdry entities are in this part.  That'll be the
+// 	// ones whose verts are all marked as used.  Unfortunately, this requires
+// 	// searching through -all- the bdry entities for each part.
+// 	std::vector<emInt> realBdryTris;
+// 	std::vector<emInt> realBdryQuads;
+// 	for (emInt ii = 0; ii < numBdryTris(); ii++) {
+// 		conn = getBdryTriConn(ii);
+// 		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]) {
+// 			TriFaceVerts TFV(numDivs, conn[0], conn[1], conn[2]);
+// 			auto iter = partBdryTris.find(TFV);
+// 			// If this bdry tri is an unmatched tri from this part, match it, and
+// 			// add the bdry tri to the list of things to copy to the part coarse
+// 			// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
+// 			// bdry face from slipping through.
+// 			if (iter != partBdryTris.end()) {
+// 				partBdryTris.erase(iter);
+// 				isBdryVert[conn[0]] = true;
+// 				isBdryVert[conn[1]] = true;
+// 				isBdryVert[conn[2]] = true;
+// 				realBdryTris.push_back(ii);
+// 				nTris++;
+// 			}
+// 		}
+// 	}
+// 	for (emInt ii = 0; ii < numBdryQuads(); ii++) {
+// 		conn = getBdryQuadConn(ii);
+// 		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]
+// 				&& isVertUsed[conn[3]]) {
+// 			QuadFaceVerts QFV(numDivs, conn[0], conn[1], conn[2], conn[3]);
+// 			auto iter = partBdryQuads.find(QFV);
+// 			// If this bdry tri is an unmatched tri from this part, match it, and
+// 			// add the bdry tri to the list of things to copy to the part coarse
+// 			// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
+// 			// bdry face from slipping through.
+// 			if (iter != partBdryQuads.end()) {
+// 				partBdryQuads.erase(iter);
+// 				isBdryVert[conn[0]] = true;
+// 				isBdryVert[conn[1]] = true;
+// 				isBdryVert[conn[2]] = true;
+// 				isBdryVert[conn[3]] = true;
+// 				realBdryQuads.push_back(ii);
+// 				nQuads++;
+// 			}
+// 		}
+// 	}
 
-	emInt nPartBdryTris = partBdryTris.size();
-	emInt nPartBdryQuads = partBdryQuads.size();
+// 	emInt nPartBdryTris = partBdryTris.size();
+// 	emInt nPartBdryQuads = partBdryQuads.size();
 
-	for (auto tri : partBdryTris) {
-		isBdryVert[tri.getCorner(0)] = true;
-		isBdryVert[tri.getCorner(1)] = true;
-		isBdryVert[tri.getCorner(2)] = true;
-	}
+// 	for (auto tri : partBdryTris) {
+// 		isBdryVert[tri.getCorner(0)] = true;
+// 		isBdryVert[tri.getCorner(1)] = true;
+// 		isBdryVert[tri.getCorner(2)] = true;
+// 	}
 
-	for (auto quad : partBdryQuads) {
-		isBdryVert[quad.getCorner(0)] = true;
-		isBdryVert[quad.getCorner(1)] = true;
-		isBdryVert[quad.getCorner(2)] = true;
-		isBdryVert[quad.getCorner(3)] = true;
-	}
-	emInt nBdryVerts = 0, nVerts = 0;
-	for (emInt ii = 0; ii < numVerts(); ii++) {
-		if (isBdryVert[ii]) nBdryVerts++;
-		if (isVertUsed[ii]) nVerts++;
-	}
+// 	for (auto quad : partBdryQuads) {
+// 		isBdryVert[quad.getCorner(0)] = true;
+// 		isBdryVert[quad.getCorner(1)] = true;
+// 		isBdryVert[quad.getCorner(2)] = true;
+// 		isBdryVert[quad.getCorner(3)] = true;
+// 	}
+// 	emInt nBdryVerts = 0, nVerts = 0;
+// 	for (emInt ii = 0; ii < numVerts(); ii++) {
+// 		if (isBdryVert[ii]) nBdryVerts++;
+// 		if (isVertUsed[ii]) nVerts++;
+// 	}
 
-	// Now set up the data structures for the new coarse UMesh
-	auto UUM = std::make_unique<UMesh>(nVerts, nBdryVerts, nTris + nPartBdryTris,
-																			nQuads + nPartBdryQuads, nTets, nPyrs,
-																			nPrisms, nHexes);
+// 	// Now set up the data structures for the new coarse UMesh
+// 	auto UUM = std::make_unique<UMesh>(nVerts, nBdryVerts, nTris + nPartBdryTris,
+// 																			nQuads + nPartBdryQuads, nTets, nPyrs,
+// 																			nPrisms, nHexes);
 
-	// Store the vertices, while keeping a mapping from the full list of verts
-	// to the restricted list so the connectivity can be copied properly.
-	std::vector<emInt> newIndices(numVerts(), EMINT_MAX);
-	for (emInt ii = 0; ii < numVerts(); ii++) {
-		if (isVertUsed[ii]) {
-			double coords[3];
-			getCoords(ii, coords);
-			newIndices[ii] = UUM->addVert(coords);
-			// Copy length scale for vertices from the parent; otherwise, there will be
-			// mismatches in the refined meshes.
-			UUM->setLengthScale(newIndices[ii], getLengthScale(ii));
-		}
-	}
+// 	// Store the vertices, while keeping a mapping from the full list of verts
+// 	// to the restricted list so the connectivity can be copied properly.
+// 	std::vector<emInt> newIndices(numVerts(), EMINT_MAX);
+// 	for (emInt ii = 0; ii < numVerts(); ii++) {
+// 		if (isVertUsed[ii]) {
+// 			double coords[3];
+// 			getCoords(ii, coords);
+// 			newIndices[ii] = UUM->addVert(coords);
+// 			// Copy length scale for vertices from the parent; otherwise, there will be
+// 			// mismatches in the refined meshes.
+// 			UUM->setLengthScale(newIndices[ii], getLengthScale(ii));
+// 		}
+// 	}
 
-	// Now copy connectivity.
-	emInt newConn[8];
-	for (emInt ii = first; ii < last; ii++) {
-		emInt type = vecCPD[ii].getCellType();
-		emInt ind = vecCPD[ii].getIndex();
-		switch (type) {
-			default:
-				// Panic! Should never get here.
-				assert(0);
-				break;
-			case TETRA_4: {
-				conn = getTetConn(ind);
-				remapIndices(4, newIndices, conn, newConn);
-				UUM->addTet(newConn);
-				break;
-			}
-			case PYRA_5: {
-				conn = getPyrConn(ind);
-				remapIndices(5, newIndices, conn, newConn);
-				UUM->addPyramid(newConn);
-				break;
-			}
-			case PENTA_6: {
-				conn = getPrismConn(ind);
-				remapIndices(6, newIndices, conn, newConn);
-				UUM->addPrism(newConn);
-				break;
-			}
-			case HEXA_8: {
-				conn = getHexConn(ind);
-				remapIndices(8, newIndices, conn, newConn);
-				UUM->addHex(newConn);
-				break;
-			}
-		} // end switch
-	} // end loop to copy most connectivity
+// 	// Now copy connectivity.
+// 	emInt newConn[8];
+// 	for (emInt ii = first; ii < last; ii++) {
+// 		emInt type = vecCPD[ii].getCellType();
+// 		emInt ind = vecCPD[ii].getIndex();
+// 		switch (type) {
+// 			default:
+// 				// Panic! Should never get here.
+// 				assert(0);
+// 				break;
+// 			case TETRA_4: {
+// 				conn = getTetConn(ind);
+// 				remapIndices(4, newIndices, conn, newConn);
+// 				UUM->addTet(newConn);
+// 				break;
+// 			}
+// 			case PYRA_5: {
+// 				conn = getPyrConn(ind);
+// 				remapIndices(5, newIndices, conn, newConn);
+// 				UUM->addPyramid(newConn);
+// 				break;
+// 			}
+// 			case PENTA_6: {
+// 				conn = getPrismConn(ind);
+// 				remapIndices(6, newIndices, conn, newConn);
+// 				UUM->addPrism(newConn);
+// 				break;
+// 			}
+// 			case HEXA_8: {
+// 				conn = getHexConn(ind);
+// 				remapIndices(8, newIndices, conn, newConn);
+// 				UUM->addHex(newConn);
+// 				break;
+// 			}
+// 		} // end switch
+// 	} // end loop to copy most connectivity
 
-	for (emInt ii = 0; ii < realBdryTris.size(); ii++) {
-		conn = getBdryTriConn(realBdryTris[ii]);
-		remapIndices(3, newIndices, conn, newConn);
-		UUM->addBdryTri(newConn);
-	}
-	for (emInt ii = 0; ii < realBdryQuads.size(); ii++) {
-		conn = getBdryQuadConn(realBdryQuads[ii]);
-		remapIndices(4, newIndices, conn, newConn);
-		UUM->addBdryQuad(newConn);
-	}
+// 	for (emInt ii = 0; ii < realBdryTris.size(); ii++) {
+// 		conn = getBdryTriConn(realBdryTris[ii]);
+// 		remapIndices(3, newIndices, conn, newConn);
+// 		UUM->addBdryTri(newConn);
+// 	}
+// 	for (emInt ii = 0; ii < realBdryQuads.size(); ii++) {
+// 		conn = getBdryQuadConn(realBdryQuads[ii]);
+// 		remapIndices(4, newIndices, conn, newConn);
+// 		UUM->addBdryQuad(newConn);
+// 	}
 
-	// Now, finally, the part bdry connectivity.
-	// TODO: Currently, there's nothing in the data structure that marks which
-	// are part bdry faces.
-	for (auto tri : partBdryTris) {
-		emInt conn[] = { newIndices[tri.getCorner(0)],
-				newIndices[tri.getCorner(1)],
-				newIndices[tri.getCorner(2)] };
-		UUM->addBdryTri(conn);
-	}
+// 	// Now, finally, the part bdry connectivity.
+// 	// TODO: Currently, there's nothing in the data structure that marks which
+// 	// are part bdry faces.
+// 	for (auto tri : partBdryTris) {
+// 		emInt conn[] = { newIndices[tri.getCorner(0)],
+// 				newIndices[tri.getCorner(1)],
+// 				newIndices[tri.getCorner(2)] };
+// 		UUM->addBdryTri(conn);
+// 	}
 
-	for (auto quad : partBdryQuads) {
-		emInt conn[] = { newIndices[quad.getCorner(0)],
-				newIndices[quad.getCorner(1)],
-				newIndices[quad.getCorner(2)],
-				newIndices[quad.getCorner(3)] };
-		UUM->addBdryQuad(conn);
-	}
+// 	for (auto quad : partBdryQuads) {
+// 		emInt conn[] = { newIndices[quad.getCorner(0)],
+// 				newIndices[quad.getCorner(1)],
+// 				newIndices[quad.getCorner(2)],
+// 				newIndices[quad.getCorner(3)] };
+// 		UUM->addBdryQuad(conn);
+// 	}
 
-	return UUM;
-}
+// 	return UUM;
+// }
 
 
 std::unique_ptr<UMesh> UMesh::createFineUMesh(const emInt numDivs, Part& P,
@@ -1473,14 +1203,13 @@ void UMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 //
 //	return true;
 //}
-void UMesh::TestMPI(const emInt &nDivs){
+void UMesh::TestMPI(const emInt &nDivs, const emInt &nParts){
 
 	struct RefineStats RS;
-
- 	emInt nParts = 4;
-	
 	std::vector<Part>             parts;
 	std::vector<CellPartData>     vecCPD; 
+	std::set<int> triRotations; 
+	std::set<int> quadRotations;
  
 	partitionCells(this, nParts, parts, vecCPD);
 	
@@ -1490,17 +1219,19 @@ void UMesh::TestMPI(const emInt &nDivs){
 
 	std::vector<std::shared_ptr<UMesh>> submeshes; 
 
-	partFaceMatching(this,parts,vecCPD,tris,quads); 
+	std::vector<std::shared_ptr<UMesh>> refinedUMeshes;
+
+ 	this->partFaceMatching(this,parts,vecCPD,tris,quads); 
 
 	for(auto i=0 ; i<nParts; i++){
 		auto coarse= this->extractCoarseMesh
 		(parts[i],vecCPD,nDivs,tris[i],quads[i],i);
-		submeshes.push_back(coarse); 
-		char filename[100];
-	//	sprintf(filename, "TestCases/Testsubmesh%03d.vtk", i);
-	//	coarse->writeVTKFile(filename);
+		std::shared_ptr<UMesh> shared_ptr = std::move(coarse);
+		submeshes.push_back(shared_ptr); 
+		char fileName [100]; 
+		sprintf(fileName, "TestCases/Coarsesubmesh%03d.vtk", i);
+		shared_ptr->writeVTKFile(fileName); 
 	}
-
 	assert(submeshes.size()==nParts); 
 
 	for(auto i=0; i<nParts; i++){
@@ -1564,59 +1295,60 @@ void UMesh::TestMPI(const emInt &nDivs){
 
 
 	}
-	
-	// // Refine the mesh 
-	std::vector<std::shared_ptr<UMesh>> refinedUMeshes; 
+	// Refine the mesh 
 	for(auto i=0 ; i<nParts; i++)
 	{
-	
-	 	auto refineUmesh= std::make_shared<UMesh>(
+		auto refineUmesh= std::make_shared<UMesh>(
 	 		*(submeshes[i].get()),nDivs,i
 	 	);
 	 	refinedUMeshes.push_back(refineUmesh); 
-	 	char filename[100];
-	 	sprintf(filename, "TestCases/TestFinesubmesh%03d.vtk", i);
-	 	refineUmesh->writeVTKFile(filename);
+		char fileName [100]; 
+		sprintf(fileName, "TestCases/Refinedmesh%03d.vtk", i);
+		refineUmesh->writeVTKFile(fileName); 
 	}
-
-	for(auto i=0; i<nParts; i++)
-	{	
-		exa_set<QuadFaceVerts> quads=
-		refinedUMeshes[i]->getRefinedPartQuads(); 
-		//printQuads(quads,nDivs);
-
-
-		//printTris(tris,nDivs);
-		
-	}
-	std::set<int> triRotations; 
-	std::set<int> quadRotations; 
-	
 	for(auto iPart=0; iPart<nParts ; iPart++){
 	 	exa_set<TriFaceVerts> tri=
 		refinedUMeshes[iPart]->getRefinedPartTris(); 
 		exa_set<QuadFaceVerts> quads= refinedUMeshes[iPart]->
 		getRefinedPartQuads(); 
 		for(auto it=tri.begin(); it!=tri.end();it++){
+			std::unordered_map<emInt, emInt> localRemote;
 			emInt whereToLook= it->getRemotePartid(); 
 			exa_set<TriFaceVerts> remoteTriSet= 
 			refinedUMeshes[whereToLook]->getRefinedPartTris(); 
 			emInt rotation= getTriRotation(*it,remoteTriSet,nDivs); 
 			triRotations.insert(rotation); 
 			 
-			comPareTri(refinedUMeshes[iPart],
-			refinedUMeshes[whereToLook],*it,rotation,nDivs,remoteTriSet);
+			comPareTri(*it,rotation,nDivs,remoteTriSet,localRemote);
+			for(auto itmap=localRemote.begin(); 
+			itmap!=localRemote.end();itmap++){
+				assert(abs(refinedUMeshes[iPart]->getX(itmap->first)-
+				refinedUMeshes[whereToLook]->getX(itmap->second))<TOLTEST); 
+				assert(abs(refinedUMeshes[iPart]->getY(itmap->first)-
+				refinedUMeshes[whereToLook]->getY(itmap->second))<TOLTEST);
+				assert(abs(refinedUMeshes[iPart]->getZ(itmap->first)-
+				refinedUMeshes[whereToLook]->getZ(itmap->second))<TOLTEST);
+			}
 
 		}
 		for(auto it=quads.begin(); it!=quads.end();it++){
+			std::unordered_map<emInt, emInt> localRemote;
 			emInt whereToLook= it->getRemotePartid(); 
 			exa_set<QuadFaceVerts> remoteQuadSet= 
 			refinedUMeshes[whereToLook]->getRefinedPartQuads(); 
 			emInt rotation= getQuadRotation(*it,remoteQuadSet,nDivs); 
 			quadRotations.insert(rotation); 
 			 
-			comPareQuad(refinedUMeshes[iPart],
-			refinedUMeshes[whereToLook],*it,rotation,nDivs,remoteQuadSet);
+			comPareQuad(*it,rotation,nDivs,remoteQuadSet,localRemote);
+			for(auto itmap=localRemote.begin(); 
+			itmap!=localRemote.end();itmap++){
+				assert(abs(refinedUMeshes[iPart]->getX(itmap->first)-
+				refinedUMeshes[whereToLook]->getX(itmap->second))<TOLTEST); 
+				assert(abs(refinedUMeshes[iPart]->getY(itmap->first)-
+				refinedUMeshes[whereToLook]->getY(itmap->second))<TOLTEST);
+				assert(abs(refinedUMeshes[iPart]->getZ(itmap->first)-
+				refinedUMeshes[whereToLook]->getZ(itmap->second))<TOLTEST);
+			}
 
 		}
 
@@ -1879,10 +1611,11 @@ void UMesh:: partFaceMatching(const ExaMesh* const pEM,
 	}
 
 }
-std::shared_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
+std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs,
 			const std::set<TriFaceVerts> &tris, 
-			const std::set<QuadFaceVerts> &quads, const emInt partID) const{
+			const std::set<QuadFaceVerts> &quads, const emInt partID) const
+			{
 				// Count the number of tris, quads, tets, pyrs, prisms and hexes.
 	const emInt first = P.getFirst();
 	const emInt last = P.getLast();

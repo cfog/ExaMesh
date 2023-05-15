@@ -188,14 +188,21 @@ public:
 	// exa_set<TriFaceVerts> getRefinedPartTris() const{
 	// 	return refinedPartTris; 
 	// }
-
+	void partFaceMatching(const ExaMesh* const pEM,
+		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
+		 std::vector<std::set<TriFaceVerts>>  &tris,
+		 std::vector<std::set<QuadFaceVerts>> &quads );
 
 	std::unique_ptr<CubicMesh> extractCoarseMesh(Part& P,
-			std::vector<CellPartData>& vecCPD, const int numDivs) const;
+			std::vector<CellPartData>& vecCPD, const int numDivs,			
+			const std::set<TriFaceVerts> &tris= std::set<TriFaceVerts>(), 
+			const std::set<QuadFaceVerts> &quads= std::set<QuadFaceVerts>(), 
+			const emInt partID=-1) const;
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;
 
+	virtual void TestMPI(const emInt &nDivs, const emInt &nParts); 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
 			double& zmax) const;

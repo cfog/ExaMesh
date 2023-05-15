@@ -59,106 +59,6 @@ class UMesh: public ExaMesh {
 	UMesh& operator=(const UMesh&);
 
 public:
-
-	// void insertTempPartTris(const TriFaceVerts &obj){
-	// 	auto iter = TemppartTris.find(obj);
-	
-	// 	if (iter != TemppartTris.end()) {
-	// 		TemppartTris.erase(iter);
-	// 	}
-	// 	else {
-	// 		TemppartTris.insert(obj);
-	// 	}
-
-	// }
-	// void insertTempPartQuads(const QuadFaceVerts &obj){
-	// 	auto iter = TemppartQuads.find(obj);
-	
-	// 	if (iter != TemppartQuads.end()) {
-	// 		TemppartQuads.erase(iter);
-	// 	}
-	// 	else {
-	// 		TemppartQuads.insert(obj);
-	// 	}
-
-	// }
-	// void updatePartTris(const TriFaceVerts &obj){
-	// 	auto iter = partTris.find(obj);
-	
-	// 	if (iter != partTris.end()) {
-	// 		partTris.erase(iter);
-	// 	}
-	// 	else {
-	// 		partTris.insert(obj);
-	// 	}
-
-	// }
-	// void updateRefinedPartTris(const TriFaceVerts &obj){
-	// 	auto iter = refinedPartTris.find(obj);
-	
-	// 	if (iter != refinedPartTris.end()) {
-	// 		refinedPartTris.erase(iter);
-	// 	}
-	// 	else {
-	// 		refinedPartTris.insert(obj);
-	// 	}
-
-	// }
-	// void updateRefinedPartQuads(const QuadFaceVerts &obj){
-	// 	auto iter = refinedPartQuads.find(obj);
-	
-	// 	if (iter != refinedPartQuads.end()) {
-	// 		refinedPartQuads.erase(iter);
-	// 	}
-	// 	else {
-	// 		refinedPartQuads.insert(obj);
-	// 	}
-
-	// }
-	// void updatePartQuads(const QuadFaceVerts &obj){
-	// 	auto iter = partQuads.find(obj);
-	
-	// 	if (iter != partQuads.end()) {
-	// 		partQuads.erase(iter);
-	// 	}
-	// 	else {
-	// 		partQuads.insert(obj);
-	// 	}
-
-	// }
-	// emInt getSizePartTris()const{
-	// 	return TemppartTris.size();
-	// }
-	// emInt getSizePartQuads()const{
-	// 	return TemppartQuads.size();
-	// }
-	// exa_set<QuadFaceVerts> getTempQuadPart() const{
-	// 	return TemppartQuads; 
-	// }
-	// exa_set<TriFaceVerts> getTempTriPart() const {
-	// 	return TemppartTris; 
-	// }
-	// exa_set<QuadFaceVerts> getQuadPart() const{
-	// 	return partQuads; 
-	// }
-	// exa_set<TriFaceVerts> getTriPart() const {
-	// 	return partTris; 
-	// }
-	// exa_set<TriFaceVerts> getRefinedPartTris() const{
-	// 	return refinedPartTris; 
-	// }
-	// exa_set<QuadFaceVerts> getRefinedPartQuads() const {
-	// 	return refinedPartQuads; 
-	// }
-	//emInt getTriRotation(const TriFaceVerts &Remotetri,const emInt nDivs); 
-
-
-	
-	// bool getBolean()const {
-	// 	return globa
-	// }
-
-
 	void partFaceMatching(const ExaMesh* const pEM,
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::set<TriFaceVerts>>  &tris,
@@ -287,18 +187,12 @@ public:
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;
 
-	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
-			std::vector<CellPartData>& vecCPD, const int numDivs) const;
 
-	std::shared_ptr<UMesh> extractCoarseMesh(Part& P,
-			std::vector<CellPartData>& vecCPD, const int numDivs,
-			const std::set<TriFaceVerts> &tris, 
-			const std::set<QuadFaceVerts> &quads, const emInt partID) const;
-	// std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
-	// 		std::vector<CellPartData>& vecCPD, const int numDivs,
-	// 		const std::vector<TriFaceVerts> &tris, 
-	// 		const std::vector<QuadFaceVerts> &quads, const emInt partID) const;				
-	virtual void TestMPI(const emInt &nDivs);
+	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,	std::vector<CellPartData>& vecCPD, const int numDivs,
+			const std::set<TriFaceVerts> &tris= std::set<TriFaceVerts>(), 
+			const std::set<QuadFaceVerts> &quads= std::set<QuadFaceVerts>(), const emInt partID=-1) const;
+			
+	virtual void TestMPI(const emInt &nDivs, const emInt &nParts);
 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,

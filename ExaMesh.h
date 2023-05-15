@@ -237,6 +237,11 @@ public:
 	exa_set<QuadFaceVerts> getRefinedPartQuads() const {
 		return refinedPartQuads; 
 	}
+	virtual void TestMPI(const emInt &nDivs, const emInt &nParts)=0; 
+	virtual void partFaceMatching(const ExaMesh* const pEM,
+		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
+		 std::vector<std::set<TriFaceVerts>>  &tris,
+		 std::vector<std::set<QuadFaceVerts>> &quads )=0;	
 
 protected:
 	void addCellToPartitionData(const emInt* verts, emInt nPts, emInt ii,

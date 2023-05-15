@@ -51,6 +51,155 @@ static void checkExpectedSize(const UMesh &UM) {
 }
 #endif
 
+void SetArtificialIntVertQuad(QuadFaceVerts &quad, const emInt nDivs){
+	// Numbering from 1 to .. 
+	emInt k=1; 	
+	for (int jj = 0; jj <= nDivs ; jj++) {
+	 	for (int ii = 0; ii <= nDivs; ii++) {
+			quad.setIntVertInd(ii,jj,k);
+			k++; 
+		}
+	}
+
+}
+void setExpectedMapping (const emInt rotation, 
+std::unordered_map<emInt,emInt> &map){
+	switch (rotation) {
+  		case -1:
+   		 	map[1]=1; 
+			map[2]=5;
+			map[3]=9;
+			map[4]=13; 
+			map[5]=2;
+			map[6]=6;
+			map[7]=10;
+			map[8]=14; 
+			map[9]=3;
+			map[10]=7;
+			map[11]=11;
+			map[12]=15;
+			map[13]=4; 
+			map[14]=8;
+			map[15]=12;
+			map[16]=16;
+   	 	break;
+  		case -2:
+		   	map[1]=4; 
+			map[2]=3;
+			map[3]=2;
+			map[4]=1; 
+			map[5]=8;
+			map[6]=7;
+			map[7]=6;
+			map[8]=5; 
+			map[9]=12;
+			map[10]=11;
+			map[11]=10;
+			map[12]=9;
+			map[13]=16; 
+			map[14]=15;
+			map[15]=14;
+			map[16]=13;
+    		
+    	break;
+  		case -3:
+			map[1]=16; 
+			map[2]=12;
+			map[3]=8;
+			map[4]=4; 
+			map[5]=15;
+			map[6]=11;
+			map[7]=7;
+			map[8]=3; 
+			map[9]=14;
+			map[10]=10;
+			map[11]=6;
+			map[12]=2;
+			map[13]=13; 
+			map[14]=9;
+			map[15]=5;
+			map[16]=1;
+    		
+    	break;
+  		case -4:
+			map[1]=13; 
+			map[2]=14;
+			map[3]=15;
+			map[4]=16; 
+			map[5]=9;
+			map[6]=10;
+			map[7]=11;
+			map[8]=12; 
+			map[9]=5;
+			map[10]=6;
+			map[11]=7;
+			map[12]=8;
+			map[13]=1; 
+			map[14]=2;
+			map[15]=3;
+			map[16]=4;
+    		
+    	break;
+  		case 2:
+			map[1]=13; 
+			map[2]=9;
+			map[3]=5;
+			map[4]=1; 
+			map[5]=14;
+			map[6]=10;
+			map[7]=6;
+			map[8]=2; 
+			map[9]=15;
+			map[10]=11;
+			map[11]=7;
+			map[12]=3;
+			map[13]=16; 
+			map[14]=12;
+			map[15]=8;
+			map[16]=4 ;
+    		
+    	break;
+  		case 3:
+			map[1]=16; 
+			map[2]=15;
+			map[3]=14;
+			map[4]=13; 
+			map[5]=12;
+			map[6]=11;
+			map[7]=10;
+			map[8]=9; 
+			map[9]=8;
+			map[10]=7;
+			map[11]=6;
+			map[12]=5;
+			map[13]=4; 
+			map[14]=3;
+			map[15]=2;
+			map[16]=1;
+    		
+    	break;
+  		case 4:
+			map[1]=4; 
+			map[2]=8;
+			map[3]=12;
+			map[4]=16; 
+			map[5]=3;
+			map[6]=7;
+			map[7]=11;
+			map[8]=15; 
+			map[9]=2;
+			map[10]=6;
+			map[11]=10;
+			map[12]=14;
+			map[13]=1; 
+			map[14]=5;
+			map[15]=9;
+			map[16]=13;
+    		
+    	break;
+	}
+}
+
 struct MixedMeshFixture {
 	UMesh *pUM_In, *pUM_Out;
 	exa_map<Edge, EdgeVerts> vertsOnEdges;
@@ -1646,106 +1795,58 @@ BOOST_AUTO_TEST_CASE(MixedN5) {
 	BOOST_CHECK(result);
 }
 BOOST_FIXTURE_TEST_SUITE(FaceMatching,MixedMeshFixture)
-BOOST_AUTO_TEST_CASE(PartFacesMatching){
-	// emInt nParts=4;
-	// emInt numDiv=3;
-	// std::vector<CellPartData> vecCPD;
-	// std::vector<Part> parts; 
-	// std::vector<std::set<QuadFaceVerts>> quads; 
-	// std::vector<std::set<TriFaceVerts>>  tris; 
-
-	// partitionCells(pUM_In,nParts,parts,vecCPD); 
-	// makeLengthScaleUniform(pUM_In);
+BOOST_AUTO_TEST_CASE(QuadMatching){
+	// run for quad cases of -2 , 1 , -4 
 	
-	// std::vector<std::vector<std::vector<emInt> >> SlocalsTris= {
-	// 	{{0,1,4}}, 
-	// 	{{0,1,2},{0,1,3}},
-	// 	{},
-	// 	{{0,1,4}}
+	const emInt nDivs=3; 
+	const emInt partID=0 ; 
+	const emInt remoteID=1; 
 
-	// };
-	// std::vector<std::vector<std::vector<emInt> >> SglobalsTris= {
-	// 	{{0,1,9}}, 
-	// 	{{0,1,4},{0,1,9}},
-	// 	{},
-	// 	{{0,1,4}}
+	emInt globalForRef_LocalQuad [4] = {1,4,16,13};
+	emInt remoteForRef [4] = {10,20,30,40};
+	emInt localForRef  [4] = {10,20,30,40}; 
+	exa_set<QuadFaceVerts> remoteQuads;
+	//Note that passing the same temp local & remote indices 
+	QuadFaceVerts refQuad (nDivs,localForRef,globalForRef_LocalQuad,
+	remoteForRef,partID,remoteID); 
+	SetArtificialIntVertQuad(refQuad,nDivs);
+	
 
-	// };
-	// std::vector<std::vector<std::vector<emInt>>> SlocalQuads ={
-	// 	{{0,1,2,3}},{},{{0,1,2,3},{0,1,4,5}}, {{0,1,2,3}}}; 
-
-	// std::vector<std::vector<std::vector<emInt>>> SglobalQuads ={
-	// 	{{0,1,5,6}},{} ,{{0,1,2,3},{0,1,5,6}},{{0,1,2,3}}
-	// } ;
-
-	// std::vector<std::vector<emInt>> remoteQuads {{2},{},{3,0},{2}}; 	
-
-	// std::vector<std::vector<emInt>> remoteTris { {1},{3,0}, {},{1}};
-
-	// pUM_In->partFaceMatching(pUM_In,parts,vecCPD,tris,quads);
-
-	// for(emInt iPart=0 ; iPart<nParts; iPart++){
+	//emInt globalForeRemote [4]= {13,16,4,1}; 
+	emInt AllCasesofglobalForeRemote [7][4]={
+		{13,16,4,1}, 
+		{16,4,1,13},
+		{4,1,13,16},
+		{1,13,16,4},
+		{13,1,4,16},
+		{16,13,1,4},
+		{4,16,13,1}
+	}; 
+	for(auto k=0; k<7; k++){
+		emInt globalForeRemote[4];
+		for (int i = 0; i < 4; i++) {
+ 			globalForeRemote[i] = AllCasesofglobalForeRemote[k][i];
+		}; 
 		
-	// 	exa_set<TriFaceVerts> subtris;
-	// 	exa_set<QuadFaceVerts> subquads;
-	// 	auto submesh=pUM_In->extractCoarseMesh
-	// 	(parts[iPart],vecCPD,numDiv,tris[iPart],
-	// 	quads[iPart],iPart);
-	// 	subquads= submesh->getTempQuadPart();
-	//  	subtris=  submesh->getTempTriPart();
-	// 	// First Check the size 
-	// 	BOOST_CHECK_EQUAL(subtris.size(),SglobalsTris[iPart].size());
-	// 	BOOST_CHECK_EQUAL(subquads.size(),SglobalQuads[iPart].size());
-	// 	if(subtris.size()!=0){
-	// 		auto k=0; 
-	// 		for(auto itr=subtris.begin(); itr!=subtris.end();itr++){
-			
-	// 			for(auto jcoord=0 ; jcoord<3 ; jcoord++){
-	// 				BOOST_CHECK_EQUAL(itr->getGlobalSorted(jcoord),
-	// 				SglobalsTris[iPart][k][jcoord]); 
-	// 				BOOST_CHECK_EQUAL(itr->getSorted(jcoord),
-	// 				SlocalsTris[iPart][k][jcoord]); 
+		QuadFaceVerts quad (nDivs,localForRef,globalForeRemote
+		, remoteForRef,remoteID,partID); 
 
-					
-
-	// 			}
-	// 			BOOST_CHECK_EQUAL(itr->getPartid(),iPart); 
-	// 			BOOST_CHECK_EQUAL(itr->getRemotePartid(),
-	// 			remoteTris[iPart][k]);
-				
-	// 			k++; 
-			
-	// 		}
-
-
-	// 	}
-	// 	if(subquads.size()!=0){
-
-	// 		auto j=0; 
-	// 		for(auto itr=subquads.begin(); itr!=subquads.end();itr++){
-			
-	// 			for(auto jcoord=0 ; jcoord<3 ; jcoord++){
-	// 				BOOST_CHECK_EQUAL(itr->getGlobalSorted(jcoord),
-	// 				SglobalQuads[iPart][j][jcoord]); 
-	// 				BOOST_CHECK_EQUAL(itr->getSorted(jcoord),
-	// 				SlocalQuads[iPart][j][jcoord]); 
-					
-					
-
-	// 			}
-	// 			BOOST_CHECK_EQUAL(itr->getPartid(),iPart); 
-	// 			BOOST_CHECK_EQUAL(itr->getRemotePartid(),
-	// 			remoteQuads[iPart][j]);
-				
-	// 			j++; 
-			
-	// 		}
-
-	// 	}
-
-
-
-
+		exa_set<QuadFaceVerts> setQuads={quad};
+	
+		emInt rotation= getQuadRotation(refQuad,setQuads,nDivs); 
+		
+		SetArtificialIntVertQuad(quad,nDivs);
+		remoteQuads.insert(quad); 
+		std::unordered_map<emInt,emInt> map; 
+		comPareQuad(refQuad,rotation,nDivs,remoteQuads,map);
+		std::unordered_map<emInt,emInt> expectedMap; 
+		setExpectedMapping(rotation,expectedMap); 
+		//bool mapsEqual = boost::range::is_permutation(map,expectedMap);
+		assert(map==expectedMap);  
+		std::cout<<"Passed Test for Rotation case: "<<rotation<<std::endl; 
+	}
+	// Giving us different rotated Quads
+	
 
 		
 	// }

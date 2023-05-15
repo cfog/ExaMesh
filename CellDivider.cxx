@@ -52,8 +52,8 @@ void sortVerts3(const emInt input[3], emInt output[3]) {
 }
 
 TriFaceVerts::TriFaceVerts(const int nDivs, const emInt v0, const emInt v1,
-		const emInt v2,const emInt partID ,const emInt type, 
-		const emInt elemInd,bool globalComparison) :
+		const emInt v2,const emInt type, 
+		const emInt elemInd,const emInt partID ,bool globalComparison) :
 		FaceVerts(nDivs, 3) {
 	m_volElem = elemInd;
 	m_volElemType = type;
@@ -308,8 +308,9 @@ void TriFaceVerts::computeParaCoords(const int ii, const int jj,
 }
 
 QuadFaceVerts::QuadFaceVerts(const int nDivs, const emInt v0, const emInt v1,
-		const emInt v2, const emInt v3, const emInt partID, const emInt remoteID ,const emInt type, 
-		const emInt elemInd,bool globalCompare) :
+		const emInt v2, const emInt v3,const emInt type, 
+		const emInt elemInd,  const emInt partID, const emInt remoteID,
+		bool globalCompare) :
 		FaceVerts(nDivs, 4) {
 	m_volElem = elemInd;
 	m_volElemType = type;
