@@ -68,3 +68,4 @@ autoscan.log
 *.jpg
 # Cubic Mesh generator for testing 
 globe_mats_cubic.cxx
+globe_mats_cubic
