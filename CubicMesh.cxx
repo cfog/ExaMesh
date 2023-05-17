@@ -515,7 +515,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4], HEXA_64, ind);
 				QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5], HEXA_64, ind);
 				QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6], HEXA_64, ind);
-				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[6], conn[7], HEXA_64, ind);
+				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7], HEXA_64, ind);
 				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], HEXA_64, ind);
 				QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7], HEXA_64, ind);
 				addUniquely(partBdryQuads, QFV0154);
@@ -915,7 +915,8 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	assert(UCM->getSizePartTris()==tris.size());
 	// std::cout<<"partBdryQuads: "<<partBdryQuads.size()<<" "<<
 	// quads.size()<< std::endl; 
-	//assert(partBdryQuads.size()==quads.size());
+
+	assert(partBdryQuads.size()==quads.size());
 	for (auto quad : partBdryQuads) {
 		emInt cellInd = quad.getVolElement();
 		emInt conn[16];
