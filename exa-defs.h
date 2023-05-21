@@ -32,6 +32,7 @@
 #include <assert.h>
 #include <algorithm>
 #include "exa_config.h"
+#include <mpi.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -64,7 +65,7 @@
 
 #define MAX_DIVS 50
 #define FILE_NAME_LEN 1024
-#define TOLTEST 1e-10
+#define TOLTEST 1e-9
 
 typedef int32_t emInt;
 #define EMINT_MAX UINT_MAX
@@ -294,6 +295,7 @@ public:
 	bool getGlobalCompare() const {
 		return m_globalComparison; 
 	}
+	friend MPI_Datatype register_mpi_type(FaceVerts const&);
 };
 
 class TriFaceVerts : public FaceVerts {
@@ -312,9 +314,15 @@ public:
 	const emInt type=0 ,const emInt elemInd=EMINT_MAX,bool globalComparison=false);
 
 
+	//TriFaceVerts(const int nDivs,const emInt global[3],
+	//const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 ,
+	//const emInt elemInd=EMINT_MAX,const bool globalComparison=false);
+
+
 	TriFaceVerts(const int nDivs,const emInt global[3],
-	const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 ,
-	const emInt elemInd=EMINT_MAX,const bool globalComparison=false);
+	const emInt partid_=-1, const emInt remoteID=-1 ,const bool globalComparison=false,
+	const emInt type=0 ,
+	const emInt elemInd=EMINT_MAX);
 
 	TriFaceVerts(const int nDivs, const emInt local[3], 
 	const emInt global[3], const emInt remoteIndices_ [3] ,const emInt partid_, 
@@ -357,9 +365,13 @@ public:
 	const emInt global[4],const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 
 	,const emInt elemInd=EMINT_MAX,
 	bool globalCompare=false);
-	QuadFaceVerts(const int nDivs,const emInt global[4],const emInt partid_=-1, const emInt remoteID=-1 
-	,const emInt type=0 ,const emInt elemInd=EMINT_MAX,
-	bool globalCompare=false);
+	// QuadFaceVerts(const int nDivs,const emInt global[4],const emInt partid_=-1, const emInt remoteID=-1 
+	// ,const emInt type=0 ,const emInt elemInd=EMINT_MAX,
+	// bool globalCompare=false);
+	QuadFaceVerts(const int nDivs,const emInt global[4],const emInt partid_=-1, 
+	const emInt remoteID=-1 , bool globalCompare=false
+	,const emInt type=0 ,const emInt elemInd=EMINT_MAX
+	);
 	QuadFaceVerts(const int nDivs, const emInt local[4], 
 	const emInt global[4], const emInt remotelocal[4] ,const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 
 	,const emInt elemInd=EMINT_MAX,

@@ -1213,15 +1213,19 @@ void UMesh::TestMPI(const emInt &nDivs, const emInt &nParts){
  
 	partitionCells(this, nParts, parts, vecCPD);
 	
-	std::vector<std::set<TriFaceVerts>>  tris; 
+	std::vector<std::unordered_set<TriFaceVerts>>  tris; 
 
-	std::vector<std::set<QuadFaceVerts>> quads;
+	std::vector<std::unordered_set<QuadFaceVerts>> quads;
 
 	std::vector<std::shared_ptr<UMesh>> submeshes; 
 
 	std::vector<std::shared_ptr<UMesh>> refinedUMeshes;
 
  	this->partFaceMatching(this,parts,vecCPD,tris,quads); 
+
+	for(auto k=0 ; k<nParts; k++){
+		std::cout<<"size of tri: "<<quads[k].size()<<std::endl; 
+	}
 
 	for(auto i=0 ; i<nParts; i++){
 		auto coarse= this->extractCoarseMesh
@@ -1231,6 +1235,10 @@ void UMesh::TestMPI(const emInt &nDivs, const emInt &nParts){
 		char fileName [100]; 
 		sprintf(fileName, "TestCases/Coarsesubmesh%03d.vtk", i);
 		shared_ptr->writeVTKFile(fileName); 
+	}
+	for(auto i=0 ; i<nParts;i++){
+		exa_set<TriFaceVerts> tri= submeshes[i]->getTempTriPart();
+		printTris(tri,nDivs);
 	}
 	assert(submeshes.size()==nParts); 
 
@@ -1373,8 +1381,8 @@ void UMesh::TestMPI(const emInt &nDivs, const emInt &nParts){
 
 void UMesh:: partFaceMatching(const ExaMesh* const pEM,
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
-		 std::vector<std::set<TriFaceVerts>>  &tris,
-		 std::vector<std::set<QuadFaceVerts>> &quads ){
+		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads ){
 
 	//std::set<TriFaceVerts>  SetTriPartbdry;
 
@@ -1598,8 +1606,8 @@ void UMesh:: partFaceMatching(const ExaMesh* const pEM,
 					emInt global[4] = {v0Global,v1Global,v2Global,v3Global}; 
 					emInt global_[4]= {v0Global_,v1Global_,v2Global_,v3Global_}; 
 
-					QuadFaceVerts quadpart(numDivs,global,partid,partid_);
-					QuadFaceVerts quadpart_(numDivs,global_,partid_,partid);
+					QuadFaceVerts quadpart(numDivs,global,partid,partid_,true);
+					QuadFaceVerts quadpart_(numDivs,global_,partid_,partid,true);
 					addUniquely(quads[partid],quadpart); 
 					addUniquely(quads[partid_],quadpart_); 
 
@@ -1613,8 +1621,8 @@ void UMesh:: partFaceMatching(const ExaMesh* const pEM,
 }
 std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs,
-			const std::set<TriFaceVerts> &tris, 
-			const std::set<QuadFaceVerts> &quads, const emInt partID) const
+			const std::unordered_set<TriFaceVerts> &tris, 
+			const std::unordered_set<QuadFaceVerts> &quads, const emInt partID) const
 			{
 				// Count the number of tris, quads, tets, pyrs, prisms and hexes.
 	const emInt first = P.getFirst();
@@ -1868,7 +1876,7 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 				newIndices[tri.getCorner(2)] };
 		emInt global [3]= {tri.getCorner(0),tri.getCorner(1),
 		tri.getCorner(2)}; 
-		TriFaceVerts TF(numDivs,global,partID,true); 
+		TriFaceVerts TF(numDivs,global,partID,-1,true); 
 		auto itr= tris.find(TF); 
 		if(itr!=tris.end()){
 			assert(itr->getGlobalCorner(0)==global[0] &&
@@ -1886,6 +1894,7 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 			
 		UUM->addBdryTri(conn);
 	}
+
 	assert(UUM->getSizePartTris()==tris.size()); 
 	
 
@@ -1897,7 +1906,7 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part& P,
 				newIndices[quad.getCorner(3)] };
 		emInt global [4]= {quad.getCorner(0),
 		quad.getCorner(1),quad.getCorner(2),quad.getCorner(3)}; 
-		QuadFaceVerts QF(numDivs,global,partID,true); 
+		QuadFaceVerts QF(numDivs,global,partID,-1,true); 
 		auto itr= quads.find(QF); 
 		if(itr!=quads.end()){
 			assert(itr->getGlobalCorner(0)==global[0] &&

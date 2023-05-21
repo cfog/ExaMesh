@@ -80,9 +80,9 @@ TriFaceVerts::TriFaceVerts(const int nDivs, const emInt local[3],
 		}	 
 }
 TriFaceVerts::TriFaceVerts(const int nDivs,const emInt global[3],
-const emInt partid_, const emInt remoteID_ ,
-const emInt type ,const emInt elemInd,
-bool globalComparison):FaceVerts(nDivs,3){
+const emInt partid_, const emInt remoteID_ ,bool globalComparison,
+const emInt type, const emInt elemInd
+):FaceVerts(nDivs,3){
 		m_volElem = elemInd;
 		m_volElemType = type;
 		partid=partid_; 
@@ -335,8 +335,9 @@ QuadFaceVerts::QuadFaceVerts(const int nDivs, const emInt local[4],
 		}	
 		
 }
-QuadFaceVerts::QuadFaceVerts(const int nDivs,const emInt global[4],const emInt partid_, const emInt remoteID 
-	,const emInt type,const emInt elemInd,bool globalCompare):FaceVerts(nDivs,4){
+QuadFaceVerts::QuadFaceVerts(const int nDivs,const emInt global[4],
+const emInt partid_, const emInt remoteID, bool globalCompare, 
+	const emInt type,const emInt elemInd):FaceVerts(nDivs,4){
 
 		m_volElem = elemInd;
 		m_volElemType = type;

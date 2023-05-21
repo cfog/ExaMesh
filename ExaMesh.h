@@ -33,6 +33,7 @@
 #include "Mapping.h"
 #include "Part.h"
 #include "exa-defs.h"
+#include "mpiDefs.h"
 #include <set>
 class UMesh;
 
@@ -129,18 +130,19 @@ public:
 
 	virtual void refineForParallel(const emInt numDivs,
 			const emInt maxCellsPerPart) const;
-	virtual void refineForMPI(const emInt numDivs, const emInt maxCellsPerPart) const; 
+	virtual void refineForMPI() const; 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const = 0;
-	//virtual void TestMPI(const emInt &nDivs)=0; 
-	///virtual void partFaceMatching(const ExaMesh* const pEM,
-		// std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
-		// std::vector<std::set<TriFaceVerts>>  &tris,
-		// std::vector<std::set<QuadFaceVerts>> &quads )=0;
-	// virtual std::shared_ptr<UMesh> extractCoarseMesh(Part& P,
-	// 		std::vector<CellPartData>& vecCPD, const int numDivs,
-	// 		const std::set<TriFaceVerts> &tris, 
-	// 		const std::set<QuadFaceVerts> &quads, const emInt partID) const=0;	 			
+			
+/* 	virtual std::unique_ptr<UMesh> extractCoarseMesh(Part& P,
+			std::vector<CellPartData>& vecCPD, const int numDivs,
+			const std::set<TriFaceVerts> &tris, 
+			const std::set<QuadFaceVerts> &quads, const emInt partID) const	=0;
+	virtual	std::unique_ptr<CubicMesh> extractCoarseMesh(Part& P,
+			std::vector<CellPartData>& vecCPD, const int numDivs,			
+			const std::set<QuadFaceVerts> &quads= std::set<QuadFaceVerts>(),
+			const std::set<TriFaceVerts> &tris= std::set<TriFaceVerts>(),
+			const emInt partID=-1) const=0;	 */	 			
 
 	virtual void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
@@ -240,8 +242,9 @@ public:
 	virtual void TestMPI(const emInt &nDivs, const emInt &nParts)=0; 
 	virtual void partFaceMatching(const ExaMesh* const pEM,
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
-		 std::vector<std::set<TriFaceVerts>>  &tris,
-		 std::vector<std::set<QuadFaceVerts>> &quads )=0;	
+		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )=0;	
+	void refineMPI();	 
 
 protected:
 	void addCellToPartitionData(const emInt* verts, emInt nPts, emInt ii,

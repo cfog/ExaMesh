@@ -418,8 +418,8 @@ static void remapIndices(const emInt nPts, const emInt newIndices[],
 
 std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		std::vector<CellPartData>& vecCPD, const int numDivs,
-			const std::set<TriFaceVerts> &tris, 
-			const std::set<QuadFaceVerts> &quads, 
+			const std::unordered_set<TriFaceVerts> &tris, 
+			const std::unordered_set<QuadFaceVerts> &quads, 
 			const emInt partID) const {
 	CALLGRIND_TOGGLE_COLLECT
 	;
@@ -896,7 +896,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		remapIndices(10, newIndices, conn, newConn);
 		emInt global [3]= {tri.getCorner(0),tri.getCorner(1),
 		tri.getCorner(2)}; 
-		TriFaceVerts TF(numDivs,global,partID,true); 
+		TriFaceVerts TF(numDivs,global,partID,-1,true); 
 		auto itr= tris.find(TF); 
 		if(itr!=tris.end()){
 			assert(itr->getGlobalCorner(0)==global[0] &&
@@ -1233,7 +1233,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		remapIndices(10, newIndices, conn, newConn);
 		emInt global [4]= {quad.getCorner(0),
 		quad.getCorner(1),quad.getCorner(2),quad.getCorner(3)}; 
-		QuadFaceVerts QF(numDivs,global,partID,true); 
+		QuadFaceVerts QF(numDivs,global,partID,-1,true); 
 		auto itr= quads.find(QF); 
 		if(itr!=quads.end()){
 			assert(itr->getGlobalCorner(0)==global[0] &&
@@ -1533,9 +1533,9 @@ void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts){
  
 	partitionCells(this, nParts, parts, vecCPD);
 	
-	std::vector<std::set<TriFaceVerts>>  tris; 
+	std::vector<std::unordered_set<TriFaceVerts>>  tris; 
 
-	std::vector<std::set<QuadFaceVerts>> quads;
+	std::vector<std::unordered_set<QuadFaceVerts>> quads;
 
 	std::vector<std::shared_ptr<CubicMesh>> submeshes; 
 
@@ -1636,15 +1636,7 @@ void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts){
 		refineUmesh->writeVTKFile(filename);
 
 	}
-	for(auto iPart=0 ; iPart<nParts; iPart++){
-		exa_set<TriFaceVerts> tri=
-		refinedUMeshes[iPart]->getRefinedPartTris(); 
-		std::cout<<"size of refined tris: "
-		<<tri.size()<<std::endl; 
-	}
-	std::cout<<"Checking for Part 0- After refining"<< " "<<
-	refinedUMeshes[0]->getX(5)<<" "<<refinedUMeshes[0]->getY(5)<<" "<<
-	refinedUMeshes[0]->getZ(5)<<std::endl; 
+
 	
 	for(auto iPart=0; iPart<nParts ; iPart++){
 	 	exa_set<TriFaceVerts> tri=
@@ -1710,8 +1702,8 @@ void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts){
 }
 void CubicMesh::partFaceMatching(const ExaMesh* const pEM,
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
-		 std::vector<std::set<TriFaceVerts>>  &tris,
-		 std::vector<std::set<QuadFaceVerts>> &quads ){
+		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads ){
 	//std::set<TriFaceVerts>  SetTriPartbdry;
 
 	//std::set<QuadFaceVerts> SetQuadPartbdry; 
@@ -1926,8 +1918,8 @@ void CubicMesh::partFaceMatching(const ExaMesh* const pEM,
 					emInt global[4] = {v0Global,v1Global,v2Global,v3Global}; 
 					emInt global_[4]= {v0Global_,v1Global_,v2Global_,v3Global_}; 
 
-					QuadFaceVerts quadpart(numDivs,global,partid,partid_);
-					QuadFaceVerts quadpart_(numDivs,global_,partid_,partid);
+					QuadFaceVerts quadpart(numDivs,global,partid,partid_,true);
+					QuadFaceVerts quadpart_(numDivs,global_,partid_,partid,true);
 					addUniquely(quads[partid],quadpart); 
 					addUniquely(quads[partid_],quadpart_); 
 

@@ -61,8 +61,8 @@ class UMesh: public ExaMesh {
 public:
 	void partFaceMatching(const ExaMesh* const pEM,
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
-		 std::vector<std::set<TriFaceVerts>>  &tris,
-		 std::vector<std::set<QuadFaceVerts>> &quads );		 
+		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads );		 
 	UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
@@ -189,8 +189,8 @@ public:
 
 
 	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,	std::vector<CellPartData>& vecCPD, const int numDivs,
-			const std::set<TriFaceVerts> &tris= std::set<TriFaceVerts>(), 
-			const std::set<QuadFaceVerts> &quads= std::set<QuadFaceVerts>(), const emInt partID=-1) const;
+			const std::unordered_set<TriFaceVerts> &tris= std::unordered_set<TriFaceVerts>(), 
+			const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>(), const emInt partID=-1) const;
 			
 	virtual void TestMPI(const emInt &nDivs, const emInt &nParts);
 
