@@ -1382,7 +1382,7 @@ void UMesh::TestMPI(const emInt &nDivs, const emInt &nParts){
 void UMesh:: partFaceMatching(const ExaMesh* const pEM,
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-		 std::vector<std::unordered_set<QuadFaceVerts>> &quads ){
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )const{
 
 	//std::set<TriFaceVerts>  SetTriPartbdry;
 

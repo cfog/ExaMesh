@@ -1703,7 +1703,7 @@ void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts){
 void CubicMesh::partFaceMatching(const ExaMesh* const pEM,
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-		 std::vector<std::unordered_set<QuadFaceVerts>> &quads ){
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )const{
 	//std::set<TriFaceVerts>  SetTriPartbdry;
 
 	//std::set<QuadFaceVerts> SetQuadPartbdry; 

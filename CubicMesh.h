@@ -191,7 +191,7 @@ public:
 	void partFaceMatching(const ExaMesh* const pEM,
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-		 std::vector<std::unordered_set<QuadFaceVerts>> &quads );
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )const;
 
 	std::unique_ptr<CubicMesh> extractCoarseMesh(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs,			

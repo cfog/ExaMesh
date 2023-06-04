@@ -243,7 +243,7 @@ public:
 	virtual void partFaceMatching(const ExaMesh* const pEM,
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )=0;	
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )const=0;	
 	void refineMPI();	 
 
 protected:

@@ -62,7 +62,7 @@ public:
 	void partFaceMatching(const ExaMesh* const pEM,
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-		 std::vector<std::unordered_set<QuadFaceVerts>> &quads );		 
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )const;		 
 	UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
