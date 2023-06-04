@@ -25,14 +25,28 @@
 
 #ifndef SRC_EXA_DEFS_H_
 #define SRC_EXA_DEFS_H_
-#include <iostream> 
+#include <iostream>
 #include <cmath>
 #include <stdint.h>
 #include <limits.h>
 #include <assert.h>
 #include <algorithm>
 #include "exa_config.h"
-#include <mpi.h>
+//#include <mpi.h>
+//#include <boost/serialization/access.hpp>
+#include <boost/mpi/datatype.hpp>
+#include <boost/serialization/base_object.hpp>
+#include <boost/mpi/environment.hpp>
+#include <boost/mpi/communicator.hpp>
+//#include  <boost/mpi/datatype.hpp>
+//#include <boost/serialization/access.hpp>
+//#include <boost/mpl/assert.hpp>
+#include <boost/mpi.hpp> 
+//#include <boost/archive/text_oarchive.hpp>
+//#include <boost/archive/text_iarchive.hpp> 
+//#include <boost/mpl.hpp>
+
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -143,10 +157,39 @@ struct EdgeVerts {
 	double m_totalDihed;
 };
 
-class FaceVerts {
+class FaceVerts
+{
+private:
+	friend class boost::serialization::access;
+	template <class Archive>
+	void serialize(Archive &ar, const unsigned int /*version*/)
+	{
+		ar &remotePartid;
+		ar &global_corners;
+		ar &global_sorted;
+		ar &remoteIndices;
+		ar &sortedRemoteIndices; 
+		ar &m_corners; 
+		ar &m_sorted; 
+		ar &m_cornerUVW; 
+		ar &m_nCorners; 
+		ar &m_nDivs; 
+		ar &m_intVerts; 
+		ar &m_param_st; 
+		ar &m_param_uvw; 
+		ar &m_volElem; 
+		ar &m_volElemType; 
+		ar &m_bothSidesDone; 
+		ar &partid; 
+		 
+		ar &m_globalComparison; 
+
+	}
 protected:
-	emInt global_corners [4], global_sorted [4]; 
-	emInt remoteIndices[4], sortedRemoteIndices[4]; 
+	// CUATION: ANY CHANGE IN MEMBER SIZE OR DELETION OR ADDING SHOULD BE REFLECTED IN ITS MPI TYPE
+
+	emInt global_corners[4], global_sorted[4];
+	emInt remoteIndices[4], sortedRemoteIndices[4];
 	emInt m_corners[4], m_sorted[4];
 	double m_cornerUVW[4][3];
 	int m_nCorners, m_nDivs;
@@ -159,13 +202,15 @@ protected:
 	emInt remotePartid; 
 	bool m_globalComparison; 
 public:
-	FaceVerts(const int nDivs, const emInt NC = 0) :
-		m_nCorners(NC), m_nDivs(nDivs), m_volElem(EMINT_MAX), m_volElemType(0),
-		m_bothSidesDone(false) {
+	 FaceVerts(){};
+	FaceVerts(const int nDivs, const emInt NC = 0) : m_nCorners(NC), m_nDivs(nDivs), m_volElem(EMINT_MAX), m_volElemType(0),
+													 m_bothSidesDone(false)
+	{
 		assert(NC == 3 || NC == 4);
 	}
-	virtual ~FaceVerts() {}
-	bool isValidIJ(const int ii, const int jj) const {
+	//virtual ~FaceVerts() {};
+	bool isValidIJ(const int ii, const int jj) const
+	{
 		bool retVal = (ii >= 0) && (jj >= 0);
 		if (m_nCorners == 3) {
 			retVal = retVal && ((ii + jj) <= m_nDivs);
@@ -182,8 +227,10 @@ public:
 		// accurate test requires significantly more information.
 		return (param >= 0 && param <= 1);
 	}
-	virtual void setupSorted() = 0;
-	emInt getSorted(const int ii) const {
+	//virtual void setupSorted() = 0;
+	void setupSorted() {}; 
+	emInt getSorted(const int ii) const
+	{
 		return m_sorted[ii];
 	}
 	void setIntVertInd(const int ii, const int jj, const emInt vert) {
@@ -202,9 +249,10 @@ public:
 		m_param_st[ii][jj][0] = st[0];
 		m_param_st[ii][jj][1] = st[1];
 	}
-	virtual void getVertAndST(const int ii, const int jj, emInt& vert,
-			double st[2], const int rotCase = 0) const = 0;
-	void setVertUVWParams(const int ii, const int jj, const double uvw[3]){
+	//virtual void getVertAndST(const int ii, const int jj, emInt &vert,
+		//					  double st[2], const int rotCase = 0) const = 0;
+	void setVertUVWParams(const int ii, const int jj, const double uvw[3])
+	{
 		assert(isValidIJ(ii, jj));
 		assert(isValidParam(uvw[0]));
 		assert(isValidParam(uvw[1]));
@@ -222,21 +270,22 @@ public:
 		assert(isValidParam(uvw[1]));
 		assert(isValidParam(uvw[2]));
 	}
-	void setCorners(const emInt cA, const emInt cB, const emInt cC,
-			const emInt cD = EMINT_MAX) {
-		m_corners[0] = cA;
-		m_corners[1] = cB;
-		m_corners[2] = cC;
-		m_corners[3] = cD;
-		setupSorted();
-	}
+	// void setCorners(const emInt cA, const emInt cB, const emInt cC,
+	// 				const emInt cD = EMINT_MAX)
+	// {
+	// 	m_corners[0] = cA;
+	// 	m_corners[1] = cB;
+	// 	m_corners[2] = cC;
+	// 	m_corners[3] = cD;
+	// 	setupSorted();
+	// }
 	void setGlobalCorners(const emInt cA, const emInt cB, const emInt cC,
 			const emInt cD = EMINT_MAX) {
 		global_corners[0] = cA;
 		global_corners[1] = cB;
 		global_corners[2] = cC;
 		global_corners[3] = cD;
-		//setupSorted();
+		// setupSorted();
 	}
 	emInt getCorner(const int ii) const {
 		assert(ii >= 0 && ii < m_nCorners);
@@ -256,11 +305,12 @@ public:
 	}
 	emInt getSortedRemoteIndices(const int ii) const {
 		assert(ii >= 0 && ii < m_nCorners);
-		return sortedRemoteIndices[ii]; 
+		return sortedRemoteIndices[ii];
 	}
-	virtual void computeParaCoords(const int ii, const int jj,
-			double st[2]) const = 0;
-	emInt getVolElement() const {
+	//virtual void computeParaCoords(const int ii, const int jj,
+								//   double st[2]) const = 0;
+	emInt getVolElement() const
+	{
 		return m_volElem;
 	}
 
@@ -295,16 +345,58 @@ public:
 	bool getGlobalCompare() const {
 		return m_globalComparison; 
 	}
-	friend MPI_Datatype register_mpi_type(FaceVerts const&);
-};
+	emInt getNumDivs() const
+	{
+		return m_nDivs;
+	}
+	//friend MPI_Datatype register_mpi_type(FaceVerts const &);
 
-class TriFaceVerts : public FaceVerts {
-//	emInt m_corners[3], m_sorted[3];
-//	volatile emInt (*m_intVerts)[MAX_DIVS - 2];
-//	double (*m_intParam_st)[MAX_DIVS-2];
-//	emInt volElement, volElementType;
+
+};
+//Notes from Documentation : 
+// It may not be immediately obvious how this one template serves 
+//for both saving data to an archive as well as loading data from the archive
+// The key is that the & operator is defined as << for output archives and as >> input archives.
+class TriFaceVerts : public FaceVerts
+{
+private: 
+	// friend class boost::serialization::access;
+	// template <class Archive>
+	// void serialize(Archive &ar, const unsigned int version)
+	// {
+		
+	// 	ar &global_corners;
+	// 	ar &global_sorted;
+	// 	ar &remoteIndices;
+	// 	ar &sortedRemoteIndices; 
+	// 	ar &m_corners; 
+	// 	ar &m_sorted; 
+	// 	ar &m_cornerUVW; 
+	// 	ar &m_nCorners; 
+	// 	ar &m_nDivs; 
+	// 	ar &m_intVerts; 
+	// 	ar &m_param_st; 
+	// 	ar &m_param_uvw; 
+	// 	ar &m_volElem; 
+	// 	ar &m_volElemType; 
+	// 	ar &m_bothSidesDone; 
+	// 	ar &partid; 
+	// 	ar &remotePartid; 
+	// 	ar &m_globalComparison; 
+
+	// }
+	friend class boost::serialization::access;
+	template <class Archive>
+	void serialize(Archive &ar, const unsigned int /*version*/)
+  	{
+    	ar & boost::serialization::base_object<FaceVerts>(*this);
+   
+  	}
+
+
 public:
-	TriFaceVerts(const int nDivs,const emInt partID=-1,bool globalComparison=false) : FaceVerts(nDivs, 3) {}
+	TriFaceVerts(){}; // Dangerous! CHANGE IT LATER ON
+	TriFaceVerts(const int nDivs, const emInt partID = -1, bool globalComparison = false) : FaceVerts(nDivs, 3) {}
 	TriFaceVerts(const int nDivs, emInt v0, const emInt v1, const emInt v2,
 			const emInt type = 0, const emInt elemInd = EMINT_MAX, 
 			const emInt partID=-1,bool globalComparison=false);
@@ -313,80 +405,106 @@ public:
 	const emInt global[3],const emInt partid_=-1, const emInt remoteID=-1 ,
 	const emInt type=0 ,const emInt elemInd=EMINT_MAX,bool globalComparison=false);
 
+	// TriFaceVerts(const int nDivs,const emInt global[3],
+	// const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 ,
+	// const emInt elemInd=EMINT_MAX,const bool globalComparison=false);
 
-	//TriFaceVerts(const int nDivs,const emInt global[3],
-	//const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 ,
-	//const emInt elemInd=EMINT_MAX,const bool globalComparison=false);
+	TriFaceVerts(const int nDivs, const emInt global[3],
+				 const emInt partid_ = -1, const emInt remoteID = -1, const bool globalComparison = false,
+				 const emInt type = 0,
+				 const emInt elemInd = EMINT_MAX);
 
+	TriFaceVerts(const int nDivs, const emInt local[3],
+				 const emInt global[3], const emInt remoteIndices_[3], const emInt partid_,
+				 const emInt remoteID,
+				 const emInt type = 0, const emInt elemInd = EMINT_MAX, bool globalComparison = false);
 
-	TriFaceVerts(const int nDivs,const emInt global[3],
-	const emInt partid_=-1, const emInt remoteID=-1 ,const bool globalComparison=false,
-	const emInt type=0 ,
-	const emInt elemInd=EMINT_MAX);
-
-	TriFaceVerts(const int nDivs, const emInt local[3], 
-	const emInt global[3], const emInt remoteIndices_ [3] ,const emInt partid_, 
-	const emInt remoteID ,
-	const emInt type=0 ,const emInt elemInd=EMINT_MAX,bool globalComparison=false);
-
-	
-
-	virtual ~TriFaceVerts() {}
-//	void allocVertMemory() {
-//		m_intVerts = new emInt[MAX_DIVS - 2][MAX_DIVS - 2];
-//	}
-//	void freeVertMemory() const {
-//		if (m_intVerts) delete[] m_intVerts;
-//	}
-	virtual void computeParaCoords(const int ii, const int jj,
-			double st[2]) const;
-	virtual void setupSorted();
-	void getVertAndST(const int ii, const int jj, emInt& vert,
-			double st[2], const int rotCase = 0) const;
+	//virtual ~TriFaceVerts() {}; 
+	//	void allocVertMemory() {
+	//		m_intVerts = new emInt[MAX_DIVS - 2][MAX_DIVS - 2];
+	//	}
+	//	void freeVertMemory() const {
+	//		if (m_intVerts) delete[] m_intVerts;
+	//	}
+	void computeParaCoords(const int ii, const int jj,
+								   double st[2]) const;
+	// virtual void computeParaCoords(const int ii, const int jj,
+	// 							   double st[2]) const;
+	//virtual void setupSorted();
+	void setupSorted();
+	void getVertAndST(const int ii, const int jj, emInt &vert,
+					  double st[2], const int rotCase = 0) const;
 	void getTrueIJ(const int ii, const int jj,
-			int &trueI, int &trueJ , const int rotCase = 0 ) const; 	
-	friend bool operator<(const TriFaceVerts& a, const TriFaceVerts& b);
-	friend bool operator==(const TriFaceVerts& a, const TriFaceVerts& b);
+				   int &trueI, int &trueJ, const int rotCase = 0) const;
+	friend bool operator<(const TriFaceVerts &a, const TriFaceVerts &b);
+	friend bool operator==(const TriFaceVerts &a, const TriFaceVerts &b);
+	friend inline MPI_Datatype register_mpi_type(TriFaceVerts const &);
+	void setCorners(const emInt cA, const emInt cB, const emInt cC,
+					const emInt cD = EMINT_MAX)
+	{
+		m_corners[0] = cA;
+		m_corners[1] = cB;
+		m_corners[2] = cC;
+		m_corners[3] = cD;
+		setupSorted();
+	}
 };
 
-struct QuadFaceVerts : public FaceVerts {
-//	emInt m_corners[4], m_sorted[4];
-//	emInt m_intVerts[MAX_DIVS - 1][MAX_DIVS - 1];
-//	emInt volElement, volElementType;
-public:
-	QuadFaceVerts(const int nDivs, const emInt partID=-1,
-	const emInt remotePartid=-1, bool globalCompare=false) : FaceVerts(nDivs, 4) {}
-	QuadFaceVerts(const int nDivs, const emInt v0, const emInt v1, const emInt v2, const emInt v3,
-	
-			const emInt type = 0, const emInt elemInd = EMINT_MAX,
-			const emInt partID=-1,const emInt remoteID=-1 ,bool globalCompare=false);		
+struct QuadFaceVerts : public FaceVerts
+{
+	private: 
+	friend class boost::serialization::access;
+	template <class Archive>
+	void serialize(Archive &ar, const unsigned int /*version*/)
+  	{
+    	ar & boost::serialization::base_object<FaceVerts>(*this);
+   
+  	}
 
-	QuadFaceVerts(const int nDivs, const emInt local[4], 
-	const emInt global[4],const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 
-	,const emInt elemInd=EMINT_MAX,
-	bool globalCompare=false);
-	// QuadFaceVerts(const int nDivs,const emInt global[4],const emInt partid_=-1, const emInt remoteID=-1 
+public:
+	QuadFaceVerts(){}; // Dangerous! CHANGE IT LATER ON
+	QuadFaceVerts(const int nDivs, const emInt partID = -1,
+				  const emInt remotePartid = -1, bool globalCompare = false) : FaceVerts(nDivs, 4) {}
+	QuadFaceVerts(const int nDivs, const emInt v0, const emInt v1, const emInt v2, const emInt v3,
+
+				  const emInt type = 0, const emInt elemInd = EMINT_MAX,
+				  const emInt partID = -1, const emInt remoteID = -1, bool globalCompare = false);
+
+	QuadFaceVerts(const int nDivs, const emInt local[4],
+				  const emInt global[4], const emInt partid_ = -1, const emInt remoteID = -1, const emInt type = 0, const emInt elemInd = EMINT_MAX,
+				  bool globalCompare = false);
+	// QuadFaceVerts(const int nDivs,const emInt global[4],const emInt partid_=-1, const emInt remoteID=-1
 	// ,const emInt type=0 ,const emInt elemInd=EMINT_MAX,
 	// bool globalCompare=false);
-	QuadFaceVerts(const int nDivs,const emInt global[4],const emInt partid_=-1, 
-	const emInt remoteID=-1 , bool globalCompare=false
-	,const emInt type=0 ,const emInt elemInd=EMINT_MAX
-	);
-	QuadFaceVerts(const int nDivs, const emInt local[4], 
-	const emInt global[4], const emInt remotelocal[4] ,const emInt partid_=-1, const emInt remoteID=-1 ,const emInt type=0 
-	,const emInt elemInd=EMINT_MAX,
-	bool globalCompare=false);
+	QuadFaceVerts(const int nDivs, const emInt global[4], const emInt partid_ = -1,
+				  const emInt remoteID = -1, bool globalCompare = false, const emInt type = 0, const emInt elemInd = EMINT_MAX);
+	QuadFaceVerts(const int nDivs, const emInt local[4],
+				  const emInt global[4], const emInt remotelocal[4], const emInt partid_ = -1, const emInt remoteID = -1, const emInt type = 0, const emInt elemInd = EMINT_MAX,
+				  bool globalCompare = false);
 
-	virtual ~QuadFaceVerts() {}
-	virtual void computeParaCoords(const int ii, const int jj,
-			double st[2]) const;
-	virtual void setupSorted();
-	void getVertAndST(const int ii, const int jj, emInt& vert,
-			double st[2], const int rotCase = 0) const;
+	//virtual ~QuadFaceVerts() {}
+	void computeParaCoords(const int ii, const int jj,
+								   double st[2]) const;
+	// virtual void computeParaCoords(const int ii, const int jj,
+	// 							   double st[2]) const;
+	//virtual void setupSorted();
+	void setupSorted();
+	void getVertAndST(const int ii, const int jj, emInt &vert,
+					  double st[2], const int rotCase = 0) const;
 	void getTrueIJ(const int ii, const int jj,
-			int &trueI, int &trueJ, const int rotCase = 0) const; 
-	friend bool operator<(const QuadFaceVerts& a, const QuadFaceVerts& b);
-	friend bool operator==(const QuadFaceVerts& a, const QuadFaceVerts& b);
+				   int &trueI, int &trueJ, const int rotCase = 0) const;
+	friend bool operator<(const QuadFaceVerts &a, const QuadFaceVerts &b);
+	friend bool operator==(const QuadFaceVerts &a, const QuadFaceVerts &b);
+	friend inline MPI_Datatype register_mpi_type(QuadFaceVerts const &);
+	void setCorners(const emInt cA, const emInt cB, const emInt cC,
+					const emInt cD = EMINT_MAX)
+	{
+		m_corners[0] = cA;
+		m_corners[1] = cB;
+		m_corners[2] = cC;
+		m_corners[3] = cD;
+		setupSorted();
+	}
 };
 
 namespace std {
@@ -713,7 +831,71 @@ inline void printQuads(const exa_set<QuadFaceVerts>  &quads, emInt nDivs){
 			std::cout<<std::endl;
 		}
 	//}
-
-	
 }
+inline void printTris(const TriFaceVerts &tris)
+{
+	std::cout<<"Num divison: "<<tris.getNumDivs()<<" "<<
+	// for(auto itr=tris.begin(); itr!=tris.end();itr++){
+	"Part: " << tris.getPartid() <<
+		// " local indices: "<<itr->getCorner(0)<<" "<<
+		// itr->getCorner(1)<<" "<<itr->getCorner(2)<<
+		// " global: "<<itr->getGlobalSorted(0)<<" "<<
+		// itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
+		" Unsorted global: " << tris.getGlobalCorner(0) << " " << tris.getGlobalCorner(1) << " " << tris.getGlobalCorner(2) << " Remote ID: " << tris.getRemotePartid() << std::endl;
+	//<<
+	// " Remote Indices: "<<itr->getRemoteIndices(0)<<" "<<
+	// itr->getRemoteIndices(1)<<" "<<
+	// itr->getRemoteIndices(2)<<
+	//" boolean value: "<<itr->getGlobalCompare()<<
+	// std::endl;
+	// std::cout<<"Refined verts: "<<std::endl;
+	// for (int ii = 0; ii <= nDivs ; ii++) {
+	// 	for (int jj = 0; jj <= nDivs-ii ; jj++) {
+
+	// 		 std::cout<<itr->getIntVertInd(ii,jj)<<" ";
+	// 	}
+	// }
+
+	std::cout << std::endl;
+	//}
+	//}
+}
+class gps_position
+{
+private:
+	friend class boost::serialization::access;
+	template <class Archive>
+	void serialize(Archive &ar, const unsigned int version)
+	{
+		ar &degrees;
+		ar &minutes;
+		ar &seconds;
+	}
+	int degrees;
+	int minutes;
+	float seconds;
+
+public:
+	void print (){
+		std::cout<<degrees<<" "<<minutes<<" "<<seconds<<std::endl; 
+	}
+	gps_position(){};
+	gps_position(int d, int m, float s) : degrees(d), minutes(m), seconds(s)
+	{
+	}
+};
+//BOOST_SERIALIZATION_ASSUME_ABSTRACT(FaceVerts)
+namespace boost { namespace mpi {
+	template <>
+struct is_mpi_datatype<gps_position> : mpl::true_ { };
+} }
+namespace boost { namespace mpi {
+	template <>
+struct is_mpi_datatype<TriFaceVerts> : mpl::true_ { };
+} }
+namespace boost { namespace mpi {
+	template <>
+struct is_mpi_datatype<QuadFaceVerts> : mpl::true_ { };
+} }
+
 #endif /* SRC_EXA_DEFS_H_ */

@@ -25,7 +25,12 @@
 
 #define BOOST_TEST_MODULE test-exa
 #include <boost/test/unit_test.hpp>
-
+#include <boost/mpi/environment.hpp>
+#include <boost/mpi/communicator.hpp>
+#include  <boost/mpi/datatype.hpp>
+#include <boost/serialization/access.hpp>
+//#include <mpi.h>
+//#include "mpiDefs.h"
 #include "ExaMesh.h"
 #include "UMesh.h"
 #include "CubicMesh.h"
@@ -36,10 +41,11 @@
 #include "HexDivider.h"
 
 #include "Mapping.h"
-
+namespace mpi = boost::mpi;
 #define DO_SUBDIVISION_TESTS
 
 #ifdef DO_SUBDIVISION_TESTS
+
 static void checkExpectedSize(const UMesh &UM) {
 	BOOST_CHECK_EQUAL(UM.maxNVerts(), UM.numVerts());
 	BOOST_CHECK_EQUAL(UM.maxNBdryTris(), UM.numBdryTris());
@@ -199,7 +205,65 @@ std::unordered_map<emInt,emInt> &map){
     	break;
 	}
 }
+void setArbitraryTriDataForTesting (const emInt i ,emInt (&local)[3], emInt (&global)[3], 
+emInt (&remote)[3], emInt &nDivs, emInt &partId, emInt &remoteId, emInt &type, 
+emInt &elemInd, bool &globalCompare){
+	local[0] = i;
+    local[1] = 2 * i;
+    local[2] = 3 * i;
+    
+    global[0] = 2 * i;
+    global[1] = 3 * i;
+    global[2] = 4 * i;
+    
+    remote[0] = i+1;
+    remote[1] = i + 2;
+    remote[2] = i + 3;
 
+	nDivs= i ; 
+	partId= 2*i; 
+	remoteId= 3*i; 
+	type= 4*i; 
+	elemInd= 5*i;
+	
+
+	if(i%2==0){
+		globalCompare=true; 
+	}else{
+		globalCompare=false;
+	}
+}
+void setArbitraryQuadDataForTesting (const emInt i ,emInt (&local)[4], emInt (&global)[4], 
+emInt (&remote)[4], emInt &nDivs, emInt &partId, emInt &remoteId, emInt &type, 
+emInt &elemInd, bool &globalCompare){
+	local[0] = i;
+    local[1] = 2 * i;
+    local[2] = 3 * i;
+	local[3]=  4 * i; 
+    
+    global[0] = 2 * i;
+    global[1] = 3 * i;
+    global[2] = 4 * i;
+	global[3]=  5*i ; 
+    
+    remote[0] = i+1;
+    remote[1] = i + 2;
+    remote[2] = i + 3;
+	remote[3]=  i + 4 ; 
+
+	nDivs= i ; 
+	partId= 2*i; 
+	remoteId= 3*i; 
+	type= 4*i; 
+	elemInd= 5*i;
+	
+
+	if(i%2==0){
+		globalCompare=true; 
+	}else{
+		globalCompare=false;
+	}
+}
 struct MixedMeshFixture {
 	UMesh *pUM_In, *pUM_Out;
 	exa_map<Edge, EdgeVerts> vertsOnEdges;
@@ -1854,6 +1918,101 @@ BOOST_AUTO_TEST_CASE(QuadMatching){
 
 }
 BOOST_AUTO_TEST_SUITE_END()
+BOOST_FIXTURE_TEST_SUITE(MPIFunctions,MixedMeshFixture)
+BOOST_AUTO_TEST_CASE(FaceType){
+
+	boost::mpi::environment env; 
+	boost::mpi::communicator world; 
+	const size_t containerSize =1000; 
+	emInt localTri [3]; 
+	emInt globalTri [3]; 
+	emInt remoteTri [3]; 
+
+	emInt localQuad [4]; 
+	emInt globalQuad [4]; 
+	emInt remoteQuad [4]; 
+
+	emInt nDivs ; 
+	emInt partId ; 
+	emInt remoteId; 
+	emInt type; 
+	emInt elemInd;
+	bool globalCompare; 
+	if(world.size()>1){
+		if(world.rank()==0){
+
+			std::vector<TriFaceVerts> dummytris;
+			std::vector<QuadFaceVerts> dummyquads; 
+
+			for(auto i =0 ; i<containerSize ; i++){
+				setArbitraryTriDataForTesting(i,localTri,globalTri,remoteTri,
+				nDivs,partId,remoteId,type,elemInd,globalCompare); 
+				setArbitraryQuadDataForTesting(i,localQuad,globalQuad,remoteQuad,
+				nDivs,partId,remoteId,type,elemInd,globalCompare); 
+
+
+
+				QuadFaceVerts quad(nDivs,localQuad,globalQuad,remoteQuad,partId,
+				remoteId,type,elemInd,globalCompare); 
+
+
+				TriFaceVerts tri (nDivs,localTri,globalTri,remoteTri,
+				partId,remoteId,type,elemInd,globalCompare); 
+
+				dummytris.push_back(tri); 
+				dummyquads.push_back(quad); 
+			}
+			world.send(1,0,dummytris); 
+			world.send(1,0,dummyquads); 
+		}
+		if(world.rank()==1){
+			std::vector<TriFaceVerts> dummytris(containerSize,TriFaceVerts(1)); 
+			std::vector<QuadFaceVerts> dummyquads(containerSize,QuadFaceVerts(1)); 
+
+			world.recv(0,0,dummytris);
+			world.recv(0,0,dummyquads);
+			
+
+			for(auto i=0 ; i<containerSize ; i++){
+				setArbitraryTriDataForTesting(i,localTri,globalTri,remoteTri,
+				nDivs,partId,remoteId,type,elemInd,globalCompare); 
+
+				setArbitraryQuadDataForTesting(i,localQuad,globalQuad,remoteQuad,
+				nDivs,partId,remoteId,type,elemInd,globalCompare);
+
+
+				BOOST_CHECK_EQUAL(dummytris[i].getNumDivs(),nDivs); 
+				BOOST_CHECK_EQUAL(dummytris[i].getPartid(),partId); 
+				BOOST_CHECK_EQUAL(dummytris[i].getRemotePartid(),remoteId); 
+				BOOST_CHECK_EQUAL(dummytris[i].getVolElementType(),type); 
+				BOOST_CHECK_EQUAL(dummytris[i].getVolElement(),elemInd); 
+				BOOST_CHECK_EQUAL(dummytris[i].getGlobalCompare(),globalCompare); 
+
+
+				BOOST_CHECK_EQUAL(dummyquads[i].getNumDivs(),nDivs); 
+				BOOST_CHECK_EQUAL(dummyquads[i].getPartid(),partId); 
+				BOOST_CHECK_EQUAL(dummyquads[i].getRemotePartid(),remoteId); 
+				BOOST_CHECK_EQUAL(dummyquads[i].getVolElementType(),type); 
+				BOOST_CHECK_EQUAL(dummyquads[i].getVolElement(),elemInd); 
+				BOOST_CHECK_EQUAL(dummyquads[i].getGlobalCompare(),globalCompare); 
+
+				for (auto k=0 ; k<4 ; k++){
+					BOOST_CHECK_EQUAL(dummyquads[i].getGlobalCorner(k), 
+					globalQuad[k]); 
+					BOOST_CHECK_EQUAL(dummyquads[i].getCorner(k), 
+					localQuad[k]); 
+					BOOST_CHECK_EQUAL(dummyquads[i].getRemoteIndices(k), 
+					remoteQuad[k]); 
+				}
+			}
+		}
+	}
+
+
+
+}
+BOOST_AUTO_TEST_SUITE_END()
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

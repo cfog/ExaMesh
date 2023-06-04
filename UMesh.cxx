@@ -1223,9 +1223,9 @@ void UMesh::TestMPI(const emInt &nDivs, const emInt &nParts){
 
  	this->partFaceMatching(this,parts,vecCPD,tris,quads); 
 
-	for(auto k=0 ; k<nParts; k++){
-		std::cout<<"size of tri: "<<quads[k].size()<<std::endl; 
-	}
+	// for(auto k=0 ; k<nParts; k++){
+	// 	std::cout<<"size of tri: "<<quads[k].size()<<std::endl; 
+	// }
 
 	for(auto i=0 ; i<nParts; i++){
 		auto coarse= this->extractCoarseMesh
@@ -1236,10 +1236,10 @@ void UMesh::TestMPI(const emInt &nDivs, const emInt &nParts){
 		sprintf(fileName, "TestCases/Coarsesubmesh%03d.vtk", i);
 		shared_ptr->writeVTKFile(fileName); 
 	}
-	for(auto i=0 ; i<nParts;i++){
-		exa_set<TriFaceVerts> tri= submeshes[i]->getTempTriPart();
-		printTris(tri,nDivs);
-	}
+	// for(auto i=0 ; i<nParts;i++){
+	// 	exa_set<TriFaceVerts> tri= submeshes[i]->getTempTriPart();
+	// 	printTris(tri,nDivs);
+	// }
 	assert(submeshes.size()==nParts); 
 
 	for(auto i=0; i<nParts; i++){
