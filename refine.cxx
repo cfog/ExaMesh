@@ -90,8 +90,8 @@ int main(int argc, char* const argv[]) {
 		CubicMesh CMorig(cgnsFileName);
 		if (isParallel){
 			if(isMPI){
-				//CMorig.refineForMPI(nDivs,maxCellsPerPart); 
-				CMorig.TestMPI(nDivs,nTestParts); 
+				CMorig.refineForMPI(); 
+				//CMorig.TestMPI(nDivs,nTestParts); 
 				//CMorig.refineForParallel(nDivs, maxCellsPerPart);
 			}
 			else{
@@ -120,8 +120,8 @@ int main(int argc, char* const argv[]) {
 		UMesh UMorig(inFileBaseName, type, infix);
 		if (isParallel){
 			if(isMPI){
-				//UMorig.refineForMPI(nDivs,maxCellsPerPart); 
-				UMorig.TestMPI(nDivs,nTestParts); 
+				UMorig.refineForMPI(); 
+				//UMorig.TestMPI(nDivs,nTestParts); 
 			}
 			//else{
 				//UMorig.refineForParallel(nDivs, maxCellsPerPart);
