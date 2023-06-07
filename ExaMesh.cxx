@@ -574,69 +574,8 @@ void ExaMesh::refineForMPI() const{
      ,MASTER,MPI_COMM_WORLD);
 
 //    // pInputMesh->extractCoarseMesh()
-
-
-
-
-
-//     MPI_Finalize();
-
-
-	
-#ifndef NDEBUG
-		if(rank==SENDER){
-			emInt global [3]= {20,30,40}; 
-			emInt globalQuad [4] = {21,25,28,31}; 
-
-			QuadFaceVerts quadSender (100,globalQuad,51,61,false); 
-			TriFaceVerts triSender (200,global,10,11,true); 
-			MPI_Send(&triSender,1,Ttri,RECEIVER,tag,MPI_COMM_WORLD); 
-			MPI_Send(&quadSender,1,TQuad,RECEIVER,tag,MPI_COMM_WORLD); 
-			//printTris(triSender); 
-
-		}if(rank==RECEIVER){
-			TriFaceVerts triRecv(10); 
-			QuadFaceVerts quadRecv(20); 
-			MPI_Recv(&triRecv,1,Ttri,SENDER,tag,
-			MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-
-
-			assert(triRecv.getNumDivs()==200); 
-			assert(triRecv.getPartid()==10); 
-			assert(triRecv.getRemotePartid()==11); 
-			assert(triRecv.getGlobalCompare()==true); 
-
-			assert(triRecv.getGlobalCorner(0)==20); 
-			assert(triRecv.getGlobalCorner(1)==30); 
-			assert(triRecv.getGlobalCorner(2)==40); 
-
-
-			MPI_Recv(&quadRecv,1,TQuad,SENDER,tag,
-			MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-
-			assert(quadRecv.getNumDivs()==100); 
-			assert(quadRecv.getPartid()==51); 
-			assert(quadRecv.getRemotePartid()==61); 
-			assert(quadRecv.getGlobalCompare()==false); 
-			assert(quadRecv.getGlobalCorner(0)== 21);
-			assert(quadRecv.getGlobalCorner(1)== 25);
-			assert(quadRecv.getGlobalCorner(2)== 28);
-			assert(quadRecv.getGlobalCorner(3)== 31);
-
-			
-			
-
-
-			//printTris(triRecv);
-		}
-
-#endif
-
-
 	MPI_Finalize(); 
 	
-
-
 
 }
 //Registering MPT Type for these two classes 
