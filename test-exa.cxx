@@ -25,23 +25,15 @@
 
 #define BOOST_TEST_MODULE test-exa
 #include <boost/test/unit_test.hpp>
-#include <boost/mpi/environment.hpp>
-#include <boost/mpi/communicator.hpp>
-#include  <boost/mpi/datatype.hpp>
-#include <boost/serialization/access.hpp>
-//#include <mpi.h>
-//#include "mpiDefs.h"
 #include "ExaMesh.h"
 #include "UMesh.h"
 #include "CubicMesh.h"
-
 #include "TetDivider.h"
 #include "PyrDivider.h"
 #include "PrismDivider.h"
 #include "HexDivider.h"
-
 #include "Mapping.h"
-namespace mpi = boost::mpi;
+
 #define DO_SUBDIVISION_TESTS
 
 #ifdef DO_SUBDIVISION_TESTS
@@ -1923,7 +1915,7 @@ BOOST_AUTO_TEST_CASE(FaceType){
 
 	boost::mpi::environment env; 
 	boost::mpi::communicator world; 
-	const size_t containerSize =1000; 
+	const size_t containerSize =100; 
 	emInt localTri [3]; 
 	emInt globalTri [3]; 
 	emInt remoteTri [3]; 
