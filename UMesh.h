@@ -59,7 +59,7 @@ class UMesh: public ExaMesh {
 	UMesh& operator=(const UMesh&);
 
 public:
-	void partFaceMatching(const ExaMesh* const pEM,
+	void partFaceMatching(
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
 		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )const;		 

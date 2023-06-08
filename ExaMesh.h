@@ -240,7 +240,7 @@ public:
 		return refinedPartQuads; 
 	}
 	virtual void TestMPI(const emInt &nDivs, const emInt &nParts)=0; 
-	virtual void partFaceMatching(const ExaMesh* const pEM,
+	virtual void partFaceMatching(
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
 		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )const=0;	

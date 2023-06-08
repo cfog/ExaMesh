@@ -396,7 +396,10 @@ private:
 
 public:
 	TriFaceVerts(){}; // Dangerous! CHANGE IT LATER ON
-	TriFaceVerts(const int nDivs, const emInt partID = -1, bool globalComparison = false) : FaceVerts(nDivs, 3) {}
+	TriFaceVerts(const int nDivs, const emInt partID = -1, bool globalComparison = false) : FaceVerts(nDivs, 3) {
+		partid=partID; 
+		m_globalComparison=globalComparison;
+	}
 	TriFaceVerts(const int nDivs, emInt v0, const emInt v1, const emInt v2,
 			const emInt type = 0, const emInt elemInd = EMINT_MAX, 
 			const emInt partID=-1,bool globalComparison=false);
@@ -464,7 +467,11 @@ struct QuadFaceVerts : public FaceVerts
 public:
 	QuadFaceVerts(){}; // Dangerous! CHANGE IT LATER ON
 	QuadFaceVerts(const int nDivs, const emInt partID = -1,
-				  const emInt remotePartid = -1, bool globalCompare = false) : FaceVerts(nDivs, 4) {}
+				  const emInt _remotePartid = -1, bool globalCompare = false) : FaceVerts(nDivs, 4) {
+					partid=partID; 
+					remotePartid=_remotePartid; 
+	 				m_globalComparison=globalCompare; 
+				  }
 	QuadFaceVerts(const int nDivs, const emInt v0, const emInt v1, const emInt v2, const emInt v3,
 
 				  const emInt type = 0, const emInt elemInd = EMINT_MAX,
@@ -586,12 +593,12 @@ const exa_set<TriFaceVerts> &remote,emInt nDivs){
 	emInt vert0= localTri.getGlobalCorner(0); 
 	emInt vert1= localTri.getGlobalCorner(1); 
 	emInt vert2= localTri.getGlobalCorner(2); 
-	emInt globalIterTris [3]={
-		iterTris->getGlobalCorner(0),
-		iterTris->getGlobalCorner(1),
-		iterTris->getGlobalCorner(2)
+	// emInt globalIterTris [3]={
+	// 	iterTris->getGlobalCorner(0),
+	// 	iterTris->getGlobalCorner(1),
+	// 	iterTris->getGlobalCorner(2)
 
-	};
+	// };
 
 
 
@@ -632,13 +639,13 @@ const exa_set<QuadFaceVerts> &remote,emInt nDivs){
 	emInt vert1= localQuad.getGlobalCorner(1); 
 	emInt vert2= localQuad.getGlobalCorner(2); 
 	emInt vert3= localQuad.getGlobalCorner(3); 
-	emInt globalIterTris [4]={
-		iterQuads->getGlobalCorner(0),
-		iterQuads->getGlobalCorner(1),
-		iterQuads->getGlobalCorner(2),
-		iterQuads->getGlobalCorner(3)
+	// emInt globalIterTris [4]={
+	// 	iterQuads->getGlobalCorner(0),
+	// 	iterQuads->getGlobalCorner(1),
+	// 	iterQuads->getGlobalCorner(2),
+	// 	iterQuads->getGlobalCorner(3)
 
-	};
+	// };
 	int rotCase = 0;
 	
 	for (int cc = 0; cc < 4; cc++){

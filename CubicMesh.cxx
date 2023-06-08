@@ -30,7 +30,8 @@
 
 #include "exa_config.h"
 #include "GeomUtils.h"
-
+#include <cstdint>
+#include <cstddef>
 #if (HAVE_CGNS == 1)
 #include <cgnslib.h>
 
@@ -338,7 +339,7 @@ void CubicMesh::reorderCubicMesh() {
 	emInt node = 0;
 	for (emInt ii = 0; ii < m_nVerts; ii++) {
 		if (isVertexNode[ii]) {
-			assert(newNodeInd[ii] == EMINT_MAX);
+			assert(newNodeInd[ii] ==  static_cast<emInt>(EMINT_MAX));
 			newNodeInd[ii] = node;
 			node++;
 		}
@@ -347,7 +348,7 @@ void CubicMesh::reorderCubicMesh() {
 	fprintf(stderr, "%'u vertex nodes.\nRenumbering other nodes.\n", node);
 	for (emInt ii = 0; ii < m_nVerts; ii++) {
 		if (!isVertexNode[ii]) {
-			assert(newNodeInd[ii] == EMINT_MAX);
+			assert(newNodeInd[ii] ==  static_cast<emInt>(EMINT_MAX));
 			newNodeInd[ii] = node;
 			node++;
 		}
@@ -662,12 +663,12 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		} // end switch
 	} // end loop to copy most connectivity
 
-	for (emInt ii = 0; ii < realBdryTris.size(); ii++) {
+	for (std::size_t ii = 0; ii < realBdryTris.size(); ii++) {
 		conn = getBdryTriConn(realBdryTris[ii]);
 		remapIndices(10, newIndices, conn, newConn);
 		UCM->addBdryTri(newConn);
 	}
-	for (emInt ii = 0; ii < realBdryQuads.size(); ii++) {
+	for (std::size_t ii = 0; ii < realBdryQuads.size(); ii++) {
 		conn = getBdryQuadConn(realBdryQuads[ii]);
 		remapIndices(16, newIndices, conn, newConn);
 		UCM->addBdryQuad(newConn);
@@ -912,7 +913,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		}
 		UCM->addBdryTri(newConn);
 	}
-	assert(UCM->getSizePartTris()==tris.size());
+	assert(static_cast<std::size_t>(UCM->getSizePartTris())==tris.size());
 	// std::cout<<"partBdryQuads: "<<partBdryQuads.size()<<" "<<
 	// quads.size()<< std::endl; 
 
@@ -1250,7 +1251,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		}
 		UCM->addBdryQuad(newConn);
 	}
-	assert(UCM->getSizePartQuads()==quads.size());
+	assert(static_cast<std::size_t>(UCM->getSizePartQuads())==quads.size());
 	delete[] newIndices;
 	CALLGRIND_TOGGLE_COLLECT
 	;
@@ -1525,7 +1526,7 @@ void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts){
 //	std::cout<<"Entering through function: "<<
 //	std::endl; 
 
-	struct RefineStats RS;
+	//struct RefineStats RS;
 	std::vector<Part>             parts;
 	std::vector<CellPartData>     vecCPD; 
 	std::set<int> triRotations; 
@@ -1541,7 +1542,7 @@ void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts){
 
 	std::vector<std::shared_ptr<UMesh>> refinedUMeshes;
 
- 	this->partFaceMatching(this,parts,vecCPD,tris,quads);
+ 	this->partFaceMatching(parts,vecCPD,tris,quads);
 
 
 	for(auto i=0 ; i<nParts; i++){
@@ -1552,7 +1553,7 @@ void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts){
 		submeshes.push_back(shared_ptr); 
 	}
 
-	assert(submeshes.size()==nParts); 
+	assert(submeshes.size()==static_cast<std::size_t>(nParts)); 
 
 	for(auto i=0; i<nParts; i++){
 	
@@ -1700,7 +1701,7 @@ void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts){
 	std::cout<<std::endl; 
 	
 }
-void CubicMesh::partFaceMatching(const ExaMesh* const pEM,
+void CubicMesh::partFaceMatching(
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
 		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )const{
@@ -1716,7 +1717,7 @@ void CubicMesh::partFaceMatching(const ExaMesh* const pEM,
 
 	emInt numDivs=1; 	
 
-	for(emInt iPart=0 ; iPart<parts.size(); iPart++){
+	for(std::size_t iPart=0 ; iPart<parts.size(); iPart++){
 		//emInt iPart=1; 
 		
 		const emInt first = parts[iPart].getFirst();
@@ -1836,7 +1837,7 @@ void CubicMesh::partFaceMatching(const ExaMesh* const pEM,
 
 	}
 
-	auto k=0 ;  
+	std::size_t k=0 ;  
 
 	for(auto itr=partBdryTris.begin(); itr!=partBdryTris.end();itr++){
 		k++; 
@@ -1874,7 +1875,7 @@ void CubicMesh::partFaceMatching(const ExaMesh* const pEM,
 		}
 
 	}
-	auto kquad=0; 
+	std::size_t kquad=0; 
 	for(auto itr=partBdryQuads.begin(); 
 	itr!=partBdryQuads.end();itr++){
 

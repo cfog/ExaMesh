@@ -7,7 +7,7 @@
 inline MPI_Datatype register_mpi_type(Part const&){
 	constexpr std::size_t num_members=9; 
 	int lengths[num_members];
-	for (auto i=0 ; i<num_members; i++){
+	for (std::size_t i=0 ; i<num_members; i++){
 		lengths[i]= 1; 
 	}
 	Part dummy(1,1,1,1,1,1,1,1,1);
@@ -24,7 +24,7 @@ inline MPI_Datatype register_mpi_type(Part const&){
 	MPI_Get_address(&dummy.m_last,&offsets[7]); 
 	MPI_Get_address(&dummy.m_nParts,&offsets[8]); 
 
-	for (auto i=0 ; i<num_members ;i++){
+	for (std::size_t i=0 ; i<num_members ;i++){
 		offsets[i]=MPI_Aint_diff(offsets[i],baseadress);
 	}
     MPI_Datatype types[num_members]={MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,MPI_DOUBLE,
@@ -40,7 +40,7 @@ inline MPI_Datatype register_mpi_type(CellPartData const&){
 	int block_length[lengths]= {1,1,3};
 	//int block_length[lengths]= {1,1};
 	MPI_Aint displacements [lengths]; 
-	MPI_Aint base_address; 
+	//MPI_Aint base_address; 
 	//CellPartData dummy (1,1,1,1,1) ; 
     
     displacements[0]=offsetof(CellPartData,m_index); 
@@ -75,22 +75,22 @@ std::unordered_set<T>& destinationSet) {
 	assert(destinationSet.size()==sourceVector.size()); 
 }
 
-inline void registerTypes(MPI_Datatype &Tri, MPI_Datatype &Quad ,
-MPI_Datatype &TypevecCPD ,
-MPI_Datatype &TypePart ){
-	emInt globalTri[3]={10,20,30}; 
-	emInt globalQuad [4]= {10,20,30,40}; 
-	QuadFaceVerts dummyQuad (1,globalQuad,1,1,true); 
-	TriFaceVerts dummyTri(1,globalTri,1,1,false); 
-	//Tri= register_mpi_type(dummyTri); 
-	//Quad= register_mpi_type(dummyQuad);
-	Part DummyPart(1,1,1,1,1,1,1,1,1); 
+// inline void registerTypes(MPI_Datatype &Tri, MPI_Datatype &Quad ,
+// MPI_Datatype &TypevecCPD ,
+// MPI_Datatype &TypePart ){
+// 	emInt globalTri[3]={10,20,30}; 
+// 	emInt globalQuad [4]= {10,20,30,40}; 
+// 	QuadFaceVerts dummyQuad (1,globalQuad,1,1,true); 
+// 	TriFaceVerts dummyTri(1,globalTri,1,1,false); 
+// 	//Tri= register_mpi_type(dummyTri); 
+// 	//Quad= register_mpi_type(dummyQuad);
+// 	Part DummyPart(1,1,1,1,1,1,1,1,1); 
 
- 	CellPartData DummyCellPartData(1,1,1.0,1.0,1.0); 
-	TypePart= register_mpi_type(DummyPart);
-	TypevecCPD= register_mpi_type(DummyCellPartData); 
+//  	CellPartData DummyCellPartData(1,1,1.0,1.0,1.0); 
+// 	TypePart= register_mpi_type(DummyPart);
+// 	TypevecCPD= register_mpi_type(DummyCellPartData); 
 
-}
+// }
 // inline MPI_Datatype register_mpi_type(TriFaceVerts const&){
 // 	constexpr std::size_t num_members= 18 ; 
 

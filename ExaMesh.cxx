@@ -36,7 +36,8 @@ using std::endl;
 #include "Part.h"
 #include "UMesh.h"
 
-#include "mpi.h"
+//#include "mpi.h"
+#include <boost/mpi.hpp>
 #include <fstream>
 
 
@@ -532,104 +533,109 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 //	fprintf(stderr, "Done building face cell connectivity\n");
 //}
 void ExaMesh::refineForMPI() const{
-	MPI_Init(NULL,NULL); 
-	emInt rank, size; 
-	emInt SENDER=0; 
-	emInt RECEIVER=1; 
-	emInt tag=0; 
-	MPI_Comm_size(MPI_COMM_WORLD,&size); 
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
-	MPI_Datatype Ttri,TQuad,TPart, TCellPartData; 
-	registerTypes(Ttri,TQuad,TCellPartData,TPart);  
-	emInt MASTER=0; 
-	emInt nParts = size;
- 	std::vector<Part> parts;
-	std::vector<CellPartData> vecCPD;
- 	emInt N_vecCPD; 
- 	struct RefineStats RS;
+	boost::mpi::environment env; 
+	//env.finalized(); 
+	//boost::mpi::commuic
+	
+ 	//MPI_Init(NULL,NULL); 
+	boost::mpi::communicator world; 
+// 	emInt rank, size; 
+// 	emInt SENDER=0; 
+// 	emInt RECEIVER=1; 
+// 	emInt tag=0; 
+// 	MPI_Comm_size(MPI_COMM_WORLD,&size); 
+// 	MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
+// 	MPI_Datatype Ttri,TQuad,TPart, TCellPartData; 
+// 	registerTypes(Ttri,TQuad,TCellPartData,TPart);  
+// 	emInt MASTER=0; 
+// 	emInt nParts = size;
+//  	std::vector<Part> parts;
+// 	std::vector<CellPartData> vecCPD;
+//  	emInt N_vecCPD; 
+//  	struct RefineStats RS;
 
-    if(rank==MASTER){
+//     if(rank==MASTER){
 
-    	std::vector<std::unordered_set<TriFaceVerts>>  tris; 
-		std::vector<std::unordered_set<QuadFaceVerts>> quads;
-		partitionCells(this, size, parts, vecCPD);
- 		N_vecCPD= vecCPD.size(); 
-        this->partFaceMatching(this,parts,vecCPD,tris,quads);
+//     	std::vector<std::unordered_set<TriFaceVerts>>  tris; 
+// 		std::vector<std::unordered_set<QuadFaceVerts>> quads;
+// 		partitionCells(this, size, parts, vecCPD);
+//  		N_vecCPD= vecCPD.size(); 
+//         this->partFaceMatching(this,parts,vecCPD,tris,quads);
 
     
 
- 	}else{
- 		parts.resize(size); // will be initialized 
- 	}	
- 	MPI_Bcast(&N_vecCPD,1,MPI_INT32_T,MASTER,MPI_COMM_WORLD);
- 	if(rank!=MASTER){
- 		vecCPD.resize(N_vecCPD); 
- 	}
-//     // Not efficinet ; it needs to replace with MPI::Send and 
-//     // MPI::Receive to only communicate every pros's data 
-//     // Each part only needs a chunk of parts and vecCPD 
- 	MPI_Bcast(parts.data(),size,TPart,MASTER,MPI_COMM_WORLD); 
+//  	}else{
+//  		parts.resize(size); // will be initialized 
+//  	}	
+//  	MPI_Bcast(&N_vecCPD,1,MPI_INT32_T,MASTER,MPI_COMM_WORLD);
+//  	if(rank!=MASTER){
+//  		vecCPD.resize(N_vecCPD); 
+//  	}
+// //     // Not efficinet ; it needs to replace with MPI::Send and 
+// //     // MPI::Receive to only communicate every pros's data 
+// //     // Each part only needs a chunk of parts and vecCPD 
+//  	MPI_Bcast(parts.data(),size,TPart,MASTER,MPI_COMM_WORLD); 
 
- 	MPI_Bcast(vecCPD.data(),vecCPD.size(),TCellPartData
-     ,MASTER,MPI_COMM_WORLD);
+//  	MPI_Bcast(vecCPD.data(),vecCPD.size(),TCellPartData
+//      ,MASTER,MPI_COMM_WORLD);
 
-//    // pInputMesh->extractCoarseMesh()
-	MPI_Finalize(); 
+// //    // pInputMesh->extractCoarseMesh()
+ 	//MPI_Finalize(); 
 	
 
 }
 //Registering MPT Type for these two classes 
-void ExaMesh::refineMPI(){
+// void ExaMesh::refineMPI(){
 
-//     MPI_Init(NULL,NULL); 
-// 	emInt rank, size; 
-// 	emInt MASTER=0; 
-// 	MPI_Comm_size(MPI_COMM_WORLD,&size); 
-// 	MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
-//     emInt nParts = size;
-// 	std::vector<Part> parts;
-// 	std::vector<CellPartData> vecCPD;
-// 	emInt N_vecCPD; 
-// 	struct RefineStats RS;
-// 	//Introducing new MPI types 
-// 	Part DummyPart(1,1,1,1,1,1,1,1,1); 
-// 	// Just for the purpose of type generation, passing random variables
-// 	// based on the desired type 
-// 	CellPartData DummyCellPartData(1,1,1.0,1.0,1.0); 
-// 	MPI_Datatype TPart= register_mpi_type(DummyPart);
-// 	MPI_Datatype TCellPartData= register_mpi_type(DummyCellPartData); 
-//     // All ranks will have a copy of inputMeh; needs to be avoided in future 
+// //     MPI_Init(NULL,NULL); 
+// // 	emInt rank, size; 
+// // 	emInt MASTER=0; 
+// // 	MPI_Comm_size(MPI_COMM_WORLD,&size); 
+// // 	MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
+// //     emInt nParts = size;
+// // 	std::vector<Part> parts;
+// // 	std::vector<CellPartData> vecCPD;
+// // 	emInt N_vecCPD; 
+// // 	struct RefineStats RS;
+// // 	//Introducing new MPI types 
+// // 	Part DummyPart(1,1,1,1,1,1,1,1,1); 
+// // 	// Just for the purpose of type generation, passing random variables
+// // 	// based on the desired type 
+// // 	CellPartData DummyCellPartData(1,1,1.0,1.0,1.0); 
+// // 	MPI_Datatype TPart= register_mpi_type(DummyPart);
+// // 	MPI_Datatype TCellPartData= register_mpi_type(DummyCellPartData); 
+// //     // All ranks will have a copy of inputMeh; needs to be avoided in future 
 
 	 
-//     if(rank==MASTER){
+// //     if(rank==MASTER){
 
-//         std::vector<std::set<TriFaceVerts>>  tris; 
+// //         std::vector<std::set<TriFaceVerts>>  tris; 
 
-// 	    std::vector<std::set<QuadFaceVerts>> quads;
+// // 	    std::vector<std::set<QuadFaceVerts>> quads;
 
-// 		partitionCells(this, size, parts, vecCPD);
-// 		N_vecCPD= vecCPD.size(); 
-//         this->partFaceMatching(this,
-//         parts,vecCPD,tris,quads);
+// // 		partitionCells(this, size, parts, vecCPD);
+// // 		N_vecCPD= vecCPD.size(); 
+// //         this->partFaceMatching(this,
+// //         parts,vecCPD,tris,quads);
 
     
 
-// 	}else{
-// 		parts.resize(size); // will be initialized 
-// 	}	
-// 	MPI_Bcast(&N_vecCPD,1,MPI_INT32_T,MASTER,MPI_COMM_WORLD);
-// 	if(rank!=MASTER){
-// 		vecCPD.resize(N_vecCPD); 
-// 	}
-//     // Not efficinet ; it needs to replace with MPI::Send and 
-//     // MPI::Receive to only communicate every pros's data 
-//     // Each part only needs a chunk of parts and vecCPD 
-// 	MPI_Bcast(parts.data(),size,TPart,MASTER,MPI_COMM_WORLD); 
+// // 	}else{
+// // 		parts.resize(size); // will be initialized 
+// // 	}	
+// // 	MPI_Bcast(&N_vecCPD,1,MPI_INT32_T,MASTER,MPI_COMM_WORLD);
+// // 	if(rank!=MASTER){
+// // 		vecCPD.resize(N_vecCPD); 
+// // 	}
+// //     // Not efficinet ; it needs to replace with MPI::Send and 
+// //     // MPI::Receive to only communicate every pros's data 
+// //     // Each part only needs a chunk of parts and vecCPD 
+// // 	MPI_Bcast(parts.data(),size,TPart,MASTER,MPI_COMM_WORLD); 
 
-// 	MPI_Bcast(vecCPD.data(),vecCPD.size(),TCellPartData
-//     ,MASTER,MPI_COMM_WORLD);
+// // 	MPI_Bcast(vecCPD.data(),vecCPD.size(),TCellPartData
+// //     ,MASTER,MPI_COMM_WORLD);
 
-//    // pInputMesh->extractCoarseMesh()
+// //    // pInputMesh->extractCoarseMesh()
 
 
 
@@ -637,4 +643,4 @@ void ExaMesh::refineMPI(){
 
 //     MPI_Finalize();
 
-}
+// }

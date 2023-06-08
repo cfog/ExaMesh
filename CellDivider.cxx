@@ -312,6 +312,7 @@ QuadFaceVerts::QuadFaceVerts(const int nDivs, const emInt v0, const emInt v1,
 		const emInt elemInd,  const emInt partID, const emInt remoteID,
 		bool globalCompare) :
 		FaceVerts(nDivs, 4) {
+	partid    = partID; 
 	m_volElem = elemInd;
 	m_volElemType = type;
 	remotePartid=remoteID; 
