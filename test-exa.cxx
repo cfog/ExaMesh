@@ -256,6 +256,33 @@ emInt &elemInd, bool &globalCompare){
 		globalCompare=false;
 	}
 }
+void setArbitrary_CellPartData_ForTesting (const emInt i ,double (&coords)[3],
+ emInt &index, emInt &cellType){
+
+    
+    coords[0] = i+1;
+    coords[1] = i + 2;
+    coords[2] = i + 3;
+
+	index= 10*i; 
+	cellType= 20*i; 
+}
+void setArbitrary_Part_DataForTesting (const emInt i , double &xmin, double &xmax, 
+double &ymin, double &ymax, double &zmin, double &zmax,
+emInt &first, emInt &last, emInt &parts ){
+	xmin= 1.2*i; 
+	xmax= 2.4*i ; 
+
+	ymin= 3.2*i; 
+	ymax= 1.2+i; 
+
+	zmin= 2.3+i; 
+	zmax= 5.2*i; 
+
+	first= i; 
+	last=  i+1; 
+	parts= i+2; 
+}
 struct MixedMeshFixture {
 	UMesh *pUM_In, *pUM_Out;
 	exa_map<Edge, EdgeVerts> vertsOnEdges;
@@ -1911,7 +1938,7 @@ BOOST_AUTO_TEST_CASE(QuadMatching){
 }
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_FIXTURE_TEST_SUITE(MPIFunctions,MixedMeshFixture)
-BOOST_AUTO_TEST_CASE(FaceType){
+BOOST_AUTO_TEST_CASE(CustomTypeRegisteration){
 
 	boost::mpi::environment env; 
 	boost::mpi::communicator world; 
@@ -1930,17 +1957,38 @@ BOOST_AUTO_TEST_CASE(FaceType){
 	emInt type; 
 	emInt elemInd;
 	bool globalCompare; 
+
+	double m_xmin, m_xmax, m_ymin, m_ymax, m_zmin, m_zmax;
+	emInt m_first, m_last, m_nParts;
+
+	emInt m_index, m_cellType;
+	double m_coords[3];
 	if(world.size()>1){
 		if(world.rank()==0){
 
 			std::vector<TriFaceVerts> dummytris;
 			std::vector<QuadFaceVerts> dummyquads; 
 
+			std::vector<Part> dummyPart; 
+			std::vector<CellPartData> dummyCellPartData; 
+
 			for(auto i =0 ; i<containerSize ; i++){
 				setArbitraryTriDataForTesting(i,localTri,globalTri,remoteTri,
 				nDivs,partId,remoteId,type,elemInd,globalCompare); 
+
 				setArbitraryQuadDataForTesting(i,localQuad,globalQuad,remoteQuad,
 				nDivs,partId,remoteId,type,elemInd,globalCompare); 
+
+				setArbitrary_Part_DataForTesting(i,m_xmin,m_xmax,
+				m_ymin,m_ymax,m_zmin,m_zmax,m_first,m_last,m_nParts); 
+
+				setArbitrary_CellPartData_ForTesting(i,m_coords,m_index,m_cellType); 
+
+				Part part(m_first,m_last,m_nParts,m_xmin,
+				m_xmax,m_ymin,m_ymax,m_zmin,m_zmax); 
+
+				CellPartData cellPartData (m_index,m_cellType,m_coords[0],m_coords[1],
+				m_coords[2]); 
 
 
 
@@ -1953,16 +2001,27 @@ BOOST_AUTO_TEST_CASE(FaceType){
 
 				dummytris.push_back(tri); 
 				dummyquads.push_back(quad); 
+				dummyPart.push_back(part); 
+				dummyCellPartData.push_back(cellPartData); 
 			}
 			world.send(1,0,dummytris); 
 			world.send(1,0,dummyquads); 
+			world.send(1,0,dummyPart); 
+			world.send(1,0,dummyCellPartData); 
+
 		}
 		if(world.rank()==1){
 			std::vector<TriFaceVerts> dummytris(containerSize,TriFaceVerts(1)); 
 			std::vector<QuadFaceVerts> dummyquads(containerSize,QuadFaceVerts(1)); 
 
+			std::vector<Part> dummyPart(containerSize,Part()); 
+			std::vector<CellPartData> dummyCellPartData(containerSize,CellPartData()); 
+
+
 			world.recv(0,0,dummytris);
 			world.recv(0,0,dummyquads);
+			world.recv(0,0,dummyPart); 
+			world.recv(0,0,dummyCellPartData); 
 			
 
 			for(auto i=0 ; i<containerSize ; i++){
@@ -1971,6 +2030,12 @@ BOOST_AUTO_TEST_CASE(FaceType){
 
 				setArbitraryQuadDataForTesting(i,localQuad,globalQuad,remoteQuad,
 				nDivs,partId,remoteId,type,elemInd,globalCompare);
+
+
+				setArbitrary_Part_DataForTesting(i,m_xmin,m_xmax,
+				m_ymin,m_ymax,m_zmin,m_zmax,m_first,m_last,m_nParts); 
+
+				setArbitrary_CellPartData_ForTesting(i,m_coords,m_index,m_cellType); 
 
 
 				BOOST_CHECK_EQUAL(dummytris[i].getNumDivs(),nDivs); 
@@ -1987,6 +2052,21 @@ BOOST_AUTO_TEST_CASE(FaceType){
 				BOOST_CHECK_EQUAL(dummyquads[i].getVolElementType(),type); 
 				BOOST_CHECK_EQUAL(dummyquads[i].getVolElement(),elemInd); 
 				BOOST_CHECK_EQUAL(dummyquads[i].getGlobalCompare(),globalCompare); 
+
+				BOOST_CHECK_EQUAL(dummyPart[i].getFirst(),m_first); 
+				BOOST_CHECK_EQUAL(dummyPart[i].getLast(), m_last); 
+				BOOST_CHECK_EQUAL(dummyPart[i].getXmax(), m_xmax); 
+				BOOST_CHECK_EQUAL(dummyPart[i].getXmin(), m_xmin); 
+				BOOST_CHECK_EQUAL(dummyPart[i].getYmax(), m_ymax); 
+				BOOST_CHECK_EQUAL(dummyPart[i].getYmin(), m_ymin); 
+				BOOST_CHECK_EQUAL(dummyPart[i].getZmax(), m_zmax); 
+				BOOST_CHECK_EQUAL(dummyPart[i].getZmin(), m_zmin); 
+
+				BOOST_CHECK_EQUAL(dummyCellPartData[i].getCellType(),m_cellType); 
+				BOOST_CHECK_EQUAL(dummyCellPartData[i].getCoord(0)  ,m_coords[0]); 
+				BOOST_CHECK_EQUAL(dummyCellPartData[i].getCoord(1)  ,m_coords[1]); 
+				BOOST_CHECK_EQUAL(dummyCellPartData[i].getCoord(2)  ,m_coords[2]); 
+
 
 				for (auto k=0 ; k<4 ; k++){
 					BOOST_CHECK_EQUAL(dummyquads[i].getGlobalCorner(k), 

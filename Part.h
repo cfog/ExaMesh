@@ -30,7 +30,17 @@
 
 #include <values.h>
 #include "mpi.h"
+#include <boost/serialization/access.hpp>
+#include <boost/mpi/datatype.hpp>
 class CellPartData {
+private: 
+	friend class boost::serialization::access; 
+	template <class Archive> 
+	void serialize(Archive &ar, const unsigned int /*version*/)	{
+		ar &m_index; 
+		ar &m_cellType; 
+		ar &m_coords; 
+	}
 	emInt m_index, m_cellType;
 	double m_coords[3];
 public:
@@ -60,6 +70,21 @@ public:
 };
 
 class Part {
+private: 
+	friend class boost::serialization::access; 
+	template <class Archive> 
+	void serialize(Archive &ar, const unsigned int /*version*/)	{
+		ar &m_xmin; 
+		ar &m_xmax; 
+		ar &m_ymin; 
+		ar &m_ymax; 
+		ar &m_zmin; 
+		ar &m_zmax; 
+		ar &m_first; 
+		ar &m_last; 
+		ar &m_nParts; 
+	}
+
 	double m_xmin, m_xmax, m_ymin, m_ymax, m_zmin, m_zmax;
 	emInt m_first, m_last, m_nParts;
 public:
@@ -124,6 +149,12 @@ public:
 	
 	friend MPI_Datatype register_mpi_type(Part const&);
 };
-
-
+namespace boost { namespace mpi {
+	template <>
+struct is_mpi_datatype<Part> : mpl::true_ { };
+} }
+namespace boost { namespace mpi {
+	template <>
+struct is_mpi_datatype<CellPartData> : mpl::true_ { };
+} }
 #endif /* SRC_PART_H_ */
