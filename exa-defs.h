@@ -867,35 +867,13 @@ inline void printTris(const TriFaceVerts &tris)
 	//}
 	//}
 }
-class gps_position
-{
-private:
-	friend class boost::serialization::access;
-	template <class Archive>
-	void serialize(Archive &ar, const unsigned int version)
-	{
-		ar &degrees;
-		ar &minutes;
-		ar &seconds;
-	}
-	int degrees;
-	int minutes;
-	float seconds;
+using triHash               = std::unordered_set<TriFaceVerts>; 
+using quadHash              = std::unordered_set<QuadFaceVerts>; 
+using vecTriHash            = std::vector<triHash>; 
+using vecQuadHash           = std::vector<quadHash>;
 
-public:
-	void print (){
-		std::cout<<degrees<<" "<<minutes<<" "<<seconds<<std::endl; 
-	}
-	gps_position(){};
-	gps_position(int d, int m, float s) : degrees(d), minutes(m), seconds(s)
-	{
-	}
-};
-//BOOST_SERIALIZATION_ASSUME_ABSTRACT(FaceVerts)
-namespace boost { namespace mpi {
-	template <>
-struct is_mpi_datatype<gps_position> : mpl::true_ { };
-} }
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(FaceVerts)
+
 namespace boost { namespace mpi {
 	template <>
 struct is_mpi_datatype<TriFaceVerts> : mpl::true_ { };
@@ -904,5 +882,5 @@ namespace boost { namespace mpi {
 	template <>
 struct is_mpi_datatype<QuadFaceVerts> : mpl::true_ { };
 } }
-
+//using BoostMPI     = boost::mpi; 
 #endif /* SRC_EXA_DEFS_H_ */
