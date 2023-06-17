@@ -172,13 +172,14 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input,
 #ifndef NDEBUG
 	fprintf(stderr, "\nDone with hexes\n");
 #endif
-	exa_set<TriFaceVerts> tris=pVM_input->getTriPart(); 
-	// std::cout<<"verts on Tri size: "<<vertsOnTris.size()<<
-	// std::endl; 
+	exa_set<TriFaceVerts> tris=pVM_input->getTempTriPart(); 
+
+
 	BdryTriDivider BTD(pVM_output, nDivs);
 	for (emInt iBT = 0; iBT < pVM_input->numBdryTris(); iBT++) {
 		const emInt *const thisBdryTri = pVM_input->getBdryTriConn(iBT);
 		TriFaceVerts TFV (nDivs,thisBdryTri[0],thisBdryTri[1],thisBdryTri[2]); 
+		TFV.setCompare(false); 
 		
 		BTD.setupCoordMapping(thisBdryTri);
 		// Shouldn't need to divide anything at all here, but these function
@@ -197,29 +198,31 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input,
 		if(it!=tris.end()){
 			TFV.setPartID(it->getPartid()); 
 			TFV.setRemotePartID(it->getRemotePartid()); 
-			emInt remoteIndices [3]={
+			emInt remoteIndices [3]=
+			{
 				it->getRemoteIndices(0),
 				it->getRemoteIndices(1),
 				it->getRemoteIndices(2)
 			}; 
-			emInt global[3]={
+			emInt global[3]=
+			{
 				it->getGlobalCorner(0),
 				it->getGlobalCorner(1),
 				it->getGlobalCorner(2)
 
 			}; 
-			TFV.setGlobalCorners(global[0],global[1],global[2]); 
-			TFV.setRemoteIndices(remoteIndices); 
-			BTD.setRefinedVerts(TFV);
-			pVM_output->updateRefinedPartTris(TFV);
-			// for (int ii = 0; ii <= nDivs ; ii++) {
-	 		// 	for (int jj = 0; jj <= nDivs-ii ; jj++) {
-			// 		std::cout<<"ii: "<<
-			// 		ii<<" jj: "<<jj<<" "<<TFV.getIntVertInd(ii,jj)<<std::endl;
-			// 	}
-			// }	
+			emInt local[3]=
+			{
+				thisBdryTri[0],
+				thisBdryTri[1], 
+				thisBdryTri[2]
+			}; 
+			TriFaceVerts TF(nDivs,local,global,remoteIndices,
+			it->getPartid(),it->getRemotePartid());
+			TF.setCompare(true);  
+			BTD.setRefinedVerts(TF);
+			pVM_output->updateRefinedPartTris(TF);
 
-			// std::cout<<std::endl; 
 		}
 			
 	
@@ -229,12 +232,13 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input,
 	fprintf(stderr, "\nDone with bdry tris\n");
 #endif
 
-	exa_set<QuadFaceVerts> quads= pVM_input->getQuadPart(); 
+	exa_set<QuadFaceVerts> quads= pVM_input->getTempQuadPart(); 
 	BdryQuadDivider BQD(pVM_output, nDivs);
 	for (emInt iBQ = 0; iBQ < pVM_input->numBdryQuads(); iBQ++) {
 		const emInt *const thisBdryQuad = pVM_input->getBdryQuadConn(iBQ);
 		QuadFaceVerts QFV(nDivs,thisBdryQuad[0],thisBdryQuad[1],
 		thisBdryQuad[2],thisBdryQuad[3]); 
+		QFV.setCompare(false); 
 		BQD.setupCoordMapping(thisBdryQuad);
 
 		// Shouldn't need to divide anything at all here, but this function
@@ -266,10 +270,18 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input,
 				it->getGlobalCorner(3)
 
 			}; 
-			QFV.setGlobalCorners(global[0],global[1],global[2],global[3]); 
-			QFV.setRemoteIndices(remoteIndices); 
-			BQD.setRefinedVerts(QFV);
-			pVM_output->updateRefinedPartQuads(QFV);
+			emInt local[4]=
+			{
+				thisBdryQuad[0], 
+				thisBdryQuad[1], 
+				thisBdryQuad[2], 
+				thisBdryQuad[3]
+			}; 
+			QuadFaceVerts QF(nDivs,local,global,remoteIndices,it->getPartid(),
+			it->getRemotePartid()); 
+			QF.setCompare(true); 
+			BQD.setRefinedVerts(QF);
+			pVM_output->updateRefinedPartQuads(QF);
 
 		}
 	}

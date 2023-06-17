@@ -1892,6 +1892,7 @@ BOOST_AUTO_TEST_CASE(QuadMatching){
 	//Note that passing the same temp local & remote indices 
 	QuadFaceVerts refQuad (nDivs,localForRef,globalForRef_LocalQuad,
 	remoteForRef,partID,remoteID); 
+	refQuad.setCompare(true); 
 	SetArtificialIntVertQuad(refQuad,nDivs);
 	
 
@@ -1913,6 +1914,7 @@ BOOST_AUTO_TEST_CASE(QuadMatching){
 		
 		QuadFaceVerts quad (nDivs,localForRef,globalForeRemote
 		, remoteForRef,remoteID,partID); 
+		quad.setCompare(true); 
 
 		exa_set<QuadFaceVerts> setQuads={quad};
 	

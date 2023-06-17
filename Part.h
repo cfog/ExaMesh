@@ -66,6 +66,7 @@ public:
 		return m_index;
 	}
 	friend MPI_Datatype register_mpi_type(CellPartData const&);
+	friend bool operator==(const CellPartData& a, const CellPartData& b); 
 
 };
 
@@ -148,6 +149,8 @@ public:
 	}
 	
 	friend MPI_Datatype register_mpi_type(Part const&);
+	friend bool operator==(const Part& a, const Part& b); 
+
 };
 namespace boost { namespace mpi {
 	template <>

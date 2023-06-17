@@ -57,7 +57,7 @@ TriFaceVerts::TriFaceVerts(const int nDivs, const emInt v0, const emInt v1,
 		FaceVerts(nDivs, 3) {
 	m_volElem = elemInd;
 	m_volElemType = type;
-	partid=partID; 
+	m_partId=partID; 
 	m_globalComparison=globalComparison;
 	setCorners(v0, v1, v2);
 }
@@ -68,15 +68,15 @@ TriFaceVerts::TriFaceVerts(const int nDivs, const emInt local[3],
 	bool globalComparison):FaceVerts(nDivs,3){
 		m_volElem = elemInd;
 		m_volElemType = type;
-		partid=partid_; 
-		remotePartid=remoteID_;
+		m_partId=partid_; 
+		m_remoteId=remoteID_;
 		m_globalComparison=globalComparison; 
 		setCorners(local[0],local[1],local[2]); 
 		emInt output [3]; 
 		sortVerts3(global,output);
 		for(auto i=0 ; i<3; i++){
-			global_corners[i]=global[i]; 
-			global_sorted[i]= output[i];
+			m_global[i]=global[i]; 
+			m_sortedGlobal[i]= output[i];
 		}	 
 }
 TriFaceVerts::TriFaceVerts(const int nDivs,const emInt global[3],
@@ -85,8 +85,8 @@ const emInt type, const emInt elemInd
 ):FaceVerts(nDivs,3){
 		m_volElem = elemInd;
 		m_volElemType = type;
-		partid=partid_; 
-		remotePartid=remoteID_; 
+		m_partId=partid_; 
+		m_remoteId=remoteID_; 
 		m_globalComparison=globalComparison;
 		emInt local[3]={-1,-1,-1};
 	
@@ -94,8 +94,8 @@ const emInt type, const emInt elemInd
 		emInt output [3]; 
 		sortVerts3(global,output);
 		for(auto i=0 ; i<3; i++){
-			global_corners[i]=global[i]; 
-			global_sorted[i]= output[i];
+			m_global[i]=global[i]; 
+			m_sortedGlobal[i]= output[i];
 		}	 
 }
 TriFaceVerts::TriFaceVerts(const int nDivs, const emInt local[3], 
@@ -105,8 +105,8 @@ TriFaceVerts::TriFaceVerts(const int nDivs, const emInt local[3],
 	FaceVerts(nDivs,3){
 	m_volElem = elemInd;
 	m_volElemType = type;
-	partid=partid_; 
-	remotePartid=remoteID_;
+	m_partId=partid_; 
+	m_remoteId=remoteID_;
 	m_globalComparison=globalComparison; 
 	setCorners(local[0],local[1],local[2]); 
 	emInt output [3];
@@ -114,10 +114,10 @@ TriFaceVerts::TriFaceVerts(const int nDivs, const emInt local[3],
 	sortVerts3(global,output);
 	sortVerts3(remoteIndices_,remoteOutput); 
 	for(auto i=0 ; i<3; i++){
-		global_corners[i]=global[i]; 
-		global_sorted[i]= output[i];
-		remoteIndices[i]= remoteIndices_[i];
-		sortedRemoteIndices[i]= remoteOutput[i]; 
+		m_global[i]=global[i]; 
+		m_sortedGlobal[i]= output[i];
+		m_remote[i]= remoteIndices_[i];
+		m_sortedRemote[i]= remoteOutput[i]; 
 	}	
 }; 
 
@@ -241,8 +241,8 @@ bool operator==(const TriFaceVerts &a, const TriFaceVerts &b) {
 			//&& a.partid==b.partid
 			);
 		}if(a.m_globalComparison==true && b.m_globalComparison==true){
-			return (a.global_sorted[0] == b.global_sorted[0] && a.global_sorted[1] == b.global_sorted[1]
-			&& a.global_sorted[2] == b.global_sorted[2]
+			return (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+			&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
 			);
 		}
 
@@ -261,19 +261,19 @@ bool operator==(const TriFaceVerts &a, const TriFaceVerts &b) {
 }
 
 bool operator<(const TriFaceVerts &a, const TriFaceVerts &b){
-		if(a.partid==b.partid &&
-			a.global_sorted[0]==b.global_sorted[0]&&
-			a.global_sorted[1]==b.global_sorted[1]&&
-			a.global_sorted[2]==b.global_sorted[2]  ){
+		if(a.m_partId==b.m_partId &&
+			a.m_sortedGlobal[0]==b.m_sortedGlobal[0]&&
+			a.m_sortedGlobal[1]==b.m_sortedGlobal[1]&&
+			a.m_sortedGlobal[2]==b.m_sortedGlobal[2]  ){
 				return false; 
 
 		}else{
-			return ((a.global_sorted[0] == b.global_sorted[0] && 
-		a.global_sorted[1] == b.global_sorted[1] && a.global_sorted[2] == b.global_sorted[2]) 
-		||a.global_sorted[0] < b.global_sorted[0]
-		|| (a.global_sorted[0] == b.global_sorted[0] && a.global_sorted[1] < b.global_sorted[1])
-		|| (a.global_sorted[0] == b.global_sorted[0] && a.global_sorted[1] == b.global_sorted[1]
-		&& a.global_sorted[2] < b.global_sorted[2]) ) ;
+			return ((a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && 
+		a.m_sortedGlobal[1] == b.m_sortedGlobal[1] && a.m_sortedGlobal[2] == b.m_sortedGlobal[2]) 
+		||a.m_sortedGlobal[0] < b.m_sortedGlobal[0]
+		|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] < b.m_sortedGlobal[1])
+		|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+		&& a.m_sortedGlobal[2] < b.m_sortedGlobal[2]) ) ;
 		}
 
 }
@@ -312,10 +312,10 @@ QuadFaceVerts::QuadFaceVerts(const int nDivs, const emInt v0, const emInt v1,
 		const emInt elemInd,  const emInt partID, const emInt remoteID,
 		bool globalCompare) :
 		FaceVerts(nDivs, 4) {
-	partid    = partID; 
+	m_partId    = partID; 
 	m_volElem = elemInd;
 	m_volElemType = type;
-	remotePartid=remoteID; 
+	m_remoteId=remoteID; 
 	m_globalComparison=globalCompare;
 	setCorners(v0, v1, v2, v3);
 }
@@ -324,15 +324,15 @@ QuadFaceVerts::QuadFaceVerts(const int nDivs, const emInt local[4],
 	const emInt type ,const emInt elemInd,bool globalCompare):FaceVerts(nDivs,4){
 		m_volElem = elemInd;
 		m_volElemType = type;
-		partid=partid_; 
-		remotePartid=remoteID_; 
+		m_partId=partid_; 
+		m_remoteId=remoteID_; 
 		m_globalComparison=globalCompare;
 		setCorners(local[0],local[1],local[2],local[3]); 
 		emInt output [4]; 
 		sortVerts4(global,output);
 		for(auto i=0 ; i<4; i++){
-			global_corners[i]=global[i]; 
-			global_sorted[i]= output[i];
+			m_global[i]=global[i]; 
+			m_sortedGlobal[i]= output[i];
 		}	
 		
 }
@@ -342,16 +342,16 @@ const emInt partid_, const emInt remoteID, bool globalCompare,
 
 		m_volElem = elemInd;
 		m_volElemType = type;
-		partid=partid_; 
-		remotePartid=remoteID; 
+		m_partId=partid_; 
+		m_remoteId=remoteID; 
 		m_globalComparison=globalCompare;
 		emInt local[4]= {-1,-1,-1,-1}; 
 		setCorners(local[0],local[1],local[2],local[3]); 
 		emInt output [4]; 
 		sortVerts4(global,output);
 		for(auto i=0 ; i<4; i++){
-			global_corners[i]=global[i]; 
-			global_sorted[i]= output[i];
+			m_global[i]=global[i]; 
+			m_sortedGlobal[i]= output[i];
 		}
 
 }
@@ -361,8 +361,8 @@ QuadFaceVerts::QuadFaceVerts(const int nDivs, const emInt local[4],
 	bool globalCompare):FaceVerts(nDivs,4){
 		m_volElem = elemInd;
 		m_volElemType = type;
-		partid=partid_; 
-		remotePartid=remoteID; 
+		m_partId=partid_; 
+		m_remoteId=remoteID; 
 		m_globalComparison=globalCompare;
 	//	emInt local[4]= {-1,-1,-1,-1}; 
 		setCorners(local[0],local[1],local[2],local[3]); 
@@ -371,10 +371,10 @@ QuadFaceVerts::QuadFaceVerts(const int nDivs, const emInt local[4],
 		sortVerts4(global,output);
 		sortVerts4(remotelocal,remoteoutput); 
 		for(auto i=0 ; i<4; i++){
-			global_corners[i]=global[i]; 
-			global_sorted[i]= output[i];
-			remoteIndices[i]= remotelocal[i];
-			sortedRemoteIndices[i]=remoteoutput[i]; 
+			m_global[i]=global[i]; 
+			m_sortedGlobal[i]= output[i];
+			m_remote[i]= remotelocal[i];
+			m_sortedRemote[i]=remoteoutput[i]; 
 		}
 	}
 
@@ -427,36 +427,36 @@ bool operator==(const QuadFaceVerts &a, const QuadFaceVerts &b) {
 		return (a.m_sorted[0] == b.m_sorted[0] && a.m_sorted[1] == b.m_sorted[1]
 			&& a.m_sorted[2] == b.m_sorted[2] && a.m_sorted[3] == b.m_sorted[3] 
 			);
-	}else{
-		return (a.global_sorted[0] == b.global_sorted[0] && 
-		a.global_sorted[1] == b.global_sorted[1]
-			&& a.global_sorted[2] == b.global_sorted[2] && 
-			a.global_sorted[3] == b.global_sorted[3]);
+	}if(a.m_globalComparison==true && b.m_globalComparison==true){
+		return (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && 
+		a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+			&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2] && 
+			a.m_sortedGlobal[3] == b.m_sortedGlobal[3]);
 	}
 	
 }
 
 bool operator<(const QuadFaceVerts &a, const QuadFaceVerts &b) {
 
-	if(a.partid==b.partid &&
-			a.global_sorted[0]== b.global_sorted[0]&&
-			a.global_sorted[1]== b.global_sorted[1]&&
-			a.global_sorted[2]== b.global_sorted[2] &&
-			a.global_sorted[3]== b.global_sorted[3]  ){
+	if(a.m_partId==b.m_partId &&
+			a.m_sortedGlobal[0]== b.m_sortedGlobal[0]&&
+			a.m_sortedGlobal[1]== b.m_sortedGlobal[1]&&
+			a.m_sortedGlobal[2]== b.m_sortedGlobal[2] &&
+			a.m_sortedGlobal[3]== b.m_sortedGlobal[3]  ){
 			return false;
 	}else{
 		return (
-			(a.global_sorted[0] == b.global_sorted[0] && a.global_sorted[1] == b.global_sorted[1]
-						&& a.global_sorted[2] == b.global_sorted[2]
-						&& a.global_sorted[3] == b.global_sorted[3])
+			(a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+						&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
+						&& a.m_sortedGlobal[3] == b.m_sortedGlobal[3])
 						||
-			a.global_sorted[0] < b.global_sorted[0]
-				|| (a.global_sorted[0] == b.global_sorted[0] && a.global_sorted[1] < b.global_sorted[1])
-				|| (a.global_sorted[0] == b.global_sorted[0] && a.global_sorted[1] == b.global_sorted[1]
-						&& a.global_sorted[2] < b.global_sorted[2])
-				|| (a.global_sorted[0] == b.global_sorted[0] && a.global_sorted[1] == b.global_sorted[1]
-						&& a.global_sorted[2] == b.global_sorted[2]
-						&& a.global_sorted[3] < b.global_sorted[3]) 
+			a.m_sortedGlobal[0] < b.m_sortedGlobal[0]
+				|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] < b.m_sortedGlobal[1])
+				|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+						&& a.m_sortedGlobal[2] < b.m_sortedGlobal[2])
+				|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+						&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
+						&& a.m_sortedGlobal[3] < b.m_sortedGlobal[3]) 
 						)
 						;
 	}		

@@ -1245,30 +1245,33 @@ void UMesh::setupCellDataForPartitioning(std::vector<CellPartData> &vecCPD,
 //
 //	return true;
 // }
-void UMesh::TestMPI(const emInt &nDivs, const emInt &nParts)
+void 
+UMesh::TestMPI(const emInt &nDivs, const emInt &nParts)
 {
 
-	// struct RefineStats RS;
-	std::vector<Part> parts;
-	std::vector<CellPartData> vecCPD;
+	vecPart parts;
+	vecCellPartData vecCPD;
+
 	std::set<int> triRotations;
 	std::set<int> quadRotations;
 
+	vecTriHash tris;
+	vecQuadHash quads;
+
+	vecSharePtrUmesh submeshes;
+	vecSharePtrUmesh refinedUMeshes;
+
 	partitionCells(this, nParts, parts, vecCPD);
 
-	std::vector<std::unordered_set<TriFaceVerts>> tris;
 
-	std::vector<std::unordered_set<QuadFaceVerts>> quads;
-
-	std::vector<std::shared_ptr<UMesh>> submeshes;
-
-	std::vector<std::shared_ptr<UMesh>> refinedUMeshes;
+	//tester->setVecpart(parts); 
+	//tester->setvecCellPartData(vecCPD); 
+	//auto submeshes= getExaMeshType(isUMesh); 
 
 	this->partFaceMatching(parts, vecCPD, tris, quads);
+	//tester->setInputTri(tris); 
 
-	// for(auto k=0 ; k<nParts; k++){
-	// 	std::cout<<"size of tri: "<<quads[k].size()<<std::endl;
-	// }
+	
 
 	for (auto i = 0; i < nParts; i++)
 	{
@@ -1279,73 +1282,8 @@ void UMesh::TestMPI(const emInt &nDivs, const emInt &nParts)
 		sprintf(fileName, "TestCases/Coarsesubmesh%03d.vtk", i);
 		shared_ptr->writeVTKFile(fileName);
 	}
-	// for(auto i=0 ; i<nParts;i++){
-	// 	exa_set<TriFaceVerts> tri= submeshes[i]->getTempTriPart();
-	// 	printTris(tri,nDivs);
-	// }
+
 	assert(submeshes.size() == static_cast<std::size_t>(nParts));
-
-	for (auto i = 0; i < nParts; i++)
-	{
-
-		exa_set<TriFaceVerts> coarsetris =
-			submeshes[i]->getTempTriPart();
-		exa_set<QuadFaceVerts> coarseQuads =
-			submeshes[i]->getTempQuadPart();
-
-		for (auto itr = coarsetris.begin();
-			 itr != coarsetris.end(); itr++)
-		{
-			emInt remoteID = itr->getRemotePartid();
-			exa_set<TriFaceVerts> otherTriPart =
-				submeshes[remoteID]->getTempTriPart();
-
-			auto itrOtherSide = otherTriPart.find(*itr);
-			assert(itrOtherSide != otherTriPart.end());
-			if (itrOtherSide != otherTriPart.end())
-			{
-				emInt global[3];
-				emInt local[3];
-				emInt remoteLocal[3];
-				for (auto i = 0; i < 3; i++)
-				{
-					global[i] = itr->getGlobalCorner(i);
-					local[i] = itr->getCorner(i);
-					remoteLocal[i] = itrOtherSide->getCorner(i);
-				}
-				TriFaceVerts TF(nDivs, local, global, remoteLocal,
-								itr->getPartid(), itr->getRemotePartid());
-				submeshes[i]->updatePartTris(TF);
-			}
-		}
-
-		for (auto itr = coarseQuads.begin();
-			 itr != coarseQuads.end(); itr++)
-		{
-			emInt remoteID = itr->getRemotePartid();
-
-			exa_set<QuadFaceVerts> otherQuadPart =
-				submeshes[remoteID]->getTempQuadPart();
-
-			auto itrOtherSide = otherQuadPart.find(*itr);
-			assert(itrOtherSide != otherQuadPart.end());
-			if (itrOtherSide != otherQuadPart.end())
-			{
-				emInt global[4];
-				emInt local[4];
-				emInt remoteLocal[4];
-				for (auto i = 0; i < 4; i++)
-				{
-					global[i] = itr->getGlobalCorner(i);
-					local[i] = itr->getCorner(i);
-					remoteLocal[i] = itrOtherSide->getCorner(i);
-				}
-				QuadFaceVerts QF(nDivs, local, global, remoteLocal,
-								 itr->getPartid(), itr->getRemotePartid());
-				submeshes[i]->updatePartQuads(QF);
-			}
-		}
-	}
 	// Refine the mesh
 	for (auto i = 0; i < nParts; i++)
 	{
@@ -1935,7 +1873,7 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part &P,
 				   itr->getGlobalCorner(1) == global[1] &&
 				   itr->getGlobalCorner(2) == global[2] && itr->getPartid() == partID);
 			TriFaceVerts TFV(numDivs, conn, global, partID,
-							 itr->getRemotePartid(), 0, EMINT_MAX, true);
+							 itr->getRemotePartid(), 0, EMINT_MAX,false);
 			// need to be corrected, I could not generate with correct bool value unless
 			// I pass all arguments
 
@@ -1966,7 +1904,7 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part &P,
 				   itr->getGlobalCorner(3) == global[3] &&
 				   itr->getPartid() == partID);
 			QuadFaceVerts QFV(numDivs, conn, global, partID,
-							  itr->getRemotePartid(), 0, EMINT_MAX, true);
+							  itr->getRemotePartid(), 0, EMINT_MAX, false);
 			// need to be corrected, I could not generate with correct bool value unless
 			// I pass all arguments
 			UUM->insertTempPartQuads(QFV);
@@ -1977,4 +1915,185 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part &P,
 	assert(UUM->getSizePartQuads() == quads.size());
 
 	return UUM;
+}
+void 
+UMesh::refineForMPI(ParallelTester* const tester, const int numDivs) const
+{
+
+	boost::mpi::environment   env; 
+	boost::mpi::communicator  world; 
+
+	vecPart         parts; 
+	vecCellPartData vecCPD; 
+	
+	emInt    vecCPDSize; 
+	emInt    trisSize; 
+	emInt    quadsSize; 
+
+	triHash  trisS; 
+	quadHash quadsS;
+
+	triVec   triV;
+	quadVec  quadV;  
+
+
+
+	int nParts = world.size(); 
+	
+	int MASTER = 0; 
+	int tag    = 0; 
+
+	if(world.rank()==MASTER)
+	{
+		vecTriHash  tris; 
+		vecQuadHash quads; 
+		partitionCells(this, nParts, parts,vecCPD); 
+		vecCPDSize = vecCPD.size(); 
+		assert(vecCPDSize>0); 
+		this->partFaceMatching(parts,vecCPD,tris,quads); 
+		for(auto irank=1; irank<world.size(); irank++)
+		{
+	
+			int triSize  = tris[irank].size(); 
+			int quadSize = quads[irank].size(); 
+			world.send(irank,tag,triSize); 
+			world.send(irank,tag,quadSize);
+			world.send(irank,tag,parts[irank]); 
+			world.send(irank,tag,vecCPD); 
+		}
+	}else
+	{
+		parts.resize(world.size()); 
+		world.recv(MASTER,tag,trisSize); 
+		world.recv(MASTER,tag,quadsSize);
+		world.recv(MASTER,tag,parts[world.rank()]);
+		
+	}
+
+	boost::mpi::broadcast(world,vecCPDSize,MASTER); 
+	if(world.rank()!= MASTER)
+	{
+		vecCPD.resize(vecCPDSize); 
+		world.recv(MASTER,tag,vecCPD); 
+	}
+	//boost::mpi::broadcast(world,vecCPD,MASTER); 
+#ifndef NDEBUG	
+	tester->testVecCellPartData(vecCPD); 
+	tester->testVecPart(world.rank(), parts[world.rank()]); 
+#endif	
+
+	if(world.rank()==MASTER)
+	{
+		vecTriHash  VectrisHash; 
+		vecQuadHash VecquadsHash;
+
+		vecTriVec   VecTriVec; 
+		vecQuadVec  vecQuadVec; 
+		this->partFaceMatching(parts,vecCPD,VectrisHash,VecquadsHash); 
+		for(auto  itri=0 ; itri<VectrisHash.size(); itri++)
+		{
+			triVec TriVec; 
+			SetToVector(VectrisHash[itri],TriVec); 
+			VecTriVec.emplace_back(TriVec); 
+		}
+		for(auto iquad=0 ; iquad<VecquadsHash.size(); iquad++)
+		{
+			quadVec QuadVec; 
+			SetToVector(VecquadsHash[iquad],QuadVec); 
+			vecQuadVec.emplace_back(QuadVec); 
+		}
+
+		trisS = VectrisHash[0]; // For MASTER 
+		quadsS= VecquadsHash[0];
+		
+		for(auto irank=1 ; irank<world.size();irank++)
+		{
+			world.send(irank,tag,VecTriVec[irank]); 
+			world.send(irank,tag,vecQuadVec[irank]); 
+		}
+	
+	
+	}else
+	{
+		world.recv(MASTER,tag,triV); 
+		world.recv(MASTER,tag,quadV);
+		vectorToSet(triV,trisS);
+		vectorToSet(quadV,quadsS); 
+	}
+
+
+	auto coarse= this->extractCoarseMesh(parts[world.rank()],vecCPD,numDivs, 
+	trisS,quadsS,world.rank()); 
+
+	 
+
+	// for only two pros, how are you going to handle this? 
+
+	triHash  coarseTrisHash   = coarse->getTempTriPart();
+	triVec   coarseTrisVec; 
+	SetToVector(coarseTrisHash,coarseTrisVec); 
+	
+	std::cout<<"My rank is: "<<world.rank()<<" my size is: "<<coarseTrisVec.size()
+	<<std::endl; 
+	
+	//1. step1: collect data into collection based on their remote ID:
+	// so the collection of collections 
+	//2. it should be multi set 
+	//3. method of euqal_range to extract ranges of 
+
+
+
+
+	//Send and recev can't be packed in a for loop 
+	// Since when rank 1 wants recver we don;
+	// for(auto ivec=0 ; ivec<coarseTrisVec.size(); ivec++)
+	// {
+
+	// 	std::cout<<"My rank is: "<<world.rank()<<" " <<
+
+	// 	coarseTrisVec[ivec].getPartid()<<std::endl;
+
+	// 	if(world.rank()==coarseTrisVec[ivec].getPartid())
+	// 	{
+	// 		world.send(coarseTrisVec[ivec].getRemotePartid(),tag,coarseTrisVec[ivec]);
+	// 	}
+	// 	if(world.rank()==coarseTrisVec[ivec].getRemotePartid())
+	// 	{
+	// 		TriFaceVerts TF; 
+	// 		world.recv(coarseTrisVec[ivec].getRemotePartid(),tag,TF);
+	// 	}
+
+	// }
+	
+
+
+
+
+
+
+
+
+	// for(auto ivec=0 ; ivec<coarseTrisVec.size(); ivec++)
+	// {
+	// 	TriFaceVerts TF; 
+	// 	 world.recv(coarseTrisVec[ivec].getRemotePartid(),tag,TF); 
+	// }
+
+
+		
+
+
+
+
+
+
+
+
+	// char filename[100];
+	// sprintf(filename, "MPIsubmesh%03d.vtk", world.rank());
+	// caorse->writeVTKFile(filename);
+
+	
+	
+	
 }

@@ -188,11 +188,17 @@ public:
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;
 
 
-	std::unique_ptr<UMesh> extractCoarseMesh(Part& P,	std::vector<CellPartData>& vecCPD, const int numDivs,
+	virtual std::unique_ptr<UMesh> extractCoarseMesh(Part& P,	std::vector<CellPartData>& vecCPD, 
+	const int numDivs,
 			const std::unordered_set<TriFaceVerts> &tris= std::unordered_set<TriFaceVerts>(), 
-			const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>(), const emInt partID=-1) const;
+			const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>(), 
+			const emInt partID=-1) const;
+
+
 			
 	virtual void TestMPI(const emInt &nDivs, const emInt &nParts);
+
+	void refineForMPI(ParallelTester* const tester, const int numDivs) const;
 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
