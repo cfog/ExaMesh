@@ -50,12 +50,11 @@ struct MeshSize {
 class ExaMesh {
 protected:
 	double *m_lenScale;
-	exa_set<QuadFaceVerts> TemppartQuads; 
-	exa_set<TriFaceVerts>  TemppartTris; 
-	exa_set<TriFaceVerts>  partTris; 
-	exa_set<TriFaceVerts>  refinedPartTris; 
-	exa_set<QuadFaceVerts> refinedPartQuads; 
-	exa_set<QuadFaceVerts> partQuads; 
+	exa_set<QuadFaceVerts> m_partQuads; 
+	exa_set<TriFaceVerts>  m_partTris; 
+	exa_set<TriFaceVerts>  m_refinedPartTris; 
+	exa_set<QuadFaceVerts> m_refinedPartQuads; 
+
 
 	void setupLengthScales();
 
@@ -144,95 +143,68 @@ public:
 			double& zmax) const = 0;
 	void prettyPrintCellCount(size_t cells, const char* prefix) const;
 
-		void insertTempPartTris(const TriFaceVerts &obj){
-		auto iter = TemppartTris.find(obj);
+	void addPartTritoSet(const TriFaceVerts &obj){
+		auto iter = m_partTris.find(obj);
 	
-		if (iter != TemppartTris.end()) {
-			TemppartTris.erase(iter);
+		if (iter != m_partTris.end()) {
+			m_partTris.erase(iter);
 		}
 		else {
-			TemppartTris.insert(obj);
+			m_partTris.insert(obj);
 		}
 
 	}
-	void insertTempPartQuads(const QuadFaceVerts &obj){
-		auto iter = TemppartQuads.find(obj);
+	void addPartQuadtoSet(const QuadFaceVerts &obj){
+		auto iter = m_partQuads.find(obj);
 	
-		if (iter != TemppartQuads.end()) {
-			TemppartQuads.erase(iter);
+		if (iter != m_partQuads.end()) {
+			m_partQuads.erase(iter);
 		}
 		else {
-			TemppartQuads.insert(obj);
+			m_partQuads.insert(obj);
 		}
 
 	}
-	void updatePartTris(const TriFaceVerts &obj){
-		auto iter = partTris.find(obj);
+	void addRefinedPartTritoSet(const TriFaceVerts &obj){
+		auto iter = m_refinedPartTris.find(obj);
 	
-		if (iter != partTris.end()) {
-			partTris.erase(iter);
+		if (iter != m_refinedPartTris.end()) {
+			m_refinedPartTris.erase(iter);
 		}
 		else {
-			partTris.insert(obj);
+			m_refinedPartTris.insert(obj);
 		}
 
 	}
-	void updateRefinedPartTris(const TriFaceVerts &obj){
-		auto iter = refinedPartTris.find(obj);
+	void addRefinedPartQuadtoSet(const QuadFaceVerts &obj){
+		auto iter = m_refinedPartQuads.find(obj);
 	
-		if (iter != refinedPartTris.end()) {
-			refinedPartTris.erase(iter);
+		if (iter != m_refinedPartQuads.end()) {
+			m_refinedPartQuads.erase(iter);
 		}
 		else {
-			refinedPartTris.insert(obj);
+			m_refinedPartQuads.insert(obj);
 		}
 
 	}
-	void updateRefinedPartQuads(const QuadFaceVerts &obj){
-		auto iter = refinedPartQuads.find(obj);
-	
-		if (iter != refinedPartQuads.end()) {
-			refinedPartQuads.erase(iter);
-		}
-		else {
-			refinedPartQuads.insert(obj);
-		}
 
-	}
-	void updatePartQuads(const QuadFaceVerts &obj){
-		auto iter = partQuads.find(obj);
-	
-		if (iter != partQuads.end()) {
-			partQuads.erase(iter);
-		}
-		else {
-			partQuads.insert(obj);
-		}
-
-	}
 	emInt getSizePartTris()const{
-		return TemppartTris.size();
+		return m_partTris.size();
 	}
 	emInt getSizePartQuads()const{
-		return TemppartQuads.size();
+		return m_partQuads.size();
 	}
 	exa_set<QuadFaceVerts> getTempQuadPart() const{
-		return TemppartQuads; 
+		return m_partQuads; 
 	}
 	exa_set<TriFaceVerts> getTempTriPart() const {
-		return TemppartTris; 
-	}
-	exa_set<QuadFaceVerts> getQuadPart() const{
-		return partQuads; 
-	}
-	exa_set<TriFaceVerts> getTriPart() const {
-		return partTris; 
+		return m_partTris; 
 	}
 	exa_set<TriFaceVerts> getRefinedPartTris() const{
-		return refinedPartTris; 
+		return m_refinedPartTris; 
 	}
 	exa_set<QuadFaceVerts> getRefinedPartQuads() const {
-		return refinedPartQuads; 
+		return m_refinedPartQuads; 
 	}
 	virtual void TestMPI(const emInt &nDivs, const emInt &nParts)=0; 
 	virtual void partFaceMatching(

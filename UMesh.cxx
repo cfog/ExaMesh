@@ -1877,7 +1877,7 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part &P,
 			// need to be corrected, I could not generate with correct bool value unless
 			// I pass all arguments
 
-			UUM->insertTempPartTris(TFV);
+			UUM->addPartTritoSet(TFV);
 		}
 
 		UUM->addBdryTri(conn);
@@ -1907,7 +1907,7 @@ std::unique_ptr<UMesh> UMesh::extractCoarseMesh(Part &P,
 							  itr->getRemotePartid(), 0, EMINT_MAX, false);
 			// need to be corrected, I could not generate with correct bool value unless
 			// I pass all arguments
-			UUM->insertTempPartQuads(QFV);
+			UUM->addPartQuadtoSet(QFV);
 		}
 
 		UUM->addBdryQuad(conn);

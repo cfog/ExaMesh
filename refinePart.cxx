@@ -221,7 +221,7 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input,
 			it->getPartid(),it->getRemotePartid());
 			TF.setCompare(true);  
 			BTD.setRefinedVerts(TF);
-			pVM_output->updateRefinedPartTris(TF);
+			pVM_output->addRefinedPartTritoSet(TF);
 
 		}
 			
@@ -281,7 +281,7 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input,
 			it->getRemotePartid()); 
 			QF.setCompare(true); 
 			BQD.setRefinedVerts(QF);
-			pVM_output->updateRefinedPartQuads(QF);
+			pVM_output->addRefinedPartQuadtoSet(QF);
 
 		}
 	}
