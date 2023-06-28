@@ -25,16 +25,16 @@ ParallelTester::testVecCellPartData(const vecCellPartData& inVecCellPartData) co
     
 };
 void 
-ParallelTester::setInputTri (const vecTriHash& inTris)
+ParallelTester::setInputTri (const vecHashTri& inTris)
 {
     for(auto itri=0 ; itri<inTris.size(); itri++)
     {
-        triHash Settri; 
+        hashTri Settri; 
         for(auto&iset:inTris[itri])
         {
             int nDivs    =  iset.getNumDivs(); 
             int partId   =  iset.getPartid(); 
-            int remoteId =  iset.getRemotePartid(); 
+            int remoteId =  iset.getRemoteId(); 
 
             int global0  =   iset.getGlobalCorner(0); 
             int global1  =   iset.getGlobalCorner(1); 
@@ -57,7 +57,7 @@ ParallelTester::setInputTri (const vecTriHash& inTris)
     
 } 
 void 
-ParallelTester::testInputTri (const int rank, const triHash& inTri) const{
+ParallelTester::testInputTri (const int rank, const hashTri& inTri) const{
     assert(inTri.size()==m_tris[rank].size()); 
    // for(const auto& itri:inTri){
         // How to check whether two unordered set are equal 

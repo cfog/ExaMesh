@@ -7,8 +7,8 @@ class ParallelTester {
 private: 
     vecPart         m_vecPart; 
     vecCellPartData m_vecPartData; 
-    vecTriHash      m_tris; 
-    vecQuadHash     m_quads; 
+    vecHashTri      m_tris; 
+    vecHashQuad     m_quads; 
 
 
 
@@ -17,11 +17,11 @@ public:
     ~ParallelTester( ); 
     void setVecpart(const vecPart& inVecPart); 
     void setvecCellPartData(const vecCellPartData& inVecCellPartData); 
-    void setInputTri (const vecTriHash& inTris); 
+    void setInputTri (const vecHashTri& inTris); 
 
     void testVecPart(const int rank,const Part& inPart) const; 
     void testVecCellPartData(const vecCellPartData& inVecCellPartData)const; 
-    void testInputTri (const int rank, const triHash& inTri) const; 
+    void testInputTri (const int rank, const hashTri& inTri) const; 
 
 
 }; 

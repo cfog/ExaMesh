@@ -53,7 +53,7 @@ void sortVerts3(const emInt input[3], emInt output[3]) {
 
 TriFaceVerts::TriFaceVerts(const int nDivs, const emInt v0, const emInt v1,
 		const emInt v2,const emInt type, 
-		const emInt elemInd,const emInt partID ,bool globalComparison) :
+		const emInt elemInd,const emInt partID ,const emInt remoteId,bool globalComparison) :
 		FaceVerts(nDivs, 3) {
 	m_volElem = elemInd;
 	m_volElemType = type;
@@ -260,7 +260,10 @@ bool operator==(const TriFaceVerts &a, const TriFaceVerts &b) {
 	
 }
 
-bool operator<(const TriFaceVerts &a, const TriFaceVerts &b){
+bool operator<(const TriFaceVerts &a, const TriFaceVerts &b)
+{
+	if(a.m_remoteId==-1 && b.m_remoteId==-1)
+	{
 		if(a.m_partId==b.m_partId &&
 			a.m_sortedGlobal[0]==b.m_sortedGlobal[0]&&
 			a.m_sortedGlobal[1]==b.m_sortedGlobal[1]&&
@@ -275,6 +278,12 @@ bool operator<(const TriFaceVerts &a, const TriFaceVerts &b){
 		|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
 		&& a.m_sortedGlobal[2] < b.m_sortedGlobal[2]) ) ;
 		}
+	}
+	else
+	{
+		return (a.m_remoteId<b.m_remoteId); 
+	}
+
 
 }
 
@@ -438,28 +447,38 @@ bool operator==(const QuadFaceVerts &a, const QuadFaceVerts &b) {
 
 bool operator<(const QuadFaceVerts &a, const QuadFaceVerts &b) {
 
-	if(a.m_partId==b.m_partId &&
-			a.m_sortedGlobal[0]== b.m_sortedGlobal[0]&&
-			a.m_sortedGlobal[1]== b.m_sortedGlobal[1]&&
-			a.m_sortedGlobal[2]== b.m_sortedGlobal[2] &&
-			a.m_sortedGlobal[3]== b.m_sortedGlobal[3]  ){
-			return false;
-	}else{
-		return (
-			(a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
-						&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
-						&& a.m_sortedGlobal[3] == b.m_sortedGlobal[3])
-						||
-			a.m_sortedGlobal[0] < b.m_sortedGlobal[0]
-				|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] < b.m_sortedGlobal[1])
-				|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
-						&& a.m_sortedGlobal[2] < b.m_sortedGlobal[2])
-				|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
-						&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
-						&& a.m_sortedGlobal[3] < b.m_sortedGlobal[3]) 
-						)
-						;
-	}		
+	if(a.m_remoteId==-1 && b.m_remoteId==-1)
+	{
+		if(a.m_partId==b.m_partId &&
+				a.m_sortedGlobal[0]== b.m_sortedGlobal[0]&&
+				a.m_sortedGlobal[1]== b.m_sortedGlobal[1]&&
+				a.m_sortedGlobal[2]== b.m_sortedGlobal[2] &&
+				a.m_sortedGlobal[3]== b.m_sortedGlobal[3]  ){
+				return false;
+		}else
+		{
+			return (
+				(a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+							&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
+							&& a.m_sortedGlobal[3] == b.m_sortedGlobal[3])
+							||
+				a.m_sortedGlobal[0] < b.m_sortedGlobal[0]
+					|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] < b.m_sortedGlobal[1])
+					|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+							&& a.m_sortedGlobal[2] < b.m_sortedGlobal[2])
+					|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+							&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
+							&& a.m_sortedGlobal[3] < b.m_sortedGlobal[3]) 
+							)
+							;
+		}
+	}
+	else
+	{
+		return (a.m_remoteId<b.m_remoteId); 
+	}
+
+		
 
 
 }

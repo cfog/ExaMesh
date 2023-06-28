@@ -1923,7 +1923,7 @@ BOOST_AUTO_TEST_CASE(QuadMatching){
 		SetArtificialIntVertQuad(quad,nDivs);
 		remoteQuads.insert(quad); 
 		std::unordered_map<emInt,emInt> map; 
-		comPareQuad(refQuad,rotation,nDivs,remoteQuads,map);
+		matchQuad(refQuad,rotation,nDivs,remoteQuads,map);
 		std::unordered_map<emInt,emInt> expectedMap; 
 		setExpectedMapping(rotation,expectedMap); 
 		//bool mapsEqual = boost::range::is_permutation(map,expectedMap);
@@ -2042,7 +2042,7 @@ BOOST_AUTO_TEST_CASE(CustomTypeRegisteration){
 
 				BOOST_CHECK_EQUAL(dummytris[i].getNumDivs(),nDivs); 
 				BOOST_CHECK_EQUAL(dummytris[i].getPartid(),partId); 
-				BOOST_CHECK_EQUAL(dummytris[i].getRemotePartid(),remoteId); 
+				BOOST_CHECK_EQUAL(dummytris[i].getRemoteId(),remoteId); 
 				BOOST_CHECK_EQUAL(dummytris[i].getVolElementType(),type); 
 				BOOST_CHECK_EQUAL(dummytris[i].getVolElement(),elemInd); 
 				BOOST_CHECK_EQUAL(dummytris[i].getGlobalCompare(),globalCompare); 
@@ -2050,7 +2050,7 @@ BOOST_AUTO_TEST_CASE(CustomTypeRegisteration){
 
 				BOOST_CHECK_EQUAL(dummyquads[i].getNumDivs(),nDivs); 
 				BOOST_CHECK_EQUAL(dummyquads[i].getPartid(),partId); 
-				BOOST_CHECK_EQUAL(dummyquads[i].getRemotePartid(),remoteId); 
+				BOOST_CHECK_EQUAL(dummyquads[i].getRemoteId(),remoteId); 
 				BOOST_CHECK_EQUAL(dummyquads[i].getVolElementType(),type); 
 				BOOST_CHECK_EQUAL(dummyquads[i].getVolElement(),elemInd); 
 				BOOST_CHECK_EQUAL(dummyquads[i].getGlobalCompare(),globalCompare); 

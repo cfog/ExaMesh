@@ -197,7 +197,7 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input,
 		auto it=tris.find(TFV); 
 		if(it!=tris.end()){
 			TFV.setPartID(it->getPartid()); 
-			TFV.setRemotePartID(it->getRemotePartid()); 
+			TFV.setRemotePartID(it->getRemoteId()); 
 			emInt remoteIndices [3]=
 			{
 				it->getRemoteIndices(0),
@@ -218,7 +218,7 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input,
 				thisBdryTri[2]
 			}; 
 			TriFaceVerts TF(nDivs,local,global,remoteIndices,
-			it->getPartid(),it->getRemotePartid());
+			it->getPartid(),it->getRemoteId());
 			TF.setCompare(true);  
 			BTD.setRefinedVerts(TF);
 			pVM_output->addRefinedPartTritoSet(TF);
@@ -256,7 +256,7 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input,
 		auto it=quads.find(QFV); 
 		if(it!=quads.end()){
 			QFV.setPartID(it->getPartid()); 
-			QFV.setRemotePartID(it->getRemotePartid()); 
+			QFV.setRemotePartID(it->getRemoteId()); 
 			emInt remoteIndices [4]={
 				it->getRemoteIndices(0),
 				it->getRemoteIndices(1),
@@ -278,7 +278,7 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input,
 				thisBdryQuad[3]
 			}; 
 			QuadFaceVerts QF(nDivs,local,global,remoteIndices,it->getPartid(),
-			it->getRemotePartid()); 
+			it->getRemoteId()); 
 			QF.setCompare(true); 
 			BQD.setRefinedVerts(QF);
 			pVM_output->addRefinedPartQuadtoSet(QF);

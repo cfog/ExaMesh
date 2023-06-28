@@ -198,7 +198,7 @@ public:
 			
 	virtual void TestMPI(const emInt &nDivs, const emInt &nParts);
 
-	void refineForMPI(ParallelTester* const tester, const int numDivs) const;
+	void refineForMPI( const int numDivs) const;
 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,

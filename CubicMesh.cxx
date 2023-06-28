@@ -904,11 +904,11 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 			itr->getGlobalCorner(1)==global[1] && 
 			itr->getGlobalCorner(2)==global[2] && itr->getPartid()==partID);
 			TriFaceVerts TFV(numDivs,newConn,global,partID,
-			itr->getRemotePartid(),0,EMINT_MAX,true);
+			itr->getRemoteId(),0,EMINT_MAX,true);
 			// need to be corrected, I could not generate with correct bool value unless
 			// I pass all arguments 
 		
-			UCM->insertTempPartTris(TFV); 
+			UCM->addPartTritoSet(TFV); 
 
 		}
 		UCM->addBdryTri(newConn);
@@ -1243,10 +1243,10 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 			itr->getGlobalCorner(3)==global[3] &&
 			itr->getPartid()==partID);
 			QuadFaceVerts QFV(numDivs,newConn,global,partID,
-			itr->getRemotePartid(),0,EMINT_MAX,true);
+			itr->getRemoteId(),0,EMINT_MAX,true);
 			// need to be corrected, I could not generate with correct bool value unless
 			// I pass all arguments 
-			UCM->insertTempPartQuads(QFV); 
+			UCM->addPartQuadtoSet(QFV); 
 
 		}
 		UCM->addBdryQuad(newConn);
@@ -1555,76 +1555,70 @@ void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts){
 
 	assert(submeshes.size()==static_cast<std::size_t>(nParts)); 
 
-	for(auto i=0; i<nParts; i++){
+	// for(auto i=0; i<nParts; i++){
 	
-		exa_set <TriFaceVerts>  coarsetris= 
-		submeshes[i]->getTempTriPart();
-		std::cout<<"coarse tri size: "<<coarsetris.size()<<std::endl;
-		exa_set<QuadFaceVerts> coarseQuads= 
-		submeshes[i]->getTempQuadPart(); 
-		std::cout<<"coarse Quad size: "<<coarseQuads.size()<<std::endl;
-		for(auto itr=coarsetris.begin(); 
-		itr!=coarsetris.end(); itr++){
-			emInt remoteID= itr->getRemotePartid(); 
-			exa_set <TriFaceVerts> otherTriPart= 
-			submeshes[remoteID]->getTempTriPart(); 
+	// 	exa_set <TriFaceVerts>  coarsetris= 
+	// 	submeshes[i]->getTempTriPart();
+	// 	std::cout<<"coarse tri size: "<<coarsetris.size()<<std::endl;
+	// 	exa_set<QuadFaceVerts> coarseQuads= 
+	// 	submeshes[i]->getTempQuadPart(); 
+	// 	std::cout<<"coarse Quad size: "<<coarseQuads.size()<<std::endl;
+	// 	for(auto itr=coarsetris.begin(); 
+	// 	itr!=coarsetris.end(); itr++){
+	// 		emInt remoteID= itr->getRemotePartid(); 
+	// 		exa_set <TriFaceVerts> otherTriPart= 
+	// 		submeshes[remoteID]->getTempTriPart(); 
  
 	
-			auto itrOtherSide= otherTriPart.find(*itr); 
-			assert(itrOtherSide!=otherTriPart.end()); 
-			if(itrOtherSide!=otherTriPart.end()){
-				emInt global[3]; 
-				emInt local[3];
-				emInt remoteLocal[3]; 
-				for(auto i=0; i<3; i++){
-					global[i]=itr->getGlobalCorner(i);
-					local[i] =itr->getCorner(i);
-					remoteLocal[i]= itrOtherSide->getCorner(i); 
-				}
-				TriFaceVerts TF(nDivs,local,global,remoteLocal,
-				itr->getPartid(), itr->getRemotePartid());
-				submeshes[i]->updatePartTris(TF); 
-			}
+	// 		auto itrOtherSide= otherTriPart.find(*itr); 
+	// 		assert(itrOtherSide!=otherTriPart.end()); 
+	// 		if(itrOtherSide!=otherTriPart.end()){
+	// 			emInt global[3]; 
+	// 			emInt local[3];
+	// 			emInt remoteLocal[3]; 
+	// 			for(auto i=0; i<3; i++){
+	// 				global[i]=itr->getGlobalCorner(i);
+	// 				local[i] =itr->getCorner(i);
+	// 				remoteLocal[i]= itrOtherSide->getCorner(i); 
+	// 			}
+	// 			TriFaceVerts TF(nDivs,local,global,remoteLocal,
+	// 			itr->getPartid(), itr->getRemotePartid());
+	// 			submeshes[i]->updatePartTris(TF); 
+	// 		}
 			
 		
-		}
+	// 	}
 
-		for(auto itr=coarseQuads.begin(); 
-		itr!=coarseQuads.end(); itr++){
-			emInt remoteID= itr->getRemotePartid(); 
+	// 	for(auto itr=coarseQuads.begin(); 
+	// 	itr!=coarseQuads.end(); itr++){
+	// 		emInt remoteID= itr->getRemotePartid(); 
 			
-			exa_set<QuadFaceVerts> otherQuadPart=
-			submeshes[remoteID]->getTempQuadPart(); 
+	// 		exa_set<QuadFaceVerts> otherQuadPart=
+	// 		submeshes[remoteID]->getTempQuadPart(); 
 	
-			auto itrOtherSide= otherQuadPart.find(*itr); 
-			assert(itrOtherSide!=otherQuadPart.end()); 
-			if(itrOtherSide!=otherQuadPart.end()){
-				emInt global[4]; 
-				emInt local[4];
-				emInt remoteLocal[4]; 
-				for(auto i=0; i<4; i++){
-					global[i]=itr->getGlobalCorner(i);
-					local[i] =itr->getCorner(i);
-					remoteLocal[i]= itrOtherSide->getCorner(i); 
-				}
-				QuadFaceVerts QF(nDivs,local,global,remoteLocal,
-				itr->getPartid(), itr->getRemotePartid());
-				submeshes[i]->updatePartQuads(QF); 
-			}
+	// 		auto itrOtherSide= otherQuadPart.find(*itr); 
+	// 		assert(itrOtherSide!=otherQuadPart.end()); 
+	// 		if(itrOtherSide!=otherQuadPart.end()){
+	// 			emInt global[4]; 
+	// 			emInt local[4];
+	// 			emInt remoteLocal[4]; 
+	// 			for(auto i=0; i<4; i++){
+	// 				global[i]=itr->getGlobalCorner(i);
+	// 				local[i] =itr->getCorner(i);
+	// 				remoteLocal[i]= itrOtherSide->getCorner(i); 
+	// 			}
+	// 			QuadFaceVerts QF(nDivs,local,global,remoteLocal,
+	// 			itr->getPartid(), itr->getRemotePartid());
+	// 			submeshes[i]->updatePartQuads(QF); 
+	// 		}
 			
 		
-		}
+	// 	}
 
 
-	}
-	// std::cout<<"Checking for Part 0- when extracting"<< " "<<
-	// submeshes[0]->getX(5)<<" "<<submeshes[0]->getY(5)<<" "<<
-	// submeshes[0]->getZ(5)<<std::endl; 
-	for (auto i=0; i<nParts ; i++){
-		exa_set<TriFaceVerts> tris= submeshes[i]->getTriPart(); 
-		//printTris(tris,nDivs); 
-		
-	}
+	// }
+
+
 	// Refine the mesh 
 	for(auto i=0 ; i<nParts; i++)
 	{
@@ -1646,13 +1640,13 @@ void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts){
 		getRefinedPartQuads(); 
 		for(auto it=tri.begin(); it!=tri.end();it++){
 			std::unordered_map<emInt, emInt> localRemote;
-			emInt whereToLook= it->getRemotePartid(); 
+			emInt whereToLook= it->getRemoteId(); 
 			exa_set<TriFaceVerts> remoteTriSet= 
 			refinedUMeshes[whereToLook]->getRefinedPartTris(); 
 			emInt rotation= getTriRotation(*it,remoteTriSet,nDivs); 
 			triRotations.insert(rotation); 
 			 
-			comPareTri(*it,rotation,nDivs,remoteTriSet,localRemote);
+			matchTri(*it,rotation,nDivs,remoteTriSet,localRemote);
 			for(auto itmap=localRemote.begin(); 
 			itmap!=localRemote.end();itmap++){
 				assert(abs(refinedUMeshes[iPart]->getX(itmap->first)-
@@ -1666,13 +1660,13 @@ void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts){
 		}
 		for(auto it=quads.begin(); it!=quads.end();it++){
 			std::unordered_map<emInt, emInt> localRemote;
-			emInt whereToLook= it->getRemotePartid(); 
+			emInt whereToLook= it->getRemoteId(); 
 			exa_set<QuadFaceVerts> remoteQuadSet= 
 			refinedUMeshes[whereToLook]->getRefinedPartQuads(); 
 			emInt rotation= getQuadRotation(*it,remoteQuadSet,nDivs); 
 			quadRotations.insert(rotation); 
 			 
-			comPareQuad(*it,rotation,nDivs,remoteQuadSet,localRemote);
+			matchQuad(*it,rotation,nDivs,remoteQuadSet,localRemote);
 			for(auto itmap=localRemote.begin(); 
 			itmap!=localRemote.end();itmap++){
 				assert(abs(refinedUMeshes[iPart]->getX(itmap->first)-

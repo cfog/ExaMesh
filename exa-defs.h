@@ -64,6 +64,9 @@
 #include <unordered_set>
 #include <unordered_map>
 
+#include <set> 
+#include <map>
+
 #define exa_set std::unordered_set
 #define exa_map std::unordered_map
 #define exa_multimap std::unordered_multimap
@@ -77,7 +80,7 @@
 #define CALLGRIND_TOGGLE_COLLECT
 #endif
 
-#define MAX_DIVS 50
+#define MAX_DIVS 10
 #define FILE_NAME_LEN 1024
 #define TOLTEST 1e-9
 
@@ -171,12 +174,12 @@ private:
 		ar &m_sortedRemote; 
 		ar &m_corners; 
 		ar &m_sorted; 
-		ar &m_cornerUVW; 
+		//ar &m_cornerUVW; 
 		ar &m_nCorners; 
 		ar &m_nDivs; 
 		ar &m_intVerts; 
-		ar &m_param_st; 
-		ar &m_param_uvw; 
+		//ar &m_param_st; 
+		//ar &m_param_uvw; 
 		ar &m_volElem; 
 		ar &m_volElemType; 
 		ar &m_bothSidesDone; 
@@ -338,7 +341,7 @@ public:
 		}
 
 	}
-	emInt getRemotePartid ()const{
+	emInt getRemoteId ()const{
 		return m_remoteId; 
 	}
 
@@ -382,7 +385,7 @@ public:
 	}
 	TriFaceVerts(const int nDivs, emInt v0, const emInt v1, const emInt v2,
 			const emInt type = 0, const emInt elemInd = EMINT_MAX, 
-			const emInt partID=-1,bool globalComparison=false);
+			const emInt partID=-1, const emInt remoteId=-1 ,bool globalComparison=false);
 
 	TriFaceVerts(const int nDivs, const emInt local[3], 
 	const emInt global[3],const emInt partid_=-1, const emInt remoteID=-1 ,
@@ -421,6 +424,7 @@ public:
 				   int &trueI, int &trueJ, const int rotCase = 0) const;
 	friend bool operator<(const TriFaceVerts &a, const TriFaceVerts &b);
 	friend bool operator==(const TriFaceVerts &a, const TriFaceVerts &b);
+	friend inline bool compare(const TriFaceVerts &a, const TriFaceVerts &b); 
 	friend inline MPI_Datatype register_mpi_type(TriFaceVerts const &);
 	void setCorners(const emInt cA, const emInt cB, const emInt cC,
 					const emInt cD = EMINT_MAX)
@@ -576,7 +580,7 @@ inline void printTris(const exa_set<TriFaceVerts>  &tris, emInt nDivs){
 			// itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
 			" Unsorted global: "<<itr->getGlobalCorner(0)<<" "<<
 			 itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<
-		 	" Remote ID: "<<itr->getRemotePartid()<<
+		 	" Remote ID: "<<itr->getRemoteId()<<
 			" Remote Indices: "<<itr->getRemoteIndices(0)<<" "<<
 			itr->getRemoteIndices(1)<<" "<<
 			itr->getRemoteIndices(2)<<
@@ -612,7 +616,7 @@ inline void printQuads(const exa_set<QuadFaceVerts>  &quads, emInt nDivs){
 			// itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
 			" Unsorted global: "<<itr->getGlobalCorner(0)<<" "<<
 			 itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<" "<<itr->getGlobalCorner(3)<<
-		 	" Remote ID: "<<itr->getRemotePartid()<<
+		 	" Remote ID: "<<itr->getRemoteId()<<
 			" Remote Indices: "<<itr->getRemoteIndices(0)<<" "<<
 			itr->getRemoteIndices(1)<<" "<<
 			itr->getRemoteIndices(2)<<" "<<itr->getRemoteIndices(3)<<
@@ -740,7 +744,7 @@ const exa_set<QuadFaceVerts> &remote,emInt nDivs){
 
 }; 
 
-inline void comPareTri(const TriFaceVerts &localTri, 
+inline void matchTri(const TriFaceVerts &localTri, 
 const emInt rotation, const emInt nDivs, 
 const exa_set<TriFaceVerts> &remoteTriSet
 ,std::unordered_map<emInt, emInt> &localRemote){
@@ -765,8 +769,8 @@ const exa_set<TriFaceVerts> &remoteTriSet
 
 	auto itRemote= remoteTriSet.find(TF); 
 	assert(itRemote!=remoteTriSet.end()); 
-	assert(localTri.getPartid()==itRemote->getRemotePartid()); 
-	assert(localTri.getRemotePartid()==itRemote->getPartid()); 
+	assert(localTri.getPartid()==itRemote->getRemoteId()); 
+	assert(localTri.getRemoteId()==itRemote->getPartid()); 
 	// for(auto i=0; i<3; i++){
 	// 	assert(localTri.getCorner(i)==
 	// 	itRemote->getRemoteIndices(i)); 
@@ -801,7 +805,7 @@ const exa_set<TriFaceVerts> &remoteTriSet
 
 
 }
-inline void comPareQuad(const QuadFaceVerts &localQuad, 
+inline void matchQuad(const QuadFaceVerts &localQuad, 
 const emInt rotation, const emInt nDivs, 
 const exa_set<QuadFaceVerts> &remoteQuadSet,
 std::unordered_map<emInt, emInt> &localRemote){
@@ -828,8 +832,8 @@ std::unordered_map<emInt, emInt> &localRemote){
 
 	auto itRemote= remoteQuadSet.find(QF); 
 	assert(itRemote!=remoteQuadSet.end()); 
-	assert(localQuad.getPartid()==itRemote->getRemotePartid()); 
-	assert(localQuad.getRemotePartid()==itRemote->getPartid()); 
+	assert(localQuad.getPartid()==itRemote->getRemoteId()); 
+	assert(localQuad.getRemoteId()==itRemote->getPartid()); 
 	// for(auto i=0; i<4; i++){
 	// 	assert(localQuad.getCorner(i)==
 	// 	itRemote->getRemoteIndices(i)); 
@@ -874,7 +878,7 @@ inline void printTris(const TriFaceVerts &tris)
 		// itr->getCorner(1)<<" "<<itr->getCorner(2)<<
 		// " global: "<<itr->getGlobalSorted(0)<<" "<<
 		// itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
-		" Unsorted global: " << tris.getGlobalCorner(0) << " " << tris.getGlobalCorner(1) << " " << tris.getGlobalCorner(2) << " Remote ID: " << tris.getRemotePartid() << std::endl;
+		" Unsorted global: " << tris.getGlobalCorner(0) << " " << tris.getGlobalCorner(1) << " " << tris.getGlobalCorner(2) << " Remote ID: " << tris.getRemoteId() << std::endl;
 	//<<
 	// " Remote Indices: "<<itr->getRemoteIndices(0)<<" "<<
 	// itr->getRemoteIndices(1)<<" "<<
@@ -913,14 +917,16 @@ std::unordered_set<T>& destinationSet) {
     }
 	assert(destinationSet.size()==sourceVector.size()); 
 }
-using triHash               = std::unordered_set<TriFaceVerts>; 
-using quadHash              = std::unordered_set<QuadFaceVerts>; 
-using vecTriHash            = std::vector<triHash>; 
-using vecQuadHash           = std::vector<quadHash>;
-using triVec                = std::vector<TriFaceVerts>; 
-using quadVec               = std::vector<QuadFaceVerts>; 
-using vecTriVec             = std::vector<triVec>  ; 
-using vecQuadVec            = std::vector<quadVec> ; 
+using hashTri               = std::unordered_set<TriFaceVerts>; 
+using hashQuad              = std::unordered_set<QuadFaceVerts>; 
+using vecHashTri            = std::vector<hashTri>; 
+using vecHashQuad           = std::vector<hashQuad>;
+using vecTri                = std::vector<TriFaceVerts>; 
+using vecQuad               = std::vector<QuadFaceVerts>; 
+using vecVecTri             = std::vector<vecTri>  ; 
+using vecVecQuad            = std::vector<vecQuad> ; 
+using intToVecTri		    = std::map<int,vecTri> ; 
+using intToVecQuad          = std::map<int,vecQuad>; 
 
 // using vecPartPtr               = std::unistd::vector<Part>; 
 // using vecCellPartDataPtr       = std::vector<CellPartData>; 
