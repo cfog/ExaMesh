@@ -2081,8 +2081,8 @@ UMesh::refineForMPI( const int numDivs) const
 	boost::mpi::environment   env; 
 	boost::mpi::communicator  world; 
 
-	//std::chrono::seconds sleepDuration(20);
-   // std::this_thread::sleep_for(sleepDuration);
+	//std::chrono::seconds sleepDuration(30);
+    //std::this_thread::sleep_for(sleepDuration);
 
 	vecPart         parts; 
 	vecCellPartData vecCPD; 
@@ -2115,6 +2115,9 @@ UMesh::refineForMPI( const int numDivs) const
 
 	hashTri  recvdTris;
 	hashQuad recvdQuads;  
+
+	boost:: mpi::request req1= boost::mpi::request(); 
+	boost:: mpi::request req2= boost::mpi::request();
 
 	if(world.rank()==MASTER)
 	{
@@ -2191,11 +2194,14 @@ UMesh::refineForMPI( const int numDivs) const
 	auto coarse= this->extractCoarseMesh(parts[world.rank()],vecCPD,numDivs, 
 	 trisS,quadsS,world.rank()); 
 
+	std::cout<<"Extraction is done for rank of: "<<world.rank()<<std::endl; 
+
 	auto refinedMesh = std::make_shared<UMesh>(
 	 		*(coarse.get()), numDivs, world.rank());
 
 
- 
+	std::cout<<"Refinement is done for rank of: "<<world.rank()<<std::endl; 
+
 	auto tris  = refinedMesh->getRefinedPartTris();
 
 	auto quads = refinedMesh->getRefinedPartQuads();
@@ -2206,7 +2212,7 @@ UMesh::refineForMPI( const int numDivs) const
 	buildTrisMap(tris,remoteTovecTris,triNeighbrs); 
 	buildQuadsMap(quads,remoteTovecQuads,quadNeighbrs); 
 
-	for(auto itri:remoteTovecQuads)
+/* 	for(auto itri:remoteTovecQuads)
 	{
 		int target    = itri.first; 
 		quadsTobeSend = itri.second; 
@@ -2221,55 +2227,62 @@ UMesh::refineForMPI( const int numDivs) const
 		quadsTobeRcvd.resize(quadsSize,QuadFaceVerts(1)); 
 		world.recv(source,tag,quadsTobeRcvd); 
 		recvdQuads.insert(quadsTobeRcvd.begin(),quadsTobeRcvd.end()); 
-	}
+	} */
 	
+	//std::vector<TriFaceVerts> dummyTris (2000, TriFaceVerts(1)); 
+
 	for(auto itri:remoteTovecTris)
 	{
 		
 		int target   = itri.first;
-			
 		trisTobeSend = itri.second; 
-			
-		world.send(target,tag,itri.second.size()); 
+		world.isend(target,tag,itri.second.size()); 
+		world.isend(target,tag,trisTobeSend);
 
-		world.send(target,tag,trisTobeSend); 
-			
 	}
+
 
 	for(auto isource:triNeighbrs)
 	{
-		
-		int source= isource;
-		world.recv(source,tag,trisSize); 
-		trisTobeRcvd.resize(trisSize,TriFaceVerts(1)); 
-		world.recv(source,tag,trisTobeRcvd); 
-		recvdTris.insert(trisTobeRcvd.begin(),trisTobeRcvd.end()); 
-			
-	}
 	
+		int source= isource;
+		req1 = world.irecv(source,tag,trisSize); 
+		if(req1.test())
+		{
+			trisTobeRcvd.resize(trisSize,TriFaceVerts(1));
 
-	for(auto it=tris.begin(); it!=tris.end(); it++)
-	{
-		std::unordered_map<emInt, emInt> localRemote;
-		int rotation = getTriRotation(*it,recvdTris,numDivs);
-		matchTri(*it,rotation,numDivs,recvdTris,localRemote); 
-		printMatchedTris(localRemote,world.rank()); 
-
+			req2= world.irecv(source,tag,trisTobeRcvd); 
+			
+			if(req2.test())
+				recvdTris.insert(trisTobeRcvd.begin(),trisTobeRcvd.end());
+			
+		}
 	}
-	for(auto iq=quads.begin(); iq!=quads.end();iq++)
+
+	if(req2.test())
+	{
+		
+		for(auto it=tris.begin(); it!=tris.end(); it++)
+		{
+			std::unordered_map<emInt, emInt> localRemote;
+			int rotation = getTriRotation(*it,recvdTris,numDivs);
+			matchTri(*it,rotation,numDivs,recvdTris,localRemote); 
+			printMatchedTris(localRemote,world.rank()); 
+
+		}
+	}
+
+/* 	for(auto iq=quads.begin(); iq!=quads.end();iq++)
 	{
 		std::unordered_map<emInt, emInt> localRemote;
 		int rotation = getQuadRotation(*iq,recvdQuads,numDivs);
 		matchQuad(*iq,rotation,numDivs,recvdQuads,localRemote); 
 		printMatchedQuads(localRemote,world.rank()); 
-	}
+	} */
 
 	// char fileName[100]; 
 
 	// sprintf(fileName, "Results/tris%03d.vtk", world.rank());
 	// writeTrisMap(tris,fileName,remoteTovecTris,numDivs); 
 
-
-	
-	
 }

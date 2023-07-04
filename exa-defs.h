@@ -38,6 +38,7 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
+#include <boost/serialization/vector.hpp>
 //#include  <boost/mpi/datatype.hpp>
 //#include <boost/serialization/access.hpp>
 //#include <boost/mpl/assert.hpp>
@@ -80,7 +81,7 @@
 #define CALLGRIND_TOGGLE_COLLECT
 #endif
 
-#define MAX_DIVS 10
+#define MAX_DIVS 5
 #define FILE_NAME_LEN 1024
 #define TOLTEST 1e-9
 
@@ -196,7 +197,7 @@ protected:
 	emInt m_corners[4], m_sorted[4];
 	double m_cornerUVW[4][3];
 	int m_nCorners, m_nDivs;
-	emInt m_intVerts[MAX_DIVS - 1][MAX_DIVS - 1];
+	std::vector<std::vector<emInt>> m_intVerts; 
 	double m_param_st[MAX_DIVS + 1][MAX_DIVS + 1][2];
 	double m_param_uvw[MAX_DIVS + 1][MAX_DIVS + 1][3];
 	emInt m_volElem, m_volElemType;
@@ -209,6 +210,11 @@ public:
 	FaceVerts(const int nDivs, const emInt NC = 0) : m_nCorners(NC), m_nDivs(nDivs), m_volElem(EMINT_MAX), m_volElemType(0),
 													 m_bothSidesDone(false)
 	{
+		m_intVerts.resize(m_nDivs + 1);
+		for (int i = 0; i <m_nDivs + 1 ; ++i) 
+		{
+    		m_intVerts[i].resize(m_nDivs + 1);
+		}
 		assert(NC == 3 || NC == 4);
 	}
 	//virtual ~FaceVerts() {};
@@ -933,13 +939,13 @@ using intToVecQuad          = std::map<int,vecQuad>;
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(FaceVerts)
 
-namespace boost { namespace mpi {
-	template <>
-struct is_mpi_datatype<TriFaceVerts> : mpl::true_ { };
-} }
-namespace boost { namespace mpi {
-	template <>
-struct is_mpi_datatype<QuadFaceVerts> : mpl::true_ { };
-} }
+// namespace boost { namespace mpi {
+// 	template <>
+// struct is_mpi_datatype<TriFaceVerts> : mpl::true_ { };
+// } }
+// namespace boost { namespace mpi {
+// 	template <>
+// struct is_mpi_datatype<QuadFaceVerts> : mpl::true_ { };
+// } }
 //using BoostMPI     = boost::mpi; 
 #endif /* SRC_EXA_DEFS_H_ */
