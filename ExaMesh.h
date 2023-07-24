@@ -211,7 +211,7 @@ public:
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
 		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )const=0;	
-	void refineMPI();	 
+	//void refineMPI();	 
 
 protected:
 	void addCellToPartitionData(const emInt* verts, emInt nPts, emInt ii,

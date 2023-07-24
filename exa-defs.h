@@ -32,20 +32,13 @@
 #include <assert.h>
 #include <algorithm>
 #include "exa_config.h"
-//#include <mpi.h>
-//#include <boost/serialization/access.hpp>
 #include <boost/mpi/datatype.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
 #include <boost/serialization/vector.hpp>
-//#include  <boost/mpi/datatype.hpp>
-//#include <boost/serialization/access.hpp>
-//#include <boost/mpl/assert.hpp>
 #include <boost/mpi.hpp> 
-//#include <boost/archive/text_oarchive.hpp>
-//#include <boost/archive/text_iarchive.hpp> 
-//#include <boost/mpl.hpp>
+
 
 
 #ifdef _OPENMP
@@ -81,7 +74,7 @@
 #define CALLGRIND_TOGGLE_COLLECT
 #endif
 
-#define MAX_DIVS 5
+#define MAX_DIVS 50
 #define FILE_NAME_LEN 1024
 #define TOLTEST 1e-9
 
@@ -166,26 +159,25 @@ class FaceVerts
 private:
 	friend class boost::serialization::access;
 	template <class Archive>
-	void serialize(Archive &ar, const unsigned int /*version*/)
+	void serialize(Archive &ar,const unsigned int /*version*/)
 	{
 		ar &m_remoteId;
 		ar &m_global;
 		ar &m_sortedGlobal;
-		ar &m_remote;
-		ar &m_sortedRemote; 
-		ar &m_corners; 
-		ar &m_sorted; 
+		//ar &m_remote;
+		//ar &m_sortedRemote; 
+		//ar &m_corners; 
+		//ar &m_sorted; 
 		//ar &m_cornerUVW; 
 		ar &m_nCorners; 
 		ar &m_nDivs; 
 		ar &m_intVerts; 
 		//ar &m_param_st; 
 		//ar &m_param_uvw; 
-		ar &m_volElem; 
-		ar &m_volElemType; 
-		ar &m_bothSidesDone; 
+		//ar &m_volElem; 
+		//ar &m_volElemType; 
+		//ar &m_bothSidesDone; 
 		ar &m_partId; 
-		 
 		ar &m_globalComparison; 
 
 	}
@@ -196,25 +188,31 @@ protected:
 	emInt m_remote[4], m_sortedRemote[4];
 	emInt m_corners[4], m_sorted[4];
 	double m_cornerUVW[4][3];
-	int m_nCorners, m_nDivs;
+	int64_t m_nCorners, m_nDivs;
 	std::vector<std::vector<emInt>> m_intVerts; 
-	double m_param_st[MAX_DIVS + 1][MAX_DIVS + 1][2];
-	double m_param_uvw[MAX_DIVS + 1][MAX_DIVS + 1][3];
+	//emInt m_intVerts [MAX_DIVS + 1][MAX_DIVS + 1]; 
+	//double m_param_st[MAX_DIVS + 1][MAX_DIVS + 1][2];
+	 std::vector<std::vector<std::vector<double>>> m_param_st;
+	//double m_param_uvw[MAX_DIVS + 1][MAX_DIVS + 1][3];
+	std::vector<std::vector<std::vector<double>>> m_param_uvw; 
 	emInt m_volElem, m_volElemType;
 	bool m_bothSidesDone;
 	emInt m_partId; 
 	emInt m_remoteId; 
 	bool m_globalComparison; 
 public:
-	 FaceVerts(){};
-	FaceVerts(const int nDivs, const emInt NC = 0) : m_nCorners(NC), m_nDivs(nDivs), m_volElem(EMINT_MAX), m_volElemType(0),
-													 m_bothSidesDone(false)
+	FaceVerts(){};
+	FaceVerts(const int nDivs, const emInt NC = 0) : 
+	m_nCorners(NC), 
+	m_nDivs(nDivs), 
+	m_volElem(EMINT_MAX), 
+	m_volElemType(0),
+	m_bothSidesDone(false),
+	m_intVerts (nDivs + 1, std::vector<emInt>(nDivs + 1)), 
+    m_param_st (nDivs + 1, std::vector<std::vector<double>>(nDivs + 1, std::vector<double>(2))),
+	m_param_uvw(nDivs + 1, std::vector<std::vector<double>>(nDivs + 1, std::vector<double>(3)))
+
 	{
-		m_intVerts.resize(m_nDivs + 1);
-		for (int i = 0; i <m_nDivs + 1 ; ++i) 
-		{
-    		m_intVerts[i].resize(m_nDivs + 1);
-		}
 		assert(NC == 3 || NC == 4);
 	}
 	//virtual ~FaceVerts() {};
@@ -304,7 +302,7 @@ public:
 		assert(ii >= 0 && ii < m_nCorners);
 		return m_global[ii];
 	}
-	emInt getGlobalSorted(const int ii) const{
+	emInt getSortedGlobal(const int ii) const{
 		assert(ii >= 0 && ii < m_nCorners);
 		return m_sortedGlobal[ii];
 	}
@@ -516,9 +514,9 @@ namespace std {
 				const result_type h2 = TFV.getSorted(2);
 				return (h0 ^ (h1 << 1)) ^ (h2 << 2);
 			}if(TFV.getGlobalCompare()==true){
-				const result_type h0 = TFV.getGlobalSorted(0);
-				const result_type h1 = TFV.getGlobalSorted(1);
-				const result_type h2 = TFV.getGlobalSorted(2);
+				const result_type h0 = TFV.getSortedGlobal(0);
+				const result_type h1 = TFV.getSortedGlobal(1);
+				const result_type h2 = TFV.getSortedGlobal(2);
 				return (h0 ^ (h1 << 1)) ^ (h2 << 2);
 			}
 
@@ -538,10 +536,10 @@ namespace std {
 				const result_type h3 = QFV.getSorted(3);
 				return h0 ^ (h1 << 1) ^ (h2 << 2) ^ (h3 << 3);
 			}else{
-				const result_type h0 = QFV.getGlobalSorted(0);
-				const result_type h1 = QFV.getGlobalSorted(1);
-				const result_type h2 = QFV.getGlobalSorted(2);
-				const result_type h3 = QFV.getGlobalSorted(3);
+				const result_type h0 = QFV.getSortedGlobal(0);
+				const result_type h1 = QFV.getSortedGlobal(1);
+				const result_type h2 = QFV.getSortedGlobal(2);
+				const result_type h3 = QFV.getSortedGlobal(3);
 				return h0 ^ (h1 << 1) ^ (h2 << 2) ^ (h3 << 3);
 
 			}

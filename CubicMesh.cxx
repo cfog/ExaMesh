@@ -1839,12 +1839,12 @@ void CubicMesh::partFaceMatching(
 		auto next= std::next(itr,1); 
 		if(k!=partBdryTris.size()){
 					if(
-			itr->getGlobalSorted(0) == next->getGlobalSorted(0) 
+			itr->getSortedGlobal(0) == next->getSortedGlobal(0) 
 			&&
 
-			itr->getGlobalSorted(1)== next->getGlobalSorted(1) 
+			itr->getSortedGlobal(1)== next->getSortedGlobal(1) 
 			&&
-			itr->getGlobalSorted(2)== next->getGlobalSorted(2)
+			itr->getSortedGlobal(2)== next->getSortedGlobal(2)
 			){
 						
 
@@ -1885,10 +1885,10 @@ void CubicMesh::partFaceMatching(
 
 			emInt partid= next->getPartid(); 
 
-			emInt v0SortedGlobal= next->getGlobalSorted(0);
-			emInt v1SortedGlobal= next->getGlobalSorted(1);
-			emInt v2SortedGlobal= next->getGlobalSorted(2);
-			emInt v3SortedGlobal= next->getGlobalSorted(3); 
+			emInt v0SortedGlobal= next->getSortedGlobal(0);
+			emInt v1SortedGlobal= next->getSortedGlobal(1);
+			emInt v2SortedGlobal= next->getSortedGlobal(2);
+			emInt v3SortedGlobal= next->getSortedGlobal(3); 
 
 
 
@@ -1901,10 +1901,10 @@ void CubicMesh::partFaceMatching(
 
 			emInt partid_= itr->getPartid(); 
 
-			emInt v0SortedGlobal_= itr->getGlobalSorted(0);
-			emInt v1SortedGlobal_= itr->getGlobalSorted(1);
-			emInt v2SortedGlobal_= itr->getGlobalSorted(2);
-			emInt v3SortedGlobal_= itr->getGlobalSorted(3); 
+			emInt v0SortedGlobal_= itr->getSortedGlobal(0);
+			emInt v1SortedGlobal_= itr->getSortedGlobal(1);
+			emInt v2SortedGlobal_= itr->getSortedGlobal(2);
+			emInt v3SortedGlobal_= itr->getSortedGlobal(3); 
 
 			if(v0SortedGlobal_==v0SortedGlobal &&
 				v1SortedGlobal==v1SortedGlobal_ &&

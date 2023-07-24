@@ -108,7 +108,7 @@ void printTrisSet(const std::set<TriFaceVerts> &tris, std::string fileName)
 
 	for (auto itr = tris.begin(); itr != tris.end(); itr++)
 	{
-		out << "part: " << itr->getPartid() << " local: " << itr->getSorted(0) << " " << itr->getSorted(1) << " " << itr->getSorted(2) << " global: " << itr->getGlobalSorted(0) << " " << itr->getGlobalSorted(1) << " " << itr->getGlobalSorted(2) <<
+		out << "part: " << itr->getPartid() << " local: " << itr->getSorted(0) << " " << itr->getSorted(1) << " " << itr->getSorted(2) << " global: " << itr->getSortedGlobal(0) << " " << itr->getSortedGlobal(1) << " " << itr->getSortedGlobal(2) <<
 			// " Unsorted global: "<<itr->getGlobalCorner(0)<<" "<<
 			// itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<
 			// " Remote ID: "<<itr->getRemotePartid()<<
@@ -1573,10 +1573,10 @@ void UMesh::partFaceMatching(
 		if (k != partBdryTris.size())
 		{
 			if (
-				itr->getGlobalSorted(0) == next->getGlobalSorted(0) &&
+				itr->getSortedGlobal(0) == next->getSortedGlobal(0) &&
 
-				itr->getGlobalSorted(1) == next->getGlobalSorted(1) &&
-				itr->getGlobalSorted(2) == next->getGlobalSorted(2))
+				itr->getSortedGlobal(1) == next->getSortedGlobal(1) &&
+				itr->getSortedGlobal(2) == next->getSortedGlobal(2))
 			{
 
 				emInt global[3] = {itr->getGlobalCorner(0),
@@ -1611,10 +1611,10 @@ void UMesh::partFaceMatching(
 
 			emInt partid = next->getPartid();
 
-			emInt v0SortedGlobal = next->getGlobalSorted(0);
-			emInt v1SortedGlobal = next->getGlobalSorted(1);
-			emInt v2SortedGlobal = next->getGlobalSorted(2);
-			emInt v3SortedGlobal = next->getGlobalSorted(3);
+			emInt v0SortedGlobal = next->getSortedGlobal(0);
+			emInt v1SortedGlobal = next->getSortedGlobal(1);
+			emInt v2SortedGlobal = next->getSortedGlobal(2);
+			emInt v3SortedGlobal = next->getSortedGlobal(3);
 
 			emInt v0Global_ = itr->getGlobalCorner(0);
 			emInt v1Global_ = itr->getGlobalCorner(1);
@@ -1623,10 +1623,10 @@ void UMesh::partFaceMatching(
 
 			emInt partid_ = itr->getPartid();
 
-			emInt v0SortedGlobal_ = itr->getGlobalSorted(0);
-			emInt v1SortedGlobal_ = itr->getGlobalSorted(1);
-			emInt v2SortedGlobal_ = itr->getGlobalSorted(2);
-			emInt v3SortedGlobal_ = itr->getGlobalSorted(3);
+			emInt v0SortedGlobal_ = itr->getSortedGlobal(0);
+			emInt v1SortedGlobal_ = itr->getSortedGlobal(1);
+			emInt v2SortedGlobal_ = itr->getSortedGlobal(2);
+			emInt v3SortedGlobal_ = itr->getSortedGlobal(3);
 
 			if (v0SortedGlobal_ == v0SortedGlobal &&
 				v1SortedGlobal == v1SortedGlobal_ &&
@@ -2039,8 +2039,8 @@ const char* fileName, std::map<int, vecTri> const&  remoteTotris, int nDivs)
 			out<<"Remote ID: "<< itr->getRemoteId()<<
 			" local indices: "<<itr->getCorner(0)<<" "<<
 			itr->getCorner(1)<<" "<<itr->getCorner(2)<<
-			" sorted global: "<<itr->getGlobalSorted(0)<<" "<<
-			itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
+			" sorted global: "<<itr->getSortedGlobal(0)<<" "<<
+			itr->getSortedGlobal(1)<<" "<<itr->getSortedGlobal(2)<<
 			" Unsorted global: "<<itr->getGlobalCorner(0)<<" "<<
 				itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<
 				" Part ID: "<<itr->getPartid()<<
@@ -2079,10 +2079,9 @@ UMesh::refineForMPI( const int numDivs) const
 {
 
 	boost::mpi::environment   env; 
-	boost::mpi::communicator  world; 
+	boost::mpi::communicator  world;
 
-	//std::chrono::seconds sleepDuration(30);
-    //std::this_thread::sleep_for(sleepDuration);
+	std::vector<boost::mpi::request> Trireqs;  
 
 	vecPart         parts; 
 	vecCellPartData vecCPD; 
@@ -2107,17 +2106,12 @@ UMesh::refineForMPI( const int numDivs) const
 	std::set<int> triNeighbrs;  
 	std::set<int> quadNeighbrs; 
 
-	vecTri trisTobeSend; 
-	vecTri trisTobeRcvd;
-
-	vecQuad quadsTobeSend; 
-	vecQuad quadsTobeRcvd; 
+	
+	std::vector<vecTri>  trisTobeRcvd; 
+	std::vector<vecQuad> quadsTobeRcvd;
 
 	hashTri  recvdTris;
 	hashQuad recvdQuads;  
-
-	boost:: mpi::request req1= boost::mpi::request(); 
-	boost:: mpi::request req2= boost::mpi::request();
 
 	if(world.rank()==MASTER)
 	{
@@ -2156,8 +2150,6 @@ UMesh::refineForMPI( const int numDivs) const
 			world.send(irank,tag,VecTriVec[irank]); 
 			world.send(irank,tag,vecQuadVec[irank]); 
 		}
-	
-	
 	}
 	else
 	{
@@ -2175,102 +2167,81 @@ UMesh::refineForMPI( const int numDivs) const
 	{
 		for(auto irank=1 ; irank<world.size();irank++)
 		{
-			
 			world.send(irank,tag,vecCPD); 
-		
 		}
-	
 	}
-
 	if(world.rank()!= MASTER)
 	{
 		vecCPD.resize(vecCPDSize); 
-		
 		world.recv(MASTER,tag,vecCPD); 
 	}
-
-	
 
 	auto coarse= this->extractCoarseMesh(parts[world.rank()],vecCPD,numDivs, 
 	 trisS,quadsS,world.rank()); 
 
-	std::cout<<"Extraction is done for rank of: "<<world.rank()<<std::endl; 
-
 	auto refinedMesh = std::make_shared<UMesh>(
 	 		*(coarse.get()), numDivs, world.rank());
-
-
-	std::cout<<"Refinement is done for rank of: "<<world.rank()<<std::endl; 
 
 	auto tris  = refinedMesh->getRefinedPartTris();
 
 	auto quads = refinedMesh->getRefinedPartQuads();
 	
+	buildTrisMap(tris,remoteTovecTris,triNeighbrs);
 
-
-
-	buildTrisMap(tris,remoteTovecTris,triNeighbrs); 
-	buildQuadsMap(quads,remoteTovecQuads,quadNeighbrs); 
-
-/* 	for(auto itri:remoteTovecQuads)
-	{
-		int target    = itri.first; 
-		quadsTobeSend = itri.second; 
-		world.send(target,tag,itri.second.size()); 
-		world.send(target,tag,itri.second); 
-	}
-
-	for(auto isource:quadNeighbrs)
-	{
-		int source= isource; 
-		world.recv(source,tag,quadsSize); 
-		quadsTobeRcvd.resize(quadsSize,QuadFaceVerts(1)); 
-		world.recv(source,tag,quadsTobeRcvd); 
-		recvdQuads.insert(quadsTobeRcvd.begin(),quadsTobeRcvd.end()); 
-	} */
-	
-	//std::vector<TriFaceVerts> dummyTris (2000, TriFaceVerts(1)); 
-
-	for(auto itri:remoteTovecTris)
-	{
-		
-		int target   = itri.first;
-		trisTobeSend = itri.second; 
-		world.isend(target,tag,itri.second.size()); 
-		world.isend(target,tag,trisTobeSend);
-
-	}
-
-
+	trisTobeRcvd.resize(triNeighbrs.size()); 
+	int jj=0 ; 
 	for(auto isource:triNeighbrs)
 	{
-	
-		int source= isource;
-		req1 = world.irecv(source,tag,trisSize); 
-		if(req1.test())
-		{
-			trisTobeRcvd.resize(trisSize,TriFaceVerts(1));
+		auto findSource = remoteTovecTris.find(isource); 
+		// same amount of message will be sent and received from other prcoeszsor
+		// Be cuatious if this assumption later on will be break
+		trisTobeRcvd[jj].resize(findSource->second.size()); 
+		jj++; 
 
-			req2= world.irecv(source,tag,trisTobeRcvd); 
-			
-			if(req2.test())
-				recvdTris.insert(trisTobeRcvd.begin(),trisTobeRcvd.end());
-			
-		}
 	}
 
-	if(req2.test())
+	for(auto tri:remoteTovecTris)
+	{
+
+		boost::mpi::request req= world.isend(tri.first,tag,tri.second);
+		Trireqs.push_back(req);
+	
+	}
+
+	int kk=0 ; 
+	for(auto source: triNeighbrs)
 	{
 		
-		for(auto it=tris.begin(); it!=tris.end(); it++)
-		{
-			std::unordered_map<emInt, emInt> localRemote;
-			int rotation = getTriRotation(*it,recvdTris,numDivs);
-			matchTri(*it,rotation,numDivs,recvdTris,localRemote); 
-			printMatchedTris(localRemote,world.rank()); 
-
-		}
+		boost::mpi::request req= world.irecv(source,tag,trisTobeRcvd[kk]);
+		//req.test();
+		Trireqs.push_back(req);
+		kk++; 
 	}
+
+	boost::mpi::wait_all(Trireqs.begin(),Trireqs.end()); 
+
+	//boost::mpi::test_all(reqs.begin(),reqs.end());
+
+	for(const auto& tri: trisTobeRcvd)
+	{
+
+		recvdTris.insert(tri.begin(),tri.end()); 
+	}
+
+
+
+//	if(req2.test())
+	//{
+		
+	for(auto it=tris.begin(); it!=tris.end(); it++)
+	{
+		std::unordered_map<emInt, emInt> localRemote;
+		int rotation = getTriRotation(*it,recvdTris,numDivs);
+		matchTri(*it,rotation,numDivs,recvdTris,localRemote); 
+		printMatchedTris(localRemote,world.rank()); 
+
+	}
+	//} 
 
 /* 	for(auto iq=quads.begin(); iq!=quads.end();iq++)
 	{
