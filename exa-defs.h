@@ -726,15 +726,19 @@ const exa_set<QuadFaceVerts> &remote,emInt nDivs){
 	// };
 	int rotCase = 0;
 	
-	for (int cc = 0; cc < 4; cc++){
-		if (vert0 == iterQuads->getGlobalCorner(cc)) {
-			if (vert1 == iterQuads->getGlobalCorner((cc+1)%4)) {
+	for (int cc = 0; cc < 4; cc++)
+	{
+		if (vert0 == iterQuads->getGlobalCorner(cc)) 
+		{
+			if (vert1 == iterQuads->getGlobalCorner((cc+1)%4)) 
+			{
 				// Oriented forward; bdry quad
 				assert(vert2 == iterQuads->getGlobalCorner((cc+2)%4));
 				assert(vert3 == iterQuads->getGlobalCorner((cc+3)%4));
 				rotCase = cc+1;
 			}
-			else {
+			else 
+			{
 				assert(vert1 == iterQuads->getGlobalCorner((cc+3)%4));
 				assert(vert2 == iterQuads->getGlobalCorner((cc+2)%4));
 				assert(vert3 == iterQuads->getGlobalCorner((cc+1)%4));
@@ -782,8 +786,10 @@ const exa_set<TriFaceVerts> &remoteTriSet
 	// }
 
 
-	for (int ii = 0; ii <= nDivs ; ii++) {
-	 	for (int jj = 0; jj <= nDivs-ii ; jj++) {
+	for (int ii = 0; ii <= nDivs ; ii++) 
+	{
+	 	for (int jj = 0; jj <= nDivs-ii ; jj++) 
+		{
 
 			int trueI; 
 			int trueJ; 
@@ -805,8 +811,6 @@ const exa_set<TriFaceVerts> &remoteTriSet
 		}
 	}
 	//std::cout<<std::endl; 
-
-
 
 }
 inline void matchQuad(const QuadFaceVerts &localQuad, 
@@ -921,16 +925,18 @@ std::unordered_set<T>& destinationSet) {
     }
 	assert(destinationSet.size()==sourceVector.size()); 
 }
-using hashTri               = std::unordered_set<TriFaceVerts>; 
-using hashQuad              = std::unordered_set<QuadFaceVerts>; 
-using vecHashTri            = std::vector<hashTri>; 
-using vecHashQuad           = std::vector<hashQuad>;
-using vecTri                = std::vector<TriFaceVerts>; 
-using vecQuad               = std::vector<QuadFaceVerts>; 
-using vecVecTri             = std::vector<vecTri>  ; 
-using vecVecQuad            = std::vector<vecQuad> ; 
-using intToVecTri		    = std::map<int,vecTri> ; 
-using intToVecQuad          = std::map<int,vecQuad>; 
+using hashTri                    = std::unordered_set<TriFaceVerts>; 
+using hashQuad                   = std::unordered_set<QuadFaceVerts>; 
+using vecHashTri                 = std::vector<hashTri>; 
+using vecHashQuad                = std::vector<hashQuad>;
+using vecTri                     = std::vector<TriFaceVerts>; 
+using vecQuad                    = std::vector<QuadFaceVerts>; 
+using vecVecTri                  = std::vector<vecTri>  ; 
+using vecVecQuad                 = std::vector<vecQuad> ; 
+using intToVecTri		         = std::map<int,vecTri> ; 
+using intToVecQuad               = std::map<int,vecQuad>; 
+using TableTri2TableIndex2Index	 = std::unordered_map< TriFaceVerts , std::unordered_map<emInt,emInt>>;
+using TableQuad2TableIndex2Index = std::unordered_map< QuadFaceVerts, std::unordered_map<emInt,emInt>>;
 
 // using vecPartPtr               = std::unistd::vector<Part>; 
 // using vecCellPartDataPtr       = std::vector<CellPartData>; 

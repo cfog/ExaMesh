@@ -1521,7 +1521,7 @@ void CubicMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 														xmax, ymax, zmax);
 	}
 }
-void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts){
+void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester){
 
 //	std::cout<<"Entering through function: "<<
 //	std::endl; 

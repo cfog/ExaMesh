@@ -202,7 +202,7 @@ public:
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;
 
-	virtual void TestMPI(const emInt &nDivs, const emInt &nParts); 
+	virtual void TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester); 
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
 			double& zmax) const;

@@ -1306,7 +1306,7 @@ const int &rank)
 
 }
 void 
-UMesh::TestMPI(const emInt &nDivs, const emInt &nParts)
+UMesh::TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester)
 {
 
 	vecPart parts;
@@ -1321,15 +1321,21 @@ UMesh::TestMPI(const emInt &nDivs, const emInt &nParts)
 	vecSharePtrUmesh submeshes;
 	vecSharePtrUmesh refinedUMeshes;
 
+	std::vector<TableTri2TableIndex2Index>  matchedTrisAllParts  (nParts); 
+	std::vector<TableQuad2TableIndex2Index> matchedQuadsAllParts (nParts);
+
+
+
+	//std::vector< TriFaceVerts , std::unordered_map<emInt,emInt>>  matchedTrisAllParts (nParts); 
+	//std::vector< QuadFaceVerts, std::unordered_map<emInt,emInt>>  matchedQuadAllParts (nParts); 
+
+
 	partitionCells(this, nParts, parts, vecCPD);
 
 
-	//tester->setVecpart(parts); 
-	//tester->setvecCellPartData(vecCPD); 
-	//auto submeshes= getExaMeshType(isUMesh); 
-
+	
 	this->partFaceMatching(parts, vecCPD, tris, quads);
-	//tester->setInputTri(tris); 
+	
 
 	
 
@@ -1356,6 +1362,8 @@ UMesh::TestMPI(const emInt &nDivs, const emInt &nParts)
 	}
 	for (auto iPart = 0; iPart < nParts; iPart++)
 	{
+		TableTri2TableIndex2Index  matchedTris; 
+		TableQuad2TableIndex2Index matchedQuads; 
 		exa_set<TriFaceVerts> tri =
 			refinedUMeshes[iPart]->getRefinedPartTris();
 		exa_set<QuadFaceVerts> quads = refinedUMeshes[iPart]->getRefinedPartQuads();
@@ -1369,7 +1377,8 @@ UMesh::TestMPI(const emInt &nDivs, const emInt &nParts)
 			triRotations.insert(rotation);
 
 			matchTri(*it, rotation, nDivs, remoteTriSet, localRemote);
-			printMatchedTris(localRemote,iPart); 
+			matchedTris.emplace(*it,localRemote); 
+			//printMatchedTris(localRemote,iPart); 
 			for (auto itmap = localRemote.begin();
 				 itmap != localRemote.end(); itmap++)
 			{
@@ -1391,8 +1400,9 @@ UMesh::TestMPI(const emInt &nDivs, const emInt &nParts)
 			quadRotations.insert(rotation);
 
 			matchQuad(*it, rotation, nDivs, remoteQuadSet, localRemote);
-			//std::cout<<localRemote.size()<<std::endl; 
-			printMatchedQuads(localRemote,iPart); 
+			matchedQuads.emplace(*it,localRemote); 
+		
+			//printMatchedQuads(localRemote,iPart); 
 			for (auto itmap = localRemote.begin();
 				 itmap != localRemote.end(); itmap++)
 			{
@@ -1404,6 +1414,8 @@ UMesh::TestMPI(const emInt &nDivs, const emInt &nParts)
 						   refinedUMeshes[whereToLook]->getZ(itmap->second)) < TOLTEST);
 			}
 		}
+		matchedTrisAllParts[iPart] = matchedTris; 
+		matchedQuadsAllParts[iPart]= matchedQuads; 
 	}
 	// Which rotation cases are covered?
 	std::cout << "Covered Tri Rotations: " << std::endl;
@@ -1420,6 +1432,9 @@ UMesh::TestMPI(const emInt &nDivs, const emInt &nParts)
 		std::cout << *it << " ";
 	};
 	std::cout << std::endl;
+
+	tester->setMatchedTris (matchedTrisAllParts); 
+	tester->setMatchedQuads(matchedQuadsAllParts); 
 }
 
 void UMesh::partFaceMatching(
@@ -2075,7 +2090,7 @@ const char* fileName, std::map<int, vecTri> const&  remoteTotris, int nDivs)
 }
 
 void 
-UMesh::refineForMPI( const int numDivs) const
+UMesh::refineForMPI( const int numDivs, ParallelTester* tester) const
 {
 
 	boost::mpi::environment   env; 
@@ -2232,15 +2247,18 @@ UMesh::refineForMPI( const int numDivs) const
 
 //	if(req2.test())
 	//{
-		
+	TableTri2TableIndex2Index  matchedTris; 
 	for(auto it=tris.begin(); it!=tris.end(); it++)
 	{
 		std::unordered_map<emInt, emInt> localRemote;
 		int rotation = getTriRotation(*it,recvdTris,numDivs);
 		matchTri(*it,rotation,numDivs,recvdTris,localRemote); 
-		printMatchedTris(localRemote,world.rank()); 
+		//matchedTris.emplace(*it,localRemote);
+		//printMatchedTris(localRemote,world.rank()); 
 
 	}
+	//tester->testMatchedTris(matchedTris,world.rank()); 
+
 	//} 
 
 /* 	for(auto iq=quads.begin(); iq!=quads.end();iq++)

@@ -206,7 +206,7 @@ public:
 	exa_set<QuadFaceVerts> getRefinedPartQuads() const {
 		return m_refinedPartQuads; 
 	}
-	virtual void TestMPI(const emInt &nDivs, const emInt &nParts)=0; 
+	virtual void TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester)=0; 
 	virtual void partFaceMatching(
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
