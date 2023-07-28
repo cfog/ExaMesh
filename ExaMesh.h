@@ -136,8 +136,16 @@ public:
 			const emInt maxCellsPerPart) const;
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const = 0;
-			
 
+	void refineForMPI( const int numDivs ,ParallelTester* tester) const;		
+
+	virtual std::unique_ptr<ExaMesh> extractCoarseMesh(Part& P,	std::vector<CellPartData>& vecCPD, 
+	const int numDivs,
+			const std::unordered_set<TriFaceVerts> &tris= std::unordered_set<TriFaceVerts>(), 
+			const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>(), 
+			const emInt partID=-1) const=0;		
+			
+	void TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester); 
 	virtual void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
 			double& zmax) const = 0;
@@ -206,7 +214,7 @@ public:
 	exa_set<QuadFaceVerts> getRefinedPartQuads() const {
 		return m_refinedPartQuads; 
 	}
-	virtual void TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester)=0; 
+	//virtual void TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester)=0; 
 	virtual void partFaceMatching(
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,

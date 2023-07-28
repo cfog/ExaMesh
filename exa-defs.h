@@ -940,7 +940,23 @@ using TableQuad2TableIndex2Index = std::unordered_map< QuadFaceVerts, std::unord
 
 // using vecPartPtr               = std::unistd::vector<Part>; 
 // using vecCellPartDataPtr       = std::vector<CellPartData>; 
+void
+inline buildTrisMap(hashTri const& tris, std::map<int, vecTri> &remoteTotris,
+std::set<int> &neighbors)
+{
 
+	for(auto it= tris.begin(); it!=tris.end(); it++ )
+	{
+		int remoteId= it->getRemoteId(); 
+		neighbors.insert(remoteId); 
+		remoteTotris[remoteId].push_back(*it); 
+
+	}
+	
+
+	//return remoteTotris; 
+	
+}
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(FaceVerts)
 
 // namespace boost { namespace mpi {

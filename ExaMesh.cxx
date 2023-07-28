@@ -532,3 +532,302 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 //	fprintf(stderr, "Done filling up face maps\n");
 //	fprintf(stderr, "Done building face cell connectivity\n");
 //}
+void
+ExaMesh:: TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester)
+{
+		vecPart parts;
+	vecCellPartData vecCPD;
+
+	std::set<int> triRotations;
+	std::set<int> quadRotations;
+
+	vecHashTri tris;
+	vecHashQuad quads;
+
+	vecSharePtrUmesh submeshes;
+	vecSharePtrUmesh refinedUMeshes;
+
+	std::vector<TableTri2TableIndex2Index>  matchedTrisAllParts  (nParts); 
+	std::vector<TableQuad2TableIndex2Index> matchedQuadsAllParts (nParts);
+
+
+
+	//std::vector< TriFaceVerts , std::unordered_map<emInt,emInt>>  matchedTrisAllParts (nParts); 
+	//std::vector< QuadFaceVerts, std::unordered_map<emInt,emInt>>  matchedQuadAllParts (nParts); 
+
+
+	partitionCells(this, nParts, parts, vecCPD);
+
+
+	
+	this->partFaceMatching(parts, vecCPD, tris, quads);
+	
+
+	
+
+	for (auto i = 0; i < nParts; i++)
+	{
+		auto coarse = this->extractCoarseMesh(parts[i], vecCPD, nDivs, tris[i], quads[i], i);
+		//std::shared_ptr<UMesh> shared_ptr = std::move(coarse);
+		//dynamic_cast<UMesh*> (coarse.release());
+		submeshes.emplace_back(dynamic_cast<UMesh*> (coarse.release()));
+		//submeshes.push_back(shared_ptr);
+		//char fileName[100];
+		//sprintf(fileName, "TestCases/Coarsesubmesh%03d.vtk", i);
+		//shared_ptr->writeVTKFile(fileName);
+	}
+
+	assert(submeshes.size() == static_cast<std::size_t>(nParts));
+	// Refine the mesh
+	for (auto i = 0; i < nParts; i++)
+	{
+		auto refineUmesh = std::make_shared<UMesh>(
+			*(submeshes[i].get()), nDivs, i);
+		refinedUMeshes.push_back(refineUmesh);
+		char fileName[100];
+		sprintf(fileName, "TestCases/Refinedmesh%03d.vtk", i);
+		refineUmesh->writeVTKFile(fileName);
+	}
+	for (auto iPart = 0; iPart < nParts; iPart++)
+	{
+		TableTri2TableIndex2Index  matchedTris; 
+		TableQuad2TableIndex2Index matchedQuads; 
+		exa_set<TriFaceVerts> tri =
+			refinedUMeshes[iPart]->getRefinedPartTris();
+		exa_set<QuadFaceVerts> quads = refinedUMeshes[iPart]->getRefinedPartQuads();
+		for (auto it = tri.begin(); it != tri.end(); it++)
+		{
+			std::unordered_map<emInt, emInt> localRemote;
+			emInt whereToLook = it->getRemoteId();
+			exa_set<TriFaceVerts> remoteTriSet =
+				refinedUMeshes[whereToLook]->getRefinedPartTris();
+			emInt rotation = getTriRotation(*it, remoteTriSet, nDivs);
+			triRotations.insert(rotation);
+
+			matchTri(*it, rotation, nDivs, remoteTriSet, localRemote);
+			matchedTris.emplace(*it,localRemote); 
+			//printMatchedTris(localRemote,iPart); 
+			for (auto itmap = localRemote.begin();
+				 itmap != localRemote.end(); itmap++)
+			{
+				assert(abs(refinedUMeshes[iPart]->getX(itmap->first) -
+						   refinedUMeshes[whereToLook]->getX(itmap->second)) < TOLTEST);
+				assert(abs(refinedUMeshes[iPart]->getY(itmap->first) -
+						   refinedUMeshes[whereToLook]->getY(itmap->second)) < TOLTEST);
+				assert(abs(refinedUMeshes[iPart]->getZ(itmap->first) -
+						   refinedUMeshes[whereToLook]->getZ(itmap->second)) < TOLTEST);
+			}
+		}
+		for (auto it = quads.begin(); it != quads.end(); it++)
+		{
+			std::unordered_map<emInt, emInt> localRemote;
+			emInt whereToLook = it->getRemoteId();
+			exa_set<QuadFaceVerts> remoteQuadSet =
+				refinedUMeshes[whereToLook]->getRefinedPartQuads();
+			emInt rotation = getQuadRotation(*it, remoteQuadSet, nDivs);
+			quadRotations.insert(rotation);
+
+			matchQuad(*it, rotation, nDivs, remoteQuadSet, localRemote);
+			matchedQuads.emplace(*it,localRemote); 
+		
+			//printMatchedQuads(localRemote,iPart); 
+			for (auto itmap = localRemote.begin();
+				 itmap != localRemote.end(); itmap++)
+			{
+				assert(abs(refinedUMeshes[iPart]->getX(itmap->first) -
+						   refinedUMeshes[whereToLook]->getX(itmap->second)) < TOLTEST);
+				assert(abs(refinedUMeshes[iPart]->getY(itmap->first) -
+						   refinedUMeshes[whereToLook]->getY(itmap->second)) < TOLTEST);
+				assert(abs(refinedUMeshes[iPart]->getZ(itmap->first) -
+						   refinedUMeshes[whereToLook]->getZ(itmap->second)) < TOLTEST);
+			}
+		}
+		matchedTrisAllParts[iPart] = matchedTris; 
+		matchedQuadsAllParts[iPart]= matchedQuads; 
+	}
+	// Which rotation cases are covered?
+	std::cout << "Covered Tri Rotations: " << std::endl;
+	for (auto it = triRotations.begin();
+		 it != triRotations.end(); it++)
+	{
+		std::cout << *it << " ";
+	};
+	std::cout << std::endl;
+	std::cout << "Covered Quad Rotations: " << std::endl;
+	for (auto it = quadRotations.begin();
+		 it != quadRotations.end(); it++)
+	{
+		std::cout << *it << " ";
+	};
+	std::cout << std::endl;
+
+	tester->setMatchedTris (matchedTrisAllParts); 
+	tester->setMatchedQuads(matchedQuadsAllParts); 
+}
+
+void 
+ExaMesh::refineForMPI( const int numDivs ,ParallelTester* tester) 
+const
+{
+	boost::mpi::environment   env; 
+	boost::mpi::communicator  world;
+
+	std::vector<boost::mpi::request> Trireqs;  
+
+	vecPart         parts; 
+	vecCellPartData vecCPD; 
+	
+	std::size_t    vecCPDSize; 
+	std::size_t    trisSize; 
+	std::size_t    quadsSize; 
+	std::size_t nParts = world.size();
+
+	hashTri  trisS; 
+	hashQuad quadsS;
+
+	vecTri   triV;
+	vecQuad  quadV;  
+
+	int MASTER = 0; 
+	int tag    = 0; 
+
+	intToVecTri  remoteTovecTris;
+	intToVecQuad remoteTovecQuads; 
+
+	std::set<int> triNeighbrs;  
+	std::set<int> quadNeighbrs; 
+
+	
+	std::vector<vecTri>  trisTobeRcvd; 
+	std::vector<vecQuad> quadsTobeRcvd;
+
+	hashTri  recvdTris;
+	hashQuad recvdQuads;  
+
+	if(world.rank()==MASTER)
+	{
+		partitionCells(this, nParts, parts,vecCPD); 
+
+		vecCPDSize = vecCPD.size(); 
+
+		assert(vecCPDSize>0); 
+
+		vecHashTri  VectrisHash; 
+		vecHashQuad VecquadsHash;
+
+		vecVecTri   VecTriVec; 
+		vecVecQuad  vecQuadVec; 
+
+		this->partFaceMatching(parts,vecCPD,VectrisHash,VecquadsHash); 
+		for(auto  itri=0 ; itri<VectrisHash.size(); itri++)
+		{
+			vecTri TriVec; 
+			SetToVector(VectrisHash[itri],TriVec); 
+			VecTriVec.emplace_back(TriVec); 
+		}
+		for(auto iquad=0 ; iquad<VecquadsHash.size(); iquad++)
+		{
+			vecQuad QuadVec; 
+			SetToVector(VecquadsHash[iquad],QuadVec); 
+			vecQuadVec.emplace_back(QuadVec); 
+		}
+
+		trisS = VectrisHash[0]; // For MASTER 
+		quadsS= VecquadsHash[0];
+		
+		for(auto irank=1 ; irank<world.size();irank++)
+		{
+			world.send(irank,tag,parts[irank]); 
+			world.send(irank,tag,VecTriVec[irank]); 
+			world.send(irank,tag,vecQuadVec[irank]); 
+		}
+	}
+	else
+	{
+		parts.resize(world.size()); 
+		world.recv(MASTER,tag,parts[world.rank()]);
+		world.recv(MASTER,tag,triV); 
+		world.recv(MASTER,tag,quadV);
+		vectorToSet(triV,trisS);
+		vectorToSet(quadV,quadsS); 
+	}
+
+	boost::mpi::broadcast(world,vecCPDSize,MASTER);
+
+	if(world.rank()==MASTER)
+	{
+		for(auto irank=1 ; irank<world.size();irank++)
+		{
+			world.send(irank,tag,vecCPD); 
+		}
+	}
+	if(world.rank()!= MASTER)
+	{
+		vecCPD.resize(vecCPDSize); 
+		world.recv(MASTER,tag,vecCPD); 
+	}
+
+	auto coarse= this->extractCoarseMesh(parts[world.rank()],vecCPD,numDivs, 
+	 trisS,quadsS,world.rank()); 
+	
+
+	auto refinedMesh = std::make_unique<UMesh>(
+	 		*(dynamic_cast<UMesh*> (coarse.release())), 
+			numDivs, world.rank());
+
+	auto tris  = refinedMesh->getRefinedPartTris();
+
+	auto quads = refinedMesh->getRefinedPartQuads();
+	
+	buildTrisMap(tris,remoteTovecTris,triNeighbrs);
+
+	trisTobeRcvd.resize(triNeighbrs.size()); 
+	int jj=0 ; 
+	for(auto isource:triNeighbrs)
+	{
+		auto findSource = remoteTovecTris.find(isource); 
+		// same amount of message will be sent and received from other prcoeszsor
+		// Be cuatious if this assumption later on will be break
+		trisTobeRcvd[jj].resize(findSource->second.size()); 
+		jj++; 
+
+	}
+
+	for(auto tri:remoteTovecTris)
+	{
+
+		boost::mpi::request req= world.isend(tri.first,tag,tri.second);
+		Trireqs.push_back(req);
+	
+	}
+
+	int kk=0 ; 
+	for(auto source: triNeighbrs)
+	{
+		
+		boost::mpi::request req= world.irecv(source,tag,trisTobeRcvd[kk]);
+		Trireqs.push_back(req);
+		kk++; 
+	}
+
+	boost::mpi::wait_all(Trireqs.begin(),Trireqs.end()); 
+
+	for(const auto& tri: trisTobeRcvd)
+	{
+
+		recvdTris.insert(tri.begin(),tri.end()); 
+	}
+
+	TableTri2TableIndex2Index  matchedTris; 
+	for(auto it=tris.begin(); it!=tris.end(); it++)
+	{
+		std::unordered_map<emInt, emInt> localRemote;
+		int rotation = getTriRotation(*it,recvdTris,numDivs);
+		matchTri(*it,rotation,numDivs,recvdTris,localRemote); 
+		matchedTris.emplace(*it,localRemote);
+
+	}
+
+	tester->testMatchedTris(matchedTris,world.rank()); 
+
+}

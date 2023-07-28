@@ -417,7 +417,7 @@ static void remapIndices(const emInt nPts, const emInt newIndices[],
 	}
 }
 
-std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
+std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 		std::vector<CellPartData>& vecCPD, const int numDivs,
 			const std::unordered_set<TriFaceVerts> &tris, 
 			const std::unordered_set<QuadFaceVerts> &quads, 
@@ -1329,7 +1329,7 @@ std::unique_ptr<UMesh> CubicMesh::createFineUMesh(const emInt numDivs, Part& P,
 	RS.extractTime = middle - start;
 
 	// For some reason, I needed the helper variable to keep the compiler happy here.
-	auto UUM = std::make_unique<UMesh>(*coarse, numDivs);
+	auto UUM = std::make_unique<UMesh>(*(dynamic_cast<UMesh*>(coarse.release())), numDivs);
 	RS.cells = UUM->numCells();
 	RS.refineTime = exaTime() - middle;
 	return UUM;
@@ -1521,180 +1521,7 @@ void CubicMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 														xmax, ymax, zmax);
 	}
 }
-void CubicMesh:: TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester){
 
-//	std::cout<<"Entering through function: "<<
-//	std::endl; 
-
-	//struct RefineStats RS;
-	std::vector<Part>             parts;
-	std::vector<CellPartData>     vecCPD; 
-	std::set<int> triRotations; 
-	std::set<int> quadRotations;
- 
-	partitionCells(this, nParts, parts, vecCPD);
-	
-	std::vector<std::unordered_set<TriFaceVerts>>  tris; 
-
-	std::vector<std::unordered_set<QuadFaceVerts>> quads;
-
-	std::vector<std::shared_ptr<CubicMesh>> submeshes; 
-
-	std::vector<std::shared_ptr<UMesh>> refinedUMeshes;
-
- 	this->partFaceMatching(parts,vecCPD,tris,quads);
-
-
-	for(auto i=0 ; i<nParts; i++){
-		
-		auto coarse= this->extractCoarseMesh
-		(parts[i],vecCPD,nDivs,tris[i],quads[i],i);
-		std::shared_ptr<CubicMesh> shared_ptr = std::move(coarse);
-		submeshes.push_back(shared_ptr); 
-	}
-
-	assert(submeshes.size()==static_cast<std::size_t>(nParts)); 
-
-	// for(auto i=0; i<nParts; i++){
-	
-	// 	exa_set <TriFaceVerts>  coarsetris= 
-	// 	submeshes[i]->getTempTriPart();
-	// 	std::cout<<"coarse tri size: "<<coarsetris.size()<<std::endl;
-	// 	exa_set<QuadFaceVerts> coarseQuads= 
-	// 	submeshes[i]->getTempQuadPart(); 
-	// 	std::cout<<"coarse Quad size: "<<coarseQuads.size()<<std::endl;
-	// 	for(auto itr=coarsetris.begin(); 
-	// 	itr!=coarsetris.end(); itr++){
-	// 		emInt remoteID= itr->getRemotePartid(); 
-	// 		exa_set <TriFaceVerts> otherTriPart= 
-	// 		submeshes[remoteID]->getTempTriPart(); 
- 
-	
-	// 		auto itrOtherSide= otherTriPart.find(*itr); 
-	// 		assert(itrOtherSide!=otherTriPart.end()); 
-	// 		if(itrOtherSide!=otherTriPart.end()){
-	// 			emInt global[3]; 
-	// 			emInt local[3];
-	// 			emInt remoteLocal[3]; 
-	// 			for(auto i=0; i<3; i++){
-	// 				global[i]=itr->getGlobalCorner(i);
-	// 				local[i] =itr->getCorner(i);
-	// 				remoteLocal[i]= itrOtherSide->getCorner(i); 
-	// 			}
-	// 			TriFaceVerts TF(nDivs,local,global,remoteLocal,
-	// 			itr->getPartid(), itr->getRemotePartid());
-	// 			submeshes[i]->updatePartTris(TF); 
-	// 		}
-			
-		
-	// 	}
-
-	// 	for(auto itr=coarseQuads.begin(); 
-	// 	itr!=coarseQuads.end(); itr++){
-	// 		emInt remoteID= itr->getRemotePartid(); 
-			
-	// 		exa_set<QuadFaceVerts> otherQuadPart=
-	// 		submeshes[remoteID]->getTempQuadPart(); 
-	
-	// 		auto itrOtherSide= otherQuadPart.find(*itr); 
-	// 		assert(itrOtherSide!=otherQuadPart.end()); 
-	// 		if(itrOtherSide!=otherQuadPart.end()){
-	// 			emInt global[4]; 
-	// 			emInt local[4];
-	// 			emInt remoteLocal[4]; 
-	// 			for(auto i=0; i<4; i++){
-	// 				global[i]=itr->getGlobalCorner(i);
-	// 				local[i] =itr->getCorner(i);
-	// 				remoteLocal[i]= itrOtherSide->getCorner(i); 
-	// 			}
-	// 			QuadFaceVerts QF(nDivs,local,global,remoteLocal,
-	// 			itr->getPartid(), itr->getRemotePartid());
-	// 			submeshes[i]->updatePartQuads(QF); 
-	// 		}
-			
-		
-	// 	}
-
-
-	// }
-
-
-	// Refine the mesh 
-	for(auto i=0 ; i<nParts; i++)
-	{
-		auto refineUmesh= std::make_shared<UMesh>(
-	 		*(submeshes[i].get()),nDivs,i
-	 	);
-	 	refinedUMeshes.push_back(refineUmesh); 
-		char filename [100]; 
-		sprintf(filename, "TestCases/Testsubmesh%03d.vtk", i);
-		refineUmesh->writeVTKFile(filename);
-
-	}
-
-	
-	for(auto iPart=0; iPart<nParts ; iPart++){
-	 	exa_set<TriFaceVerts> tri=
-		refinedUMeshes[iPart]->getRefinedPartTris(); 
-		exa_set<QuadFaceVerts> quads= refinedUMeshes[iPart]->
-		getRefinedPartQuads(); 
-		for(auto it=tri.begin(); it!=tri.end();it++){
-			std::unordered_map<emInt, emInt> localRemote;
-			emInt whereToLook= it->getRemoteId(); 
-			exa_set<TriFaceVerts> remoteTriSet= 
-			refinedUMeshes[whereToLook]->getRefinedPartTris(); 
-			emInt rotation= getTriRotation(*it,remoteTriSet,nDivs); 
-			triRotations.insert(rotation); 
-			 
-			matchTri(*it,rotation,nDivs,remoteTriSet,localRemote);
-			for(auto itmap=localRemote.begin(); 
-			itmap!=localRemote.end();itmap++){
-				assert(abs(refinedUMeshes[iPart]->getX(itmap->first)-
-				refinedUMeshes[whereToLook]->getX(itmap->second))<TOLTEST); 
-				assert(abs(refinedUMeshes[iPart]->getY(itmap->first)-
-				refinedUMeshes[whereToLook]->getY(itmap->second))<TOLTEST);
-				assert(abs(refinedUMeshes[iPart]->getZ(itmap->first)-
-				refinedUMeshes[whereToLook]->getZ(itmap->second))<TOLTEST);
-			}
-
-		}
-		for(auto it=quads.begin(); it!=quads.end();it++){
-			std::unordered_map<emInt, emInt> localRemote;
-			emInt whereToLook= it->getRemoteId(); 
-			exa_set<QuadFaceVerts> remoteQuadSet= 
-			refinedUMeshes[whereToLook]->getRefinedPartQuads(); 
-			emInt rotation= getQuadRotation(*it,remoteQuadSet,nDivs); 
-			quadRotations.insert(rotation); 
-			 
-			matchQuad(*it,rotation,nDivs,remoteQuadSet,localRemote);
-			for(auto itmap=localRemote.begin(); 
-			itmap!=localRemote.end();itmap++){
-				assert(abs(refinedUMeshes[iPart]->getX(itmap->first)-
-				refinedUMeshes[whereToLook]->getX(itmap->second))<TOLTEST); 
-				assert(abs(refinedUMeshes[iPart]->getY(itmap->first)-
-				refinedUMeshes[whereToLook]->getY(itmap->second))<TOLTEST);
-				assert(abs(refinedUMeshes[iPart]->getZ(itmap->first)-
-				refinedUMeshes[whereToLook]->getZ(itmap->second))<TOLTEST);
-			}
-
-		}
-
-	}
-	// Which rotation cases are covered? 
-	std::cout<<"Covered Tri Rotations: "<<std::endl; 
-	for(auto it=triRotations.begin();
-	it!=triRotations.end(); it++){
-		std::cout<<*it<<" "; 
-	}; 
-	std::cout<<std::endl; 
-	std::cout<<"Covered Quad Rotations: "<<std::endl; 
-	for(auto it=quadRotations.begin();
-	it!=quadRotations.end(); it++){
-		std::cout<<*it<<" "; 
-	}; 
-	std::cout<<std::endl; 
-	
-}
 void CubicMesh::partFaceMatching(
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
