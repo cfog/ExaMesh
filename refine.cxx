@@ -29,6 +29,7 @@
 #include "ExaMesh.h"
 #include "CubicMesh.h"
 #include "UMesh.h"
+#include "mpiImpl.h"
 
 int main(int argc, char* const argv[]) {
 	char opt = EOF;
@@ -90,7 +91,12 @@ int main(int argc, char* const argv[]) {
 		CubicMesh CMorig(cgnsFileName);
 		if (isParallel){
 			if(isMPI){
-				CMorig.refineForMPI(); 
+#ifndef NDEBUG
+				ParallelTester* tester= new ParallelTester(); 
+				CMorig.TestMPI(nDivs,nTestParts,tester);
+				//CMorig.refineForMPI(nDivs,tester);
+#endif
+				//CMorig.refineForMPI(); 
 				//CMorig.TestMPI(nDivs,nTestParts); 
 				//CMorig.refineForParallel(nDivs, maxCellsPerPart);
 			}
@@ -119,9 +125,26 @@ int main(int argc, char* const argv[]) {
 	else {
 		UMesh UMorig(inFileBaseName, type, infix);
 		if (isParallel){
-			if(isMPI){
-				UMorig.refineForMPI(); 
-				//UMorig.TestMPI(nDivs,nTestParts); 
+			if(isMPI)
+			{
+#ifndef NDEBUG
+				ParallelTester* tester= new ParallelTester(); 
+				
+				UMorig.TestMPI(nDivs,nTestParts,tester); 
+				UMorig.refineForMPI(nDivs,tester);
+				
+				//mpiImpl MPIRefine (&UMorig); // Is this right ? 
+				//MPIRefine.refineMPI(nDivs); 	
+				//UMorig.refineMPI(nDivs); 
+				//UMorig.TestForMPI(nDivs,nTestParts); 
+
+
+#endif				
+				//UMorig.refineForMPI(nDivs,tester); 
+				
+
+				//
+				
 			}
 			//else{
 				//UMorig.refineForParallel(nDivs, maxCellsPerPart);
