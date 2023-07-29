@@ -904,7 +904,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 			itr->getGlobalCorner(1)==global[1] && 
 			itr->getGlobalCorner(2)==global[2] && itr->getPartid()==partID);
 			TriFaceVerts TFV(numDivs,newConn,global,partID,
-			itr->getRemoteId(),0,EMINT_MAX,true);
+			itr->getRemoteId(),0,EMINT_MAX,false);
 			// need to be corrected, I could not generate with correct bool value unless
 			// I pass all arguments 
 		
@@ -1230,8 +1230,8 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				// Should never get here.
 				assert(0);
 		}
-		emInt newConn[10];
-		remapIndices(10, newIndices, conn, newConn);
+		emInt newConn[16];
+		remapIndices(16, newIndices, conn, newConn);
 		emInt global [4]= {quad.getCorner(0),
 		quad.getCorner(1),quad.getCorner(2),quad.getCorner(3)}; 
 		QuadFaceVerts QF(numDivs,global,partID,-1,true); 
@@ -1243,7 +1243,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 			itr->getGlobalCorner(3)==global[3] &&
 			itr->getPartid()==partID);
 			QuadFaceVerts QFV(numDivs,newConn,global,partID,
-			itr->getRemoteId(),0,EMINT_MAX,true);
+			itr->getRemoteId(),0,EMINT_MAX,false);
 			// need to be corrected, I could not generate with correct bool value unless
 			// I pass all arguments 
 			UCM->addPartQuadtoSet(QFV); 

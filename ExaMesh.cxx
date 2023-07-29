@@ -533,9 +533,10 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 //	fprintf(stderr, "Done building face cell connectivity\n");
 //}
 void
-ExaMesh:: TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester)
+ExaMesh:: TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester, 
+const char MeshType)
 {
-		vecPart parts;
+	vecPart parts;
 	vecCellPartData vecCPD;
 
 	std::set<int> triRotations;
@@ -544,7 +545,7 @@ ExaMesh:: TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* teste
 	vecHashTri tris;
 	vecHashQuad quads;
 
-	vecSharePtrUmesh submeshes;
+	std::vector<std::shared_ptr<ExaMesh>> submeshes;
 	vecSharePtrUmesh refinedUMeshes;
 
 	std::vector<TableTri2TableIndex2Index>  matchedTrisAllParts  (nParts); 
@@ -568,25 +569,31 @@ ExaMesh:: TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* teste
 	for (auto i = 0; i < nParts; i++)
 	{
 		auto coarse = this->extractCoarseMesh(parts[i], vecCPD, nDivs, tris[i], quads[i], i);
-		//std::shared_ptr<UMesh> shared_ptr = std::move(coarse);
-		//dynamic_cast<UMesh*> (coarse.release());
-		submeshes.emplace_back(dynamic_cast<UMesh*> (coarse.release()));
-		//submeshes.push_back(shared_ptr);
-		//char fileName[100];
-		//sprintf(fileName, "TestCases/Coarsesubmesh%03d.vtk", i);
-		//shared_ptr->writeVTKFile(fileName);
+		submeshes.emplace_back(coarse.release()); 
 	}
 
 	assert(submeshes.size() == static_cast<std::size_t>(nParts));
 	// Refine the mesh
 	for (auto i = 0; i < nParts; i++)
 	{
-		auto refineUmesh = std::make_shared<UMesh>(
-			*(submeshes[i].get()), nDivs, i);
-		refinedUMeshes.push_back(refineUmesh);
-		char fileName[100];
-		sprintf(fileName, "TestCases/Refinedmesh%03d.vtk", i);
-		refineUmesh->writeVTKFile(fileName);
+		
+
+		if(MeshType=='C')
+		{
+			auto inputMesh = dynamic_cast<CubicMesh*> ((submeshes[i].get()));
+					auto refineUmesh = std::make_shared<UMesh>(
+			*(inputMesh), nDivs, i);
+			refinedUMeshes.push_back(refineUmesh);
+		}
+		if(MeshType=='U')
+		{
+			auto inputMesh = dynamic_cast<UMesh*> ((submeshes[i].get()));
+					auto refineUmesh = std::make_shared<UMesh>(
+			*(inputMesh), nDivs, i);
+			refinedUMeshes.push_back(refineUmesh);
+		}
+
+
 	}
 	for (auto iPart = 0; iPart < nParts; iPart++)
 	{
@@ -666,13 +673,14 @@ ExaMesh:: TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* teste
 }
 
 void 
-ExaMesh::refineForMPI( const int numDivs ,ParallelTester* tester) 
+ExaMesh::refineForMPI( const int numDivs ,ParallelTester* tester,const char MeshType) 
 const
 {
 	boost::mpi::environment   env; 
 	boost::mpi::communicator  world;
 
-	std::vector<boost::mpi::request> Trireqs;  
+	std::vector<boost::mpi::request> Trireqs;
+	std::vector<std::unique_ptr<UMesh>>   refinedMeshVec;  
 
 	vecPart         parts; 
 	vecCellPartData vecCPD; 
@@ -771,13 +779,27 @@ const
 	 trisS,quadsS,world.rank()); 
 	
 
-	auto refinedMesh = std::make_unique<UMesh>(
+	 
+
+	if(MeshType=='C')
+	{
+		auto refinedMesh = std::make_unique<UMesh>(
+	 		*(dynamic_cast<CubicMesh*> (coarse.release())), 
+			numDivs, world.rank());
+			refinedMeshVec.emplace_back(refinedMesh.release()); 
+	}
+	if(MeshType=='U')
+	{
+		auto refinedMesh = std::make_unique<UMesh>(
 	 		*(dynamic_cast<UMesh*> (coarse.release())), 
 			numDivs, world.rank());
+			refinedMeshVec.emplace_back(refinedMesh.release()); 
+	}
 
-	auto tris  = refinedMesh->getRefinedPartTris();
 
-	auto quads = refinedMesh->getRefinedPartQuads();
+	auto tris  = refinedMeshVec[0]->getRefinedPartTris();
+
+	auto quads = refinedMeshVec[0]->getRefinedPartQuads();
 	
 	buildTrisMap(tris,remoteTovecTris,triNeighbrs);
 
@@ -827,6 +849,7 @@ const
 		matchedTris.emplace(*it,localRemote);
 
 	}
+
 
 	tester->testMatchedTris(matchedTris,world.rank()); 
 
