@@ -100,14 +100,7 @@ public:
 
 	virtual Mapping::MappingType getDefaultMappingType() const = 0;
 
-	//virtual emInt getSizePartTris()const =0 ; 
-	//virtual emInt getSizePartQuads()const=0 ;
-	//virtual exa_set<TriFaceVerts> getRefinedPartTris() const=0; 
-		
-	//virtual exa_set<QuadFaceVerts> getTempQuadPart() const=0; 
-	//virtual exa_set <TriFaceVerts> getTempTriPart() const=0;
-	//virtual exa_set<QuadFaceVerts> getQuadPart() const=0; 
-	//virtual exa_set<TriFaceVerts> getTriPart() const=0; 
+
 
 	void printMeshSizeStats();
 	double getLengthScale(const emInt vert) const {
@@ -203,19 +196,22 @@ public:
 	emInt getSizePartQuads()const{
 		return m_partQuads.size();
 	}
-	exa_set<QuadFaceVerts> getTempQuadPart() const{
+	const exa_set<QuadFaceVerts>& getTempQuadPart    () const
+	{
 		return m_partQuads; 
 	}
-	exa_set<TriFaceVerts> getTempTriPart() const {
+	const exa_set<TriFaceVerts>&  getTempTriPart     () const 
+	{
 		return m_partTris; 
 	}
-	exa_set<TriFaceVerts> getRefinedPartTris() const{
+	const exa_set<TriFaceVerts>&  getRefinedPartTris () const
+	{
 		return m_refinedPartTris; 
 	}
-	exa_set<QuadFaceVerts> getRefinedPartQuads() const {
+	const exa_set<QuadFaceVerts>& getRefinedPartQuads() const 
+	{
 		return m_refinedPartQuads; 
 	}
-	//virtual void TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester)=0; 
 	virtual void partFaceMatching(
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,

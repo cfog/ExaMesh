@@ -49,12 +49,6 @@ class UMesh: public ExaMesh {
 	emInt (*m_PrismConn)[6];
 	emInt (*m_HexConn)[8];
 	char *m_buffer, *m_fileImage;
-	// exa_set<QuadFaceVerts> TemppartQuads; 
-	// exa_set<TriFaceVerts>  TemppartTris; 
-	// exa_set<TriFaceVerts>  partTris; 
-	// exa_set<TriFaceVerts>  refinedPartTris; 
-	// exa_set<QuadFaceVerts> refinedPartQuads; 
-	// exa_set<QuadFaceVerts> partQuads; 
 	UMesh(const UMesh&);
 	UMesh& operator=(const UMesh&);
 

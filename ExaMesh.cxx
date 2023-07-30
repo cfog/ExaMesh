@@ -38,6 +38,8 @@ using std::endl;
 
 //#include "mpi.h"
 #include <boost/mpi.hpp>
+//#include <boost/timer/timer.hpp>
+#include <chrono>
 #include <fstream>
 
 
@@ -678,8 +680,11 @@ const
 {
 	boost::mpi::environment   env; 
 	boost::mpi::communicator  world;
-
-	std::vector<boost::mpi::request> Trireqs;
+	
+	auto start = exaTime();
+	
+	std::vector<boost::mpi::request>      triReqs;
+	std::vector<boost::mpi::request>      quadReqs;
 	std::vector<std::unique_ptr<UMesh>>   refinedMeshVec;  
 
 	vecPart         parts; 
@@ -688,7 +693,7 @@ const
 	std::size_t    vecCPDSize; 
 	std::size_t    trisSize; 
 	std::size_t    quadsSize; 
-	std::size_t nParts = world.size();
+	std::size_t    nParts = world.size();
 
 	hashTri  trisS; 
 	hashQuad quadsS;
@@ -710,7 +715,10 @@ const
 	std::vector<vecQuad> quadsTobeRcvd;
 
 	hashTri  recvdTris;
-	hashQuad recvdQuads;  
+	hashQuad recvdQuads; 
+
+	TableTri2TableIndex2Index   matchedTris; 
+	TableQuad2TableIndex2Index  matchedQuads; 
 
 	if(world.rank()==MASTER)
 	{
@@ -778,9 +786,6 @@ const
 	auto coarse= this->extractCoarseMesh(parts[world.rank()],vecCPD,numDivs, 
 	 trisS,quadsS,world.rank()); 
 	
-
-	 
-
 	if(MeshType=='C')
 	{
 		auto refinedMesh = std::make_unique<UMesh>(
@@ -798,41 +803,67 @@ const
 
 
 	auto tris  = refinedMeshVec[0]->getRefinedPartTris();
-
 	auto quads = refinedMeshVec[0]->getRefinedPartQuads();
+
 	
 	buildTrisMap(tris,remoteTovecTris,triNeighbrs);
+	buildQuadsMap(quads,remoteTovecQuads,quadNeighbrs); 
+	
 
-	trisTobeRcvd.resize(triNeighbrs.size()); 
-	int jj=0 ; 
+	trisTobeRcvd.resize (triNeighbrs.size()); 
+	quadsTobeRcvd.resize(quadNeighbrs.size());
+
+	int Trijj=0 ; 
 	for(auto isource:triNeighbrs)
 	{
 		auto findSource = remoteTovecTris.find(isource); 
 		// same amount of message will be sent and received from other prcoeszsor
 		// Be cuatious if this assumption later on will be break
-		trisTobeRcvd[jj].resize(findSource->second.size()); 
-		jj++; 
+		trisTobeRcvd[Trijj].resize(findSource->second.size()); 
+		Trijj++; 
+	}
 
+	int Quadjj=0; 
+	for(auto isource:quadNeighbrs)
+	{
+		auto findSource = remoteTovecQuads.find(isource); 
+		// same amount of message will be sent and received from other prcoeszsor
+		// Be cuatious if this assumption later on will be break
+		quadsTobeRcvd[Quadjj].resize(findSource->second.size()); 
+		Quadjj++; 
 	}
 
 	for(auto tri:remoteTovecTris)
 	{
-
 		boost::mpi::request req= world.isend(tri.first,tag,tri.second);
-		Trireqs.push_back(req);
-	
+		triReqs.push_back(req);
 	}
 
-	int kk=0 ; 
+	for(auto quad:remoteTovecQuads)
+	{
+		boost::mpi::request req = world.isend(quad.first,tag,quad.second);
+		quadReqs.push_back(req);  
+	}
+
+	int Quadkk=0 ; 
+	for(auto source: quadNeighbrs)
+	{
+		boost::mpi::request req = world.irecv(source,tag,quadsTobeRcvd[Quadkk]);
+		quadReqs.push_back(req); 
+		Quadkk++; 
+	}
+
+
+	int Trikk=0 ; 
 	for(auto source: triNeighbrs)
 	{
 		
-		boost::mpi::request req= world.irecv(source,tag,trisTobeRcvd[kk]);
-		Trireqs.push_back(req);
-		kk++; 
+		boost::mpi::request req= world.irecv(source,tag,trisTobeRcvd[Trikk]);
+		triReqs.push_back(req);
+		Trikk++; 
 	}
 
-	boost::mpi::wait_all(Trireqs.begin(),Trireqs.end()); 
+	boost::mpi::wait_all(triReqs.begin(),triReqs.end()); 
 
 	for(const auto& tri: trisTobeRcvd)
 	{
@@ -840,17 +871,49 @@ const
 		recvdTris.insert(tri.begin(),tri.end()); 
 	}
 
-	TableTri2TableIndex2Index  matchedTris; 
 	for(auto it=tris.begin(); it!=tris.end(); it++)
 	{
 		std::unordered_map<emInt, emInt> localRemote;
-		int rotation = getTriRotation(*it,recvdTris,numDivs);
-		matchTri(*it,rotation,numDivs,recvdTris,localRemote); 
-		matchedTris.emplace(*it,localRemote);
-
+		//int rotation = getTriRotation(*it,recvdTris,numDivs);
+		//matchTri(*it,rotation,numDivs,recvdTris,localRemote); 
+		findRotationAndMatchTris(*it,numDivs,recvdTris,localRemote); 
+		
+#ifndef NDEBUG
+		//matchedTris.emplace(*it,localRemote);
+#endif //NDEBUG
 	}
 
+	boost::mpi::wait_all(quadReqs.begin(),quadReqs.end()); 
 
+	for(const auto& quad:quadsTobeRcvd)
+	{
+		recvdQuads.insert(quad.begin(),quad.end()); 
+	}
+
+	for(auto it=quads.begin(); it!=quads.end();it++)
+	{
+		std::unordered_map<emInt,emInt> localRemote; 
+		//int rotation = getQuadRotation(*it,recvdQuads,numDivs); 
+		//matchQuad(*it,rotation,numDivs,recvdQuads,localRemote);
+		findRotationAndMatchQuads(*it,numDivs,recvdQuads,localRemote); 
+#ifndef NDEBUG			
+		//matchedQuads.emplace(*it,localRemote); 
+#endif
+	}
+	
+	double time = exaTime() - start;
+	double maximumTime; 
+	boost::mpi::reduce(world, time, maximumTime,boost:: mpi::maximum<double>(), MASTER);
+	
+	if (world.rank() == MASTER) 
+	{	
+    	fprintf(stderr, "MAXIMUM CPU time for refinement = %5.2F seconds, for numDivs of %d\n", maximumTime,numDivs);
+ 	} 
+	world.barrier();
+	fprintf(stderr, "Rank of: %d has %lu tris and has %lu quads.\n", world.rank(), tris.size(), quads.size());
+#ifndef NDEBUG				
 	tester->testMatchedTris(matchedTris,world.rank()); 
+	tester->testMatchedQuads(matchedQuads,world.rank()); 				
+#endif
 
 }

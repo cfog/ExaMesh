@@ -569,75 +569,6 @@ struct RefineStats {
 	emInt cells;
 	size_t fileSize;
 };
-inline void printTris(const exa_set<TriFaceVerts>  &tris, emInt nDivs){
-	
-	//cout<<"checking for tris: "<<endl; 
-	//for(auto i=0 ; i<tris.size(); i++){
-		
-		std::cout<<"size of set: "<< tris.size()<<std::endl; 
-		std::cout<<"-----------------------------------------------------------"<<std::endl; 
-		for(auto itr=tris.begin(); itr!=tris.end();itr++){
-			std::cout<<"Part: "<< itr->getPartid()<<
-			" local indices: "<<itr->getCorner(0)<<" "<<
-			itr->getCorner(1)<<" "<<itr->getCorner(2)<<
-			// " global: "<<itr->getGlobalSorted(0)<<" "<<
-			// itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
-			" Unsorted global: "<<itr->getGlobalCorner(0)<<" "<<
-			 itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<
-		 	" Remote ID: "<<itr->getRemoteId()<<
-			" Remote Indices: "<<itr->getRemoteIndices(0)<<" "<<
-			itr->getRemoteIndices(1)<<" "<<
-			itr->getRemoteIndices(2)<<
-			" boolean value: "<<itr->getGlobalCompare()<<
-			std::endl;
-			std::cout<<"Refined verts: "<<std::endl; 
-			for (int ii = 0; ii <= nDivs ; ii++) {
-	 			for (int jj = 0; jj <= nDivs-ii ; jj++) {
-
-	 				 std::cout<<itr->getIntVertInd(ii,jj)<<" "; 
-	 			}
-			}
-			
-			std::cout<<std::endl;
-		}
-	//}
-
-	
-}
-inline void printQuads(const exa_set<QuadFaceVerts>  &quads, emInt nDivs){
-	
-	//cout<<"checking for tris: "<<endl; 
-	//for(auto i=0 ; i<tris.size(); i++){
-		
-		std::cout<<"size of set: "<< quads.size()<<std::endl; 
-		std::cout<<"-----------------------------------------------------------"<<std::endl; 
-		for(auto itr=quads.begin(); itr!=quads.end();itr++){
-			std::cout<<"Part: "<< itr->getPartid()<<
-			" local indices: "<<itr->getCorner(0)<<" "<<
-			itr->getCorner(1)<<" "<<itr->getCorner(2)<<" "<<itr->getCorner(3)<<
-			
-			// " global: "<<itr->getGlobalSorted(0)<<" "<<
-			// itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
-			" Unsorted global: "<<itr->getGlobalCorner(0)<<" "<<
-			 itr->getGlobalCorner(1)<<" "<<itr->getGlobalCorner(2)<<" "<<itr->getGlobalCorner(3)<<
-		 	" Remote ID: "<<itr->getRemoteId()<<
-			" Remote Indices: "<<itr->getRemoteIndices(0)<<" "<<
-			itr->getRemoteIndices(1)<<" "<<
-			itr->getRemoteIndices(2)<<" "<<itr->getRemoteIndices(3)<<
-			" boolean value: "<<itr->getGlobalCompare()<<
-			std::endl;
-			std::cout<<"Refined verts: "<<std::endl; 
-			for (int ii = 0; ii <= nDivs ; ii++) {
-	 			for (int jj = 0; jj <= nDivs ; jj++) {
-
-	 				 std::cout<<itr->getIntVertInd(ii,jj)<<" "; 
-	 			}
-			}
-			
-			std::cout<<std::endl;
-		}
-	//}
-}
 inline emInt getTriRotation(const TriFaceVerts &localTri, 
 const exa_set<TriFaceVerts> &remote,emInt nDivs){
 
@@ -875,35 +806,144 @@ std::unordered_map<emInt, emInt> &localRemote){
 		}
 	}	
 }
-
-
-inline void printTris(const TriFaceVerts &tris)
+inline 
+void findRotationAndMatchTris (
+const TriFaceVerts &localTri, 
+const emInt nDivs, 
+const exa_set<TriFaceVerts> &remoteTriSet
+,std::unordered_map<emInt, emInt> &localRemote)
 {
-	std::cout<<"Num divison: "<<tris.getNumDivs()<<" "<<
-	// for(auto itr=tris.begin(); itr!=tris.end();itr++){
-	"Part: " << tris.getPartid() <<
-		// " local indices: "<<itr->getCorner(0)<<" "<<
-		// itr->getCorner(1)<<" "<<itr->getCorner(2)<<
-		// " global: "<<itr->getGlobalSorted(0)<<" "<<
-		// itr->getGlobalSorted(1)<<" "<<itr->getGlobalSorted(2)<<
-		" Unsorted global: " << tris.getGlobalCorner(0) << " " << tris.getGlobalCorner(1) << " " << tris.getGlobalCorner(2) << " Remote ID: " << tris.getRemoteId() << std::endl;
-	//<<
-	// " Remote Indices: "<<itr->getRemoteIndices(0)<<" "<<
-	// itr->getRemoteIndices(1)<<" "<<
-	// itr->getRemoteIndices(2)<<
-	//" boolean value: "<<itr->getGlobalCompare()<<
-	// std::endl;
-	// std::cout<<"Refined verts: "<<std::endl;
-	// for (int ii = 0; ii <= nDivs ; ii++) {
-	// 	for (int jj = 0; jj <= nDivs-ii ; jj++) {
 
-	// 		 std::cout<<itr->getIntVertInd(ii,jj)<<" ";
-	// 	}
-	// }
+	emInt global[3]=
+	{
+		localTri.getGlobalCorner(0), 
+		localTri.getGlobalCorner(1), 
+		localTri.getGlobalCorner(2)
+	};
 
-	std::cout << std::endl;
-	//}
-	//}
+	TriFaceVerts TF(nDivs,global); 
+	TF.setCompare(true); 
+	
+
+	auto iterTris=remoteTriSet.find(TF); 
+	assert(iterTris!=remoteTriSet.end());
+	assert(localTri.getPartid()  == iterTris->getRemoteId()); 
+	assert(localTri.getRemoteId()== iterTris->getPartid());  
+
+	emInt vert0= localTri.getGlobalCorner(0); 
+	emInt vert1= localTri.getGlobalCorner(1); 
+	emInt vert2= localTri.getGlobalCorner(2); 
+
+	int rotCase = 0;
+		for (int cc = 0; cc < 3; cc++) {
+			if (vert0 == iterTris->getGlobalCorner(cc)) {
+				if (vert1 == iterTris->getGlobalCorner((cc+1)%3)){
+					assert(vert2 == iterTris->getGlobalCorner((cc+2)%3));
+					rotCase = cc+1;
+				}
+				else {
+					assert(vert1 == iterTris->getGlobalCorner((cc+2)%3));
+					assert(vert2 == iterTris->getGlobalCorner((cc+1)%3));
+					rotCase = -(cc+1);
+				}
+			}
+		}
+		assert(rotCase != 0);
+	
+	// Once found totation, go a haed to match tris 
+
+	for (int ii = 0; ii <= nDivs ; ii++) 
+	{
+	 	for (int jj = 0; jj <= nDivs-ii ; jj++) 
+		{
+
+			int trueI; 
+			int trueJ; 
+			iterTris->getTrueIJ(ii,jj,trueI,trueJ,rotCase); 
+			
+			emInt vertLocal=localTri.getIntVertInd(trueI,trueJ); 
+			emInt vertRemote=iterTris->getIntVertInd(ii,jj); 
+			localRemote.insert({vertLocal,vertRemote}); 
+			
+
+ 			
+		}
+	}
+ 
+}
+
+inline
+void findRotationAndMatchQuads(
+const QuadFaceVerts &localQuad, 
+const emInt nDivs, 
+const exa_set<QuadFaceVerts> &remoteQuadSet,
+std::unordered_map<emInt, emInt> &localRemote)
+{
+
+	emInt global [4]=
+	{
+		localQuad.getGlobalCorner(0),
+		localQuad.getGlobalCorner(1), 
+		localQuad.getGlobalCorner(2), 
+		localQuad.getGlobalCorner(3)
+	}; 
+
+
+	QuadFaceVerts QF (nDivs,global); 
+	QF.setCompare(true); 
+
+	auto iterQuads=remoteQuadSet.find(QF); 
+
+	assert(iterQuads!=remoteQuadSet.end());
+	assert(localQuad.getPartid()  == iterQuads->getRemoteId()); 
+	assert(localQuad.getRemoteId()== iterQuads->getPartid());  
+
+	emInt vert0= localQuad.getGlobalCorner(0); 
+	emInt vert1= localQuad.getGlobalCorner(1); 
+	emInt vert2= localQuad.getGlobalCorner(2); 
+	emInt vert3= localQuad.getGlobalCorner(3); 
+
+	int rotCase = 0;
+	
+	for (int cc = 0; cc < 4; cc++)
+	{
+		if (vert0 == iterQuads->getGlobalCorner(cc)) 
+		{
+			if (vert1 == iterQuads->getGlobalCorner((cc+1)%4)) 
+			{
+				// Oriented forward; bdry quad
+				assert(vert2 == iterQuads->getGlobalCorner((cc+2)%4));
+				assert(vert3 == iterQuads->getGlobalCorner((cc+3)%4));
+				rotCase = cc+1;
+			}
+			else 
+			{
+				assert(vert1 == iterQuads->getGlobalCorner((cc+3)%4));
+				assert(vert2 == iterQuads->getGlobalCorner((cc+2)%4));
+				assert(vert3 == iterQuads->getGlobalCorner((cc+1)%4));
+				rotCase = -(cc+1);
+			}
+		}
+	}
+	assert(rotCase != 0);
+
+	
+
+	for (int ii = 0; ii <= nDivs ; ii++) 
+	{
+	 	for (int jj = 0; jj <= nDivs ; jj++) 
+		{
+
+			int trueI; 
+			int trueJ; 
+			iterQuads->getTrueIJ(ii,jj,trueI,trueJ,rotCase); 
+			emInt vertLocal=localQuad.getIntVertInd(ii,jj); 
+			emInt vertRemote=iterQuads->getIntVertInd(trueI,trueJ); 
+			
+			localRemote.insert({vertLocal,vertRemote});  
+
+		}
+	}	
 }
 template <typename T>
 inline void SetToVector(const std::unordered_set<T>& sourceSet, 
@@ -937,9 +977,6 @@ using intToVecTri		         = std::map<int,vecTri> ;
 using intToVecQuad               = std::map<int,vecQuad>; 
 using TableTri2TableIndex2Index	 = std::unordered_map< TriFaceVerts , std::unordered_map<emInt,emInt>>;
 using TableQuad2TableIndex2Index = std::unordered_map< QuadFaceVerts, std::unordered_map<emInt,emInt>>;
-
-// using vecPartPtr               = std::unistd::vector<Part>; 
-// using vecCellPartDataPtr       = std::vector<CellPartData>; 
 void
 inline buildTrisMap(hashTri const& tris, std::map<int, vecTri> &remoteTotris,
 std::set<int> &neighbors)
@@ -951,21 +988,20 @@ std::set<int> &neighbors)
 		neighbors.insert(remoteId); 
 		remoteTotris[remoteId].push_back(*it); 
 
-	}
+	}	
+}
+void
+inline buildQuadsMap(hashQuad const& quads, std::map<int, vecQuad> &remoteToquads,
+std::set<int> &neighbors)
+{
 	
+	for(auto it= quads.begin(); it!=quads.end(); it++ )
+	{
+		int remoteId= it->getRemoteId(); 
+		neighbors.insert(remoteId); 
+		remoteToquads[remoteId].push_back(*it); 
 
-	//return remoteTotris; 
-	
+	}
 }
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(FaceVerts)
-
-// namespace boost { namespace mpi {
-// 	template <>
-// struct is_mpi_datatype<TriFaceVerts> : mpl::true_ { };
-// } }
-// namespace boost { namespace mpi {
-// 	template <>
-// struct is_mpi_datatype<QuadFaceVerts> : mpl::true_ { };
-// } }
-//using BoostMPI     = boost::mpi; 
 #endif /* SRC_EXA_DEFS_H_ */

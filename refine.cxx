@@ -42,6 +42,7 @@ int main(int argc, char* const argv[]) {
 	char cgnsFileName[1024];
 	char outFileName[1024];
 	bool isInputCGNS = false, isParallel = false, isMPI=false;
+	char InputMeshType ; 
 
 	sprintf(type, "vtk");
 	sprintf(infix, "b8");
@@ -86,24 +87,28 @@ int main(int argc, char* const argv[]) {
 		}
 	}
 
-	if (isInputCGNS) {
+	if (isInputCGNS) 
+	{
 #if (HAVE_CGNS == 1)
 		CubicMesh CMorig(cgnsFileName);
-		if (isParallel){
-			if(isMPI){
-#ifndef NDEBUG
+		if (isParallel)
+		{
+			if(isMPI)
+			{
 				ParallelTester* tester= new ParallelTester(); 
-				CMorig.TestMPI(nDivs,nTestParts,tester);
-				//CMorig.refineForMPI(nDivs,tester);
-#endif
-				//CMorig.refineForMPI(); 
-				//CMorig.TestMPI(nDivs,nTestParts); 
-				//CMorig.refineForParallel(nDivs, maxCellsPerPart);
+#ifndef NDEBUG
+				CMorig.TestMPI(nDivs,nTestParts,tester,'C');
+#endif				
+				CMorig.refineForMPI(nDivs,tester,'C');
+				delete tester; 
+
 			}
-			else{
+			else
+			{
 				CMorig.refineForParallel(nDivs, maxCellsPerPart);
 			}
-		}else {
+		}else 
+		{
 			double start = exaTime();
 			UMesh UMrefined(CMorig, nDivs);
 			double time = exaTime() - start;
@@ -115,43 +120,35 @@ int main(int argc, char* const argv[]) {
 							(cells / 1000000.) / (time / 60));
 
 //			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
-			UMrefined.writeVTKFile("/tmp/junk.vtk");
+//			UMrefined.writeVTKFile("/tmp/junk.vtk");
 		}
 #else
 		fprintf(stderr, "Not compiled with CGNS; curved meshes not supported.\n");
 		exit(1);
 #endif
 	}
-	else {
+	else 
+	{
 		UMesh UMorig(inFileBaseName, type, infix);
-		if (isParallel){
+		if (isParallel)
+		{
 			if(isMPI)
 			{
-#ifndef NDEBUG
 				ParallelTester* tester= new ParallelTester(); 
-				
-				UMorig.TestMPI(nDivs,nTestParts,tester); 
-				UMorig.refineForMPI(nDivs,tester);
-				
-				//mpiImpl MPIRefine (&UMorig); // Is this right ? 
-				//MPIRefine.refineMPI(nDivs); 	
-				//UMorig.refineMPI(nDivs); 
-				//UMorig.TestForMPI(nDivs,nTestParts); 
-
-
-#endif				
-				//UMorig.refineForMPI(nDivs,tester); 
-				
-
-				//
-				
+#ifndef NDEBUG				
+				UMorig.TestMPI(nDivs,nTestParts,tester,'U'); 
+#endif
+				UMorig.refineForMPI(nDivs,tester,'U');
+				delete tester; 
 			}
-			//else{
-				//UMorig.refineForParallel(nDivs, maxCellsPerPart);
-			//}
+			else
+			{
+				UMorig.refineForParallel(nDivs, maxCellsPerPart);
+			}
 
 		}
-		if (!isParallel) {
+		if (!isParallel) 
+		{
 			double start = exaTime();
 			UMesh UMrefined(UMorig, nDivs);
 			double time = exaTime() - start;
@@ -165,7 +162,6 @@ int main(int argc, char* const argv[]) {
 			//UMrefined.writeVTKFile(outFileName);
 		}
 	}
-
 	printf("Exiting\n");
 	exit(0);
 }
