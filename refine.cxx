@@ -87,6 +87,10 @@ int main(int argc, char* const argv[]) {
 		}
 	}
 
+	size_t lastSlashPos = std::string(inFileBaseName).find_last_of('/');
+	std::string mshName = std::string(inFileBaseName).substr(lastSlashPos + 1);
+
+
 	if (isInputCGNS) 
 	{
 #if (HAVE_CGNS == 1)
@@ -136,9 +140,10 @@ int main(int argc, char* const argv[]) {
 			{
 				ParallelTester* tester= new ParallelTester(); 
 #ifndef NDEBUG				
-				UMorig.TestMPI(nDivs,nTestParts,tester,'U'); 
+				//UMorig.TestMPI(nDivs,nTestParts,tester,'U'); 
 #endif
-				UMorig.refineForMPI(nDivs,tester,'U');
+				UMorig.refineForMPI(nDivs,tester,'U',mshName);
+				
 				delete tester; 
 			}
 			else
@@ -153,11 +158,14 @@ int main(int argc, char* const argv[]) {
 			UMesh UMrefined(UMorig, nDivs);
 			double time = exaTime() - start;
 			size_t cells = UMrefined.numCells();
-			fprintf(stderr, "\nDone serial refinement.\n");
+			WrireSerialTime(mshName,time,cells,nDivs);
+			//fprintf(stderr, "\nDone serial refinement.\n");
 			fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
 			fprintf(stderr,
 							"                          %5.2F million cells / minute\n",
 							(cells / 1000000.) / (time / 60));
+			
+
 			//UMrefined.writeUGridFile(outFileName);
 			//UMrefined.writeVTKFile(outFileName);
 		}

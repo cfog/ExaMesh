@@ -130,7 +130,7 @@ public:
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const = 0;
 
-	void refineForMPI( const int numDivs ,ParallelTester* tester,const char MeshType) const;		
+	void refineForMPI( const int numDivs ,ParallelTester* tester,const char MeshType, std::string mshName) const;		
 
 	virtual std::unique_ptr<ExaMesh> extractCoarseMesh(Part& P,	std::vector<CellPartData>& vecCPD, 
 	const int numDivs,

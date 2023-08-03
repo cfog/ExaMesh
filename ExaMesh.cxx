@@ -675,13 +675,16 @@ const char MeshType)
 }
 
 void 
-ExaMesh::refineForMPI( const int numDivs ,ParallelTester* tester,const char MeshType) 
+ExaMesh::refineForMPI( const int numDivs ,ParallelTester* tester,const char MeshType,std::string mshName) 
 const
 {
 	boost::mpi::environment   env; 
 	boost::mpi::communicator  world;
+	mshName = mshName+"-nDivs-"+std::to_string(numDivs)+".txt";
 	
 	auto start = exaTime();
+	double maximumTime;
+	double serialTime; 
 	
 	std::vector<boost::mpi::request>      triReqs;
 	std::vector<boost::mpi::request>      quadReqs;
@@ -722,6 +725,7 @@ const
 
 	if(world.rank()==MASTER)
 	{
+		double serialTimeStart = exaTime(); 
 		partitionCells(this, nParts, parts,vecCPD); 
 
 		vecCPDSize = vecCPD.size(); 
@@ -735,6 +739,7 @@ const
 		vecVecQuad  vecQuadVec; 
 
 		this->partFaceMatching(parts,vecCPD,VectrisHash,VecquadsHash); 
+		serialTime = exaTime()- serialTimeStart; 
 		for(auto  itri=0 ; itri<VectrisHash.size(); itri++)
 		{
 			vecTri TriVec; 
@@ -867,7 +872,9 @@ const
 
 	for(const auto& tri: trisTobeRcvd)
 	{
-
+		// I'm collecting the whole data into a set 
+		// I should have received the whole data from it 
+		
 		recvdTris.insert(tri.begin(),tri.end()); 
 	}
 
@@ -902,18 +909,18 @@ const
 	}
 	
 	double time = exaTime() - start;
-	double maximumTime; 
+	
 	boost::mpi::reduce(world, time, maximumTime,boost:: mpi::maximum<double>(), MASTER);
 	
 	if (world.rank() == MASTER) 
 	{	
-    	fprintf(stderr, "MAXIMUM CPU time for refinement = %5.2F seconds, for numDivs of %d\n", maximumTime,numDivs);
- 	} 
+		WriteParallelTimeResults(mshName,maximumTime,serialTime,world.size()); 
+	} 
 	world.barrier();
-	fprintf(stderr, "Rank of: %d has %lu tris and has %lu quads.\n", world.rank(), tris.size(), quads.size());
+	//fprintf(stderr, "Rank of: %d has %lu tris and has %lu quads.\n", world.rank(), tris.size(), quads.size());
 #ifndef NDEBUG				
-	tester->testMatchedTris(matchedTris,world.rank()); 
-	tester->testMatchedQuads(matchedQuads,world.rank()); 				
+	//tester->testMatchedTris(matchedTris,world.rank()); 
+	//tester->testMatchedQuads(matchedQuads,world.rank()); 				
 #endif
 
 }
