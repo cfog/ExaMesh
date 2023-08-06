@@ -41,6 +41,7 @@ using std::endl;
 //#include <boost/timer/timer.hpp>
 #include <chrono>
 #include <fstream>
+#include "resultGenerator.cxx"
 
 
 static void triUnitNormal(const double coords0[], const double coords1[],
@@ -675,16 +676,40 @@ const char MeshType)
 }
 
 void 
-ExaMesh::refineForMPI( const int numDivs ,ParallelTester* tester,const char MeshType,std::string mshName) 
+ExaMesh::refineForMPI( const int numDivs ,
+ParallelTester* tester,
+const char MeshType,
+std::string mshName, 
+FILE* fileAllTimes) 
 const
 {
 	boost::mpi::environment   env; 
 	boost::mpi::communicator  world;
-	mshName = mshName+"-nDivs-"+std::to_string(numDivs)+".txt";
 	
-	auto start = exaTime();
-	double maximumTime;
-	double serialTime; 
+	
+	auto    StartTotalTime = exaTime();
+	double  MAXTotalTime;
+
+	double  MAXExtractionTime; 
+	double  MAXRefineTime; 
+	double  MAXTriTime; 
+	double  MAXQuadTime; 
+
+	double  StartPartitinTime; 
+	double  StartPartFaceMatching; 
+	double  StartExtractionTime; 
+	double  StartRefineTime; 
+	double  StartTriTime; 
+	double  StartQuadTime; 
+
+	double  PartitinTime; 
+	double  ExtractionTime; 
+	double  RefineTime; 
+	double  TriTime; 
+	double  QuadTime; 
+	double  PartFaceMatchingTime;
+
+	double  serialTime; 
 	
 	std::vector<boost::mpi::request>      triReqs;
 	std::vector<boost::mpi::request>      quadReqs;
@@ -726,7 +751,9 @@ const
 	if(world.rank()==MASTER)
 	{
 		double serialTimeStart = exaTime(); 
+		StartPartitinTime= exaTime(); 
 		partitionCells(this, nParts, parts,vecCPD); 
+		PartitinTime= exaTime()- StartPartitinTime; 
 
 		vecCPDSize = vecCPD.size(); 
 
@@ -738,7 +765,10 @@ const
 		vecVecTri   VecTriVec; 
 		vecVecQuad  vecQuadVec; 
 
-		this->partFaceMatching(parts,vecCPD,VectrisHash,VecquadsHash); 
+		StartPartFaceMatching= exaTime(); 
+		this->partFaceMatching(parts,vecCPD,VectrisHash,VecquadsHash);
+		PartFaceMatchingTime= exaTime() -StartPartFaceMatching; 
+		 
 		serialTime = exaTime()- serialTimeStart; 
 		for(auto  itri=0 ; itri<VectrisHash.size(); itri++)
 		{
@@ -787,10 +817,13 @@ const
 		vecCPD.resize(vecCPDSize); 
 		world.recv(MASTER,tag,vecCPD); 
 	}
-
+	StartExtractionTime = exaTime(); 
 	auto coarse= this->extractCoarseMesh(parts[world.rank()],vecCPD,numDivs, 
 	 trisS,quadsS,world.rank()); 
+	ExtractionTime = exaTime()- StartExtractionTime;  
 	
+
+	StartRefineTime = exaTime(); 
 	if(MeshType=='C')
 	{
 		auto refinedMesh = std::make_unique<UMesh>(
@@ -805,6 +838,7 @@ const
 			numDivs, world.rank());
 			refinedMeshVec.emplace_back(refinedMesh.release()); 
 	}
+	RefineTime = exaTime()- StartRefineTime; 
 
 
 	auto tris  = refinedMeshVec[0]->getRefinedPartTris();
@@ -870,6 +904,7 @@ const
 
 	boost::mpi::wait_all(triReqs.begin(),triReqs.end()); 
 
+	StartTriTime = exaTime(); 
 	for(const auto& tri: trisTobeRcvd)
 	{
 		// I'm collecting the whole data into a set 
@@ -889,9 +924,11 @@ const
 		//matchedTris.emplace(*it,localRemote);
 #endif //NDEBUG
 	}
+	TriTime = exaTime()-StartTriTime; 
 
 	boost::mpi::wait_all(quadReqs.begin(),quadReqs.end()); 
 
+	StartQuadTime = exaTime(); 
 	for(const auto& quad:quadsTobeRcvd)
 	{
 		recvdQuads.insert(quad.begin(),quad.end()); 
@@ -907,14 +944,25 @@ const
 		//matchedQuads.emplace(*it,localRemote); 
 #endif
 	}
+	QuadTime         = exaTime()- StartQuadTime; 
 	
-	double time = exaTime() - start;
+	double Totaltime = exaTime() - StartTotalTime;
 	
-	boost::mpi::reduce(world, time, maximumTime,boost:: mpi::maximum<double>(), MASTER);
+	boost::mpi::reduce(world, Totaltime      , MAXTotalTime      ,boost:: mpi::maximum<double>(), MASTER);
+
+	boost::mpi::reduce(world, ExtractionTime , MAXExtractionTime ,boost:: mpi::maximum<double>(), MASTER);
+
+	boost::mpi::reduce(world, RefineTime     , MAXRefineTime     ,boost:: mpi::maximum<double>(), MASTER);
+
+	boost::mpi::reduce(world, TriTime        , MAXTriTime        ,boost:: mpi::maximum<double>(), MASTER);
+
+	boost::mpi::reduce(world, QuadTime       , MAXQuadTime       ,boost:: mpi::maximum<double>(), MASTER);
 	
 	if (world.rank() == MASTER) 
 	{	
-		WriteParallelTimeResults(mshName,maximumTime,serialTime,world.size()); 
+		 
+		writeAllTimeResults(fileAllTimes,world.size(),PartitinTime,
+		PartFaceMatchingTime,MAXExtractionTime,MAXRefineTime,MAXTriTime,MAXQuadTime,MAXTotalTime); 
 	} 
 	world.barrier();
 	//fprintf(stderr, "Rank of: %d has %lu tris and has %lu quads.\n", world.rank(), tris.size(), quads.size());

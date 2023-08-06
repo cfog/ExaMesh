@@ -30,6 +30,17 @@
 #include "CubicMesh.h"
 #include "UMesh.h"
 #include "mpiImpl.h"
+#include "resultGenerator.cxx"
+FILE*
+openFile (std::string fileName)
+{
+	FILE *file = fopen(fileName.c_str(), "a");
+    if (file == NULL) 
+	{
+        fprintf(stderr, "Error opening the file!\n");
+    }
+    return file; 
+}
 
 int main(int argc, char* const argv[]) {
 	char opt = EOF;
@@ -50,8 +61,10 @@ int main(int argc, char* const argv[]) {
 	sprintf(inFileBaseName, "/need/a/file/name");
 	sprintf(cgnsFileName, "/need/a/file/name");
 
-	while ((opt = getopt(argc, argv, "s:c:i:m:n:o:pt:u:q")) != EOF) {
-		switch (opt) {
+	while ((opt = getopt(argc, argv, "s:c:i:m:n:o:pt:u:q")) != EOF) 
+	{
+		switch (opt) 
+		{
 			case 's':
 				sscanf(optarg, "%d", &nTestParts);
 				break;
@@ -87,8 +100,10 @@ int main(int argc, char* const argv[]) {
 		}
 	}
 
-	size_t lastSlashPos = std::string(inFileBaseName).find_last_of('/');
-	std::string mshName = std::string(inFileBaseName).substr(lastSlashPos + 1);
+	size_t lastSlashPos  = std::string(inFileBaseName).find_last_of('/');
+	std::string mshName  = std::string(inFileBaseName).substr(lastSlashPos + 1);
+	mshName              = mshName+"-nDivs-"+std::to_string(nDivs); 
+	auto outFileAllTimes = openFile(mshName+ "AllTimes.txt"); 
 
 
 	if (isInputCGNS) 
@@ -103,7 +118,7 @@ int main(int argc, char* const argv[]) {
 #ifndef NDEBUG
 				CMorig.TestMPI(nDivs,nTestParts,tester,'C');
 #endif				
-				CMorig.refineForMPI(nDivs,tester,'C');
+				CMorig.refineForMPI(nDivs,tester,'C',mshName);
 				delete tester; 
 
 			}
@@ -142,7 +157,7 @@ int main(int argc, char* const argv[]) {
 #ifndef NDEBUG				
 				//UMorig.TestMPI(nDivs,nTestParts,tester,'U'); 
 #endif
-				UMorig.refineForMPI(nDivs,tester,'U',mshName);
+				UMorig.refineForMPI(nDivs,tester,'U',mshName,outFileAllTimes);
 				
 				delete tester; 
 			}
@@ -158,7 +173,8 @@ int main(int argc, char* const argv[]) {
 			UMesh UMrefined(UMorig, nDivs);
 			double time = exaTime() - start;
 			size_t cells = UMrefined.numCells();
-			WrireSerialTime(mshName,time,cells,nDivs);
+			writeAllTimeResults(outFileAllTimes,1,0,0,0,time,0,0,0); 
+			//WrireSerialTime(mshName,time,cells,nDivs);
 			//fprintf(stderr, "\nDone serial refinement.\n");
 			fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
 			fprintf(stderr,

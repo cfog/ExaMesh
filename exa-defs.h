@@ -1004,46 +1004,6 @@ std::set<int> &neighbors)
 	}
 }
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(FaceVerts)
-void 
-inline
-WrireSerialTime(std::string mshName, double time, std::size_t cells, int numDivs)
-{
-	mshName = mshName + "Serial.txt"; 
-	FILE* outputFile = fopen(mshName.c_str(), "a");
-    if (outputFile == NULL) 
-	{
-        printf("Error opening the output file.\n");
-        
-    }
-	fseek(outputFile, 0, SEEK_END);
-    long size = ftell(outputFile);
-    if (size == 0) 
-	{
-		fprintf(outputFile, "%-10s %-10s %-10s\n", "nDivs", "Ts", "Rate(million cells/ minute)");
-   	}
-	fprintf(outputFile, "%-10d %-10.2f %-10.2f\n", numDivs, time, (cells / 1000000.0) / (time / 60));
-    //fprintf(outputFile, "CPUTime= %5.2F seconds, for nDivs %d\n", time,numDivs);
-    //fprintf(outputFile, " %5.2F million cells / minute\n", (cells / 1000000.0) / (time / 60));
-	//fprintf(outputFile,"----------------------------------"); 
-    fclose(outputFile);
 
-}
-void 
-inline WriteParallelTimeResults (std::string mshName, double Tp, double Ts, int nProc)
-{
-	FILE *file = fopen(mshName.c_str(), "a");
-    if (file == NULL) 
-	{
-        fprintf(stderr, "Error opening the file!\n");
-    }
- 	fseek(file, 0, SEEK_END);
-    long size = ftell(file);
-    if (size == 0) 
-	{
-		fprintf(file, "%-10s %-10s %-10s \n", "nP", "Tp", "Ts");
-   	}
-	fprintf(file, "%-10u %-10.2f %-10.2f\n", nProc, Tp, Ts);
-	fclose(file);
-}
 
 #endif /* SRC_EXA_DEFS_H_ */
