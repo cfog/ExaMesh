@@ -67,5 +67,7 @@ autoscan.log
 # jpg files 
 *.jpg
 # Cubic Mesh generator for testing 
+* .png
+* .plt 
 globe_mats_cubic.cxx
 globe_mats_cubic
