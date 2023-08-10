@@ -100,10 +100,11 @@ int main(int argc, char* const argv[]) {
 		}
 	}
 
-	size_t lastSlashPos  = std::string(inFileBaseName).find_last_of('/');
-	std::string mshName  = std::string(inFileBaseName).substr(lastSlashPos + 1);
-	mshName              = mshName+"-nDivs-"+std::to_string(nDivs); 
-	auto outFileAllTimes = openFile(mshName+ "AllTimes.txt"); 
+	size_t lastSlashPos     = std::string(inFileBaseName).find_last_of('/');
+	std::string mshName     = std::string(inFileBaseName).substr(lastSlashPos + 1);
+	
+	auto outFileAllTimes    = openFile(mshName+"-nDivs-"+std::to_string(nDivs)+ "AllTimes.txt");
+	auto outFileMeshStatics = openFile(mshName+"-mshStatics.txt");  
 
 
 	if (isInputCGNS) 
@@ -173,7 +174,9 @@ int main(int argc, char* const argv[]) {
 			UMesh UMrefined(UMorig, nDivs);
 			double time = exaTime() - start;
 			size_t cells = UMrefined.numCells();
-			writeAllTimeResults(outFileAllTimes,1,0,0,0,time,0,0,0); 
+			writeAllTimeResults(outFileAllTimes,1,0,0,0,time,0,0,time);
+			writeMeshStatics(outFileMeshStatics,nDivs,cells); 
+
 			//WrireSerialTime(mshName,time,cells,nDivs);
 			//fprintf(stderr, "\nDone serial refinement.\n");
 			fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);

@@ -32,14 +32,14 @@ ParallelTester::setInputTri (const vecHashTri& inTris)
         hashTri Settri; 
         for(auto&iset:inTris[itri])
         {
-            int nDivs    =  iset.getNumDivs(); 
-            int partId   =  iset.getPartid(); 
-            int remoteId =  iset.getRemoteId(); 
+            emInt nDivs  =  iset.getNumDivs(); 
+            emInt partId   =  iset.getPartid(); 
+            emInt remoteId =  iset.getRemoteId(); 
 
-            int global0  =   iset.getGlobalCorner(0); 
-            int global1  =   iset.getGlobalCorner(1); 
-            int global2  =   iset.getGlobalCorner(2); 
-            int global[3]=   {global0,global1,global2}; 
+            emInt global0  =   iset.getGlobalCorner(0); 
+            emInt global1  =   iset.getGlobalCorner(1); 
+            emInt global2  =   iset.getGlobalCorner(2); 
+            emInt global[3]=   {global0,global1,global2}; 
             TriFaceVerts tri(nDivs,global,partId,remoteId,true); 
             Settri.insert(tri); 
         }
