@@ -722,6 +722,8 @@ const
 	std::size_t    trisSize; 
 	std::size_t    quadsSize; 
 	std::size_t    nParts = world.size();
+	emInt          nCells;
+	emInt          totalCells;  
 
 	hashTri  trisS; 
 	hashQuad quadsS;
@@ -840,9 +842,13 @@ const
 	}
 	RefineTime = exaTime()- StartRefineTime; 
 
+	//writeEachRankMeshStatics(world.rank(),refinedMeshVec[0]->numCells(),numDivs,world.size(),
+	//mshName); 
+
 
 	auto tris  = refinedMeshVec[0]->getRefinedPartTris();
 	auto quads = refinedMeshVec[0]->getRefinedPartQuads();
+	nCells     = refinedMeshVec[0]->numCells(); 
 
 	
 	buildTrisMap(tris,remoteTovecTris,triNeighbrs);
@@ -957,12 +963,16 @@ const
 	boost::mpi::reduce(world, TriTime        , MAXTriTime        ,boost:: mpi::maximum<double>(), MASTER);
 
 	boost::mpi::reduce(world, QuadTime       , MAXQuadTime       ,boost:: mpi::maximum<double>(), MASTER);
-	
+
+	boost::mpi::reduce(world, nCells         , totalCells        ,std::plus<emInt>()            , MASTER);
+	std::cout<<"My rank is: "<<world.rank()<<" my ncells is: "<<nCells<<std::endl; 	
 	if (world.rank() == MASTER) 
 	{	
 		 
 		writeAllTimeResults(fileAllTimes,world.size(),PartitinTime,
-		PartFaceMatchingTime,MAXExtractionTime,MAXRefineTime,MAXTriTime,MAXQuadTime,MAXTotalTime); 
+		PartFaceMatchingTime,MAXExtractionTime,MAXRefineTime,MAXTriTime,
+		MAXQuadTime,MAXTotalTime,totalCells); 
+		std::cout<<"My rank is: "<<world.rank()<<" my total cells is: "<<totalCells<<std::endl; 	
 	} 
 	world.barrier();
 	//fprintf(stderr, "Rank of: %d has %lu tris and has %lu quads.\n", world.rank(), tris.size(), quads.size());

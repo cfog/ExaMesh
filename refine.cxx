@@ -45,7 +45,7 @@ openFile (std::string fileName)
 int main(int argc, char* const argv[]) {
 	char opt = EOF;
 	emInt nDivs = 1;
-	emInt nTestParts=2; 
+	int   nTestParts=2; 
 	emInt maxCellsPerPart = 1000000;
 	char type[10];
 	char infix[10];
@@ -106,6 +106,9 @@ int main(int argc, char* const argv[]) {
 	auto outFileAllTimes    = openFile(mshName+"-nDivs-"+std::to_string(nDivs)+ "AllTimes.txt");
 	auto outFileMeshStatics = openFile(mshName+"-mshStatics.txt");  
 
+	std::cout<<INT32_MAX<<std::endl; 
+  
+
 
 	if (isInputCGNS) 
 	{
@@ -119,7 +122,7 @@ int main(int argc, char* const argv[]) {
 #ifndef NDEBUG
 				CMorig.TestMPI(nDivs,nTestParts,tester,'C');
 #endif				
-				CMorig.refineForMPI(nDivs,tester,'C',mshName);
+				CMorig.refineForMPI(nDivs,tester,'C',mshName,outFileAllTimes);
 				delete tester; 
 
 			}
@@ -133,6 +136,9 @@ int main(int argc, char* const argv[]) {
 			UMesh UMrefined(CMorig, nDivs);
 			double time = exaTime() - start;
 			size_t cells = UMrefined.numCells();
+			writeAllTimeResults(outFileAllTimes,1,0,0,0,time,0,0,time,cells);
+			writeMeshStatics(outFileMeshStatics,nDivs,cells); 
+
 			fprintf(stderr, "\nDone serial refinement.\n");
 			fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
 			fprintf(stderr,
@@ -174,7 +180,7 @@ int main(int argc, char* const argv[]) {
 			UMesh UMrefined(UMorig, nDivs);
 			double time = exaTime() - start;
 			size_t cells = UMrefined.numCells();
-			writeAllTimeResults(outFileAllTimes,1,0,0,0,time,0,0,time);
+			writeAllTimeResults(outFileAllTimes,1,0,0,0,time,0,0,time,cells);
 			writeMeshStatics(outFileMeshStatics,nDivs,cells); 
 
 			//WrireSerialTime(mshName,time,cells,nDivs);

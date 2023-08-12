@@ -1040,7 +1040,7 @@ void UMesh::partFaceMatching(
 		}	  // end loop to gather information
 	}
 
-	auto k = 0;
+	std::size_t k = 0;
 
 	for (auto itr = partBdryTris.begin(); itr != partBdryTris.end(); itr++)
 	{
@@ -1072,7 +1072,7 @@ void UMesh::partFaceMatching(
 		}
 	}
 
-	auto kquad = 0;
+	std::size_t kquad = 0;
 	for (auto itr = partBdryQuads.begin();
 		 itr != partBdryQuads.end(); itr++)
 	{
@@ -1380,13 +1380,13 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMesh(Part &P,
 		} // end switch
 	}	  // end loop to copy most connectivity
 
-	for (emInt ii = 0; ii < realBdryTris.size(); ii++)
+	for (std::size_t ii = 0; ii < realBdryTris.size(); ii++)
 	{
 		conn = getBdryTriConn(realBdryTris[ii]);
 		remapIndices(3, newIndices, conn, newConn);
 		UUM->addBdryTri(newConn);
 	}
-	for (emInt ii = 0; ii < realBdryQuads.size(); ii++)
+	for (std::size_t ii = 0; ii < realBdryQuads.size(); ii++)
 	{
 		conn = getBdryQuadConn(realBdryQuads[ii]);
 		remapIndices(4, newIndices, conn, newConn);

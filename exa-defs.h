@@ -205,12 +205,12 @@ public:
 	FaceVerts(const int nDivs, const emInt NC = 0) : 
 	m_nCorners(NC), 
 	m_nDivs(nDivs), 
-	m_volElem(EMINT_MAX), 
-	m_volElemType(0),
-	m_bothSidesDone(false),
 	m_intVerts (nDivs + 1, std::vector<emInt>(nDivs + 1)), 
     m_param_st (nDivs + 1, std::vector<std::vector<double>>(nDivs + 1, std::vector<double>(2))),
-	m_param_uvw(nDivs + 1, std::vector<std::vector<double>>(nDivs + 1, std::vector<double>(3)))
+	m_param_uvw(nDivs + 1, std::vector<std::vector<double>>(nDivs + 1, std::vector<double>(3))),
+	m_volElem(EMINT_MAX), 
+	m_volElemType(0),
+	m_bothSidesDone(false)
 
 	{
 		assert(NC == 3 || NC == 4);
