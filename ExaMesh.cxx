@@ -685,6 +685,8 @@ const
 {
 	boost::mpi::environment   env; 
 	boost::mpi::communicator  world;
+
+	mshName = mshName + "-weakScaliblity.txt" ; 
 	
 	
 	auto    StartTotalTime = exaTime();
@@ -965,14 +967,23 @@ const
 	boost::mpi::reduce(world, QuadTime       , MAXQuadTime       ,boost:: mpi::maximum<double>(), MASTER);
 
 	boost::mpi::reduce(world, nCells         , totalCells        ,std::plus<emInt>()            , MASTER);
-	std::cout<<"My rank is: "<<world.rank()<<" my ncells is: "<<nCells<<std::endl; 	
+
 	if (world.rank() == MASTER) 
 	{	
-		 
 		writeAllTimeResults(fileAllTimes,world.size(),PartitinTime,
 		PartFaceMatchingTime,MAXExtractionTime,MAXRefineTime,MAXTriTime,
-		MAXQuadTime,MAXTotalTime,totalCells); 
-		std::cout<<"My rank is: "<<world.rank()<<" my total cells is: "<<totalCells<<std::endl; 	
+		MAXQuadTime,MAXTotalTime,totalCells);
+		FILE *fileWeakScaliblity = fopen(mshName.c_str(), "a");
+    	if (fileWeakScaliblity == NULL) 
+		{
+        	fprintf(stderr, "Error opening the file!\n");
+   		}
+		writeAllTimeResults(fileWeakScaliblity,world.size(),PartitinTime,
+		PartFaceMatchingTime,MAXExtractionTime,MAXRefineTime,MAXTriTime,
+		MAXQuadTime,MAXTotalTime,totalCells);
+
+    
+
 	} 
 	world.barrier();
 	//fprintf(stderr, "Rank of: %d has %lu tris and has %lu quads.\n", world.rank(), tris.size(), quads.size());

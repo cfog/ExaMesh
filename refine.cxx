@@ -100,14 +100,13 @@ int main(int argc, char* const argv[]) {
 		}
 	}
 
-	size_t lastSlashPos     = std::string(inFileBaseName).find_last_of('/');
-	std::string mshName     = std::string(inFileBaseName).substr(lastSlashPos + 1);
+	size_t lastSlashPos        = std::string(inFileBaseName).find_last_of('/');
+	std::string mshName        = std::string(inFileBaseName).substr(lastSlashPos + 1);
 	
-	auto outFileAllTimes    = openFile(mshName+"-nDivs-"+std::to_string(nDivs)+ "AllTimes.txt");
-	auto outFileMeshStatics = openFile(mshName+"-mshStatics.txt");  
+	auto outFileAllTimes       = openFile(mshName+"-nDivs-"+std::to_string(nDivs)+ "AllTimes.txt");
+	auto outFileMeshStatics    = openFile(mshName+"-mshStatics.txt");
 
-	std::cout<<INT32_MAX<<std::endl; 
-  
+	
 
 
 	if (isInputCGNS) 

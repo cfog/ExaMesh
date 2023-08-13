@@ -36,6 +36,8 @@
 #include "BdryTriDivider.h"
 #include "BdryQuadDivider.h"
 #include <stdio.h>
+#include <inttypes.h>
+#include <locale.h> 
 void printLocalVerts(const exa_set<TriFaceVerts> tris, const emInt nDivs){
 	for(auto itr=tris.begin(); itr!=tris.end(); itr++){
 		std::cout<<"For this tri: "<< itr->getCorner(0)<<
@@ -325,6 +327,13 @@ bool computeMeshSize(const struct MeshSize &MSIn, const emInt nDivs,
 	MSOut.nPyrs = MSIn.nPyrs * (2 * volFactor + nDivs) / 3;
 	MSOut.nPrisms = MSIn.nPrisms * volFactor;
 	MSOut.nHexes = MSIn.nHexes * volFactor;
+
+
+	setlocale(LC_ALL, "");
+	ssize_t totalCells = MSOut.nPyrs+MSOut.nPrisms+MSOut.nHexes+MSOut.nTets; 
+	fprintf(stderr,"Total expected cells: %'2u \n",totalCells);
+	
+	
 
 	// Use signed 64-bit ints for these calculations.  It's possible someone will ask for
 	// something that blows out 32-bit unsigned ints, and will need to be stopped.
