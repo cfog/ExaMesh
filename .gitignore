@@ -72,3 +72,6 @@ autoscan.log
 *.lpk
 globe_mats_cubic.cxx
 globe_mats_cubic
+jobGenerator.cxx
+postProcessing.cxx
+jobGenerator.cxx
