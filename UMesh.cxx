@@ -114,10 +114,12 @@ void UMesh::init(const emInt nVerts, const emInt nBdryVerts,
 	size_t bufferWords = bufferBytes / 8;
 	// Use words instead of bytes to ensure 8-byte alignment.
 	m_buffer = reinterpret_cast<char *>(calloc(bufferWords, 8));
+	assert(m_buffer!=NULL); 
 
 	// The pointer arithmetic here is made more complicated because the pointers aren't
 	// compatible with each other.
 	m_header = reinterpret_cast<emInt *>(m_buffer + slack1Size);
+	assert(m_header!=NULL); 
 	std::fill(m_header, m_header + 7, 0);
 	m_coords =
 		reinterpret_cast<double(*)[3]>(m_buffer + headerSize + slack1Size);
@@ -850,25 +852,25 @@ void UMesh::setupCellDataForPartitioning(std::vector<CellPartData> &vecCPD,
 	for (emInt ii = 0; ii < numTets(); ii++)
 	{
 		const emInt *verts = getTetConn(ii);
-		addCellToPartitionData(verts, 4, ii, TETRA_4, vecCPD, xmin, ymin, zmin,
+		addCellToPartitionData(verts, 4, ii, CGNS_ENUMV(TETRA_4), vecCPD, xmin, ymin, zmin,
 							   xmax, ymax, zmax);
 	}
 	for (emInt ii = 0; ii < numPyramids(); ii++)
 	{
 		const emInt *verts = getPyrConn(ii);
-		addCellToPartitionData(verts, 5, ii, PYRA_5, vecCPD, xmin, ymin, zmin, xmax,
+		addCellToPartitionData(verts, 5, ii, CGNS_ENUMV(PYRA_5), vecCPD, xmin, ymin, zmin, xmax,
 							   ymax, zmax);
 	}
 	for (emInt ii = 0; ii < numPrisms(); ii++)
 	{
 		const emInt *verts = getPrismConn(ii);
-		addCellToPartitionData(verts, 6, ii, PENTA_6, vecCPD, xmin, ymin, zmin,
+		addCellToPartitionData(verts, 6, ii, CGNS_ENUMV(PENTA_6), vecCPD, xmin, ymin, zmin,
 							   xmax, ymax, zmax);
 	}
 	for (emInt ii = 0; ii < numHexes(); ii++)
 	{
 		const emInt *verts = getHexConn(ii);
-		addCellToPartitionData(verts, 8, ii, HEXA_8, vecCPD, xmin, ymin, zmin, xmax,
+		addCellToPartitionData(verts, 8, ii, CGNS_ENUMV(HEXA_8), vecCPD, xmin, ymin, zmin, xmax,
 							   ymax, zmax);
 	}
 }
@@ -939,7 +941,7 @@ void UMesh::partFaceMatching(
 				// Panic! Should never get here.
 				assert(0);
 				break;
-			case TETRA_4:
+			case CGNS_ENUMV(TETRA_4):
 			{
 
 				conn = getTetConn(ind);
@@ -958,7 +960,7 @@ void UMesh::partFaceMatching(
 				addUniquely(partBdryTris, T203);
 				break;
 			}
-			case PYRA_5:
+			case CGNS_ENUMV(PYRA_5):
 			{
 				// nPyrs++;
 				conn = getPyrConn(ind);
@@ -984,7 +986,7 @@ void UMesh::partFaceMatching(
 				addUniquely(partBdryQuads, Q0123);
 				break;
 			}
-			case PENTA_6:
+			case CGNS_ENUMV(PENTA_6):
 			{
 				// nPrisms++;
 				conn = getPrismConn(ind);
@@ -1009,7 +1011,7 @@ void UMesh::partFaceMatching(
 				addUniquely(partBdryQuads, Q2035);
 				break;
 			}
-			case HEXA_8:
+			case CGNS_ENUMV(HEXA_8):
 			{
 				// nHexes++;
 				conn = getHexConn(ind);
@@ -1149,7 +1151,7 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMesh(Part &P,
 			// Panic! Should never get here.
 			assert(0);
 			break;
-		case TETRA_4:
+		case CGNS_ENUMV(TETRA_4):
 		{
 			nTets++;
 			conn = getTetConn(ind);
@@ -1167,7 +1169,7 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMesh(Part &P,
 			isVertUsed[conn[3]] = true;
 			break;
 		}
-		case PYRA_5:
+		case CGNS_ENUMV(PYRA_5):
 		{
 			nPyrs++;
 			conn = getPyrConn(ind);
@@ -1188,7 +1190,7 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMesh(Part &P,
 			isVertUsed[conn[4]] = true;
 			break;
 		}
-		case PENTA_6:
+		case CGNS_ENUMV(PENTA_6):
 		{
 			nPrisms++;
 			conn = getPrismConn(ind);
@@ -1210,7 +1212,7 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMesh(Part &P,
 			isVertUsed[conn[5]] = true;
 			break;
 		}
-		case HEXA_8:
+		case CGNS_ENUMV(HEXA_8):
 		{
 			nHexes++;
 			conn = getHexConn(ind);
@@ -1349,28 +1351,28 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMesh(Part &P,
 			// Panic! Should never get here.
 			assert(0);
 			break;
-		case TETRA_4:
+		case CGNS_ENUMV(TETRA_4):
 		{
 			conn = getTetConn(ind);
 			remapIndices(4, newIndices, conn, newConn);
 			UUM->addTet(newConn);
 			break;
 		}
-		case PYRA_5:
+		case CGNS_ENUMV(PYRA_5):
 		{
 			conn = getPyrConn(ind);
 			remapIndices(5, newIndices, conn, newConn);
 			UUM->addPyramid(newConn);
 			break;
 		}
-		case PENTA_6:
+		case CGNS_ENUMV(PENTA_6):
 		{
 			conn = getPrismConn(ind);
 			remapIndices(6, newIndices, conn, newConn);
 			UUM->addPrism(newConn);
 			break;
 		}
-		case HEXA_8:
+		case CGNS_ENUMV(HEXA_8):
 		{
 			conn = getHexConn(ind);
 			remapIndices(8, newIndices, conn, newConn);

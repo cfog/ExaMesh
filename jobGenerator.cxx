@@ -48,9 +48,10 @@ int main(int argc, char* const argv[])
 
     MasterJobSubmiiter<<"#!/bin/bash"<<std::endl; 
 
-    std::vector<int> array       = {37};
+    std::vector<int> array       = {50};
 
-    std::vector<int> nProcessors = {2,4,8,16,32,64,128,256} ;
+    std::vector<int> nProcessors
+    = {2,4,8,16,32,64,128,256,512,1024} ;
     // for (int num = 2; num <= 64; num += 2) 
     // {
     //     nProcessors .push_back(num);
@@ -74,11 +75,15 @@ int main(int argc, char* const argv[])
                 nodes = 1;
                 task = nProcessors[k];
             } 
-            else 
-            {
-                nodes=2 ; 
-                task = nProcessors[k]/2; 
-            } 
+            else{
+                nodes = 8 ; 
+                task= nProcessors[k]/nodes; 
+            }
+            // else 
+            // {
+            //     nodes=2 ; 
+            //     task = nProcessors[k]/2; 
+            // } 
            
             std::string jobName = fileName+"_N"+std::to_string(array[i])+"_nProc"+
             std::to_string(nProcessors[k]); 

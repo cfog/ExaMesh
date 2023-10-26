@@ -8,6 +8,7 @@ inline writeAllTimeResults (FILE* file, int nP, double Tpartition,
 double TpartFaceMatching, double Textraction, double Trefinement, 
 double TtriMatch, double TquadMatch, double Ttotal ,emInt nCells)
 {
+    //setlocale(LC_ALL, "");
     fseek(file, 0, SEEK_END);
     long size = ftell(file);
     if (size == 0) 
@@ -17,14 +18,12 @@ double TtriMatch, double TquadMatch, double Ttotal ,emInt nCells)
          "Textract","Trefine","TtriMatch","TquadMatch","Ttoal","nCells");
    	}
 	
+    // fprintf(file, "%-5u %-12f %-18f %-12f %-12f %-12f %-12f %-12f %-12" PRId64"\n",
+    // nP,Tpartition,TpartFaceMatching,Textraction,Trefinement, 
+    // TtriMatch,TquadMatch,Ttotal,nCells);
     fprintf(file, "%-5u %-12f %-18f %-12f %-12f %-12f %-12f %-12f %-12" PRId64"\n",
     nP,Tpartition,TpartFaceMatching,Textraction,Trefinement, 
     TtriMatch,TquadMatch,Ttotal,nCells);
-
-    // fprintf(file, "%-5u %-12f %-18f %-12f %-12f %-12f %-12f %-12f %-12" PRId64 "\n",
-    //     nP, Tpartition, TpartFaceMatching, Textraction, Trefinement, 
-    //     TtriMatch, TquadMatch, Ttotal, nCells);
-
 }
 
 void 

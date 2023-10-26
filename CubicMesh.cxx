@@ -92,7 +92,7 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 		fprintf(stderr, "Can only handle one zone\n");
 		exit(1);
 	}
-	ZoneType_t zoneType;
+	CGNS_ENUMT(ZoneType_t) zoneType;
 	status = cg_zone_type(index_file, 1, 1, &zoneType);
 	CHECK_STATUS;
 	if (zoneType != CGNS_ENUMV(Unstructured)) {
@@ -116,7 +116,7 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 	for (int iSec = 1; iSec <= nSections; iSec++) {
 		int start, end, count;
 		int nBdry, parentFlag;
-		ElementType_t eType;
+		CGNS_ENUMT(ElementType_t) eType;
 		char sectionName[33];
 		status = cg_section_read(index_file, 1, 1, iSec, sectionName, &eType,
 															&start, &end, &nBdry, &parentFlag);
@@ -152,7 +152,7 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 	for (int iSec = 1; iSec <= nSections; iSec++) {
 		int start, end, count, totalCount;
 		int nBdry, parentFlag;
-		ElementType_t eType;
+		CGNS_ENUMT(ElementType_t) eType;
 		char sectionName[33];
 		status = cg_section_read(index_file, 1, 1, iSec, sectionName, &eType,
 															&start, &end, &nBdry, &parentFlag);
@@ -208,7 +208,7 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 	m_xcoords = new double[zoneSize[0]];
 	m_ycoords = new double[zoneSize[0]];
 	m_zcoords = new double[zoneSize[0]];
-	DataType_t dataType = CGNS_ENUMT(RealDouble);
+	CGNS_ENUMT(DataType_t) dataType = CGNS_ENUMT(RealDouble);
 	int min = 1, max = zoneSize[0];
 	status = cg_coord_read(index_file, 1, 1, "CoordinateX", dataType, &min, &max,
 													m_xcoords);
@@ -448,13 +448,13 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				// Panic! Should never get here.
 				assert(0);
 				break;
-			case TETRA_20: {
+			case CGNS_ENUMV(TETRA_20): {
 				nTets++;
 				conn = getTetConn(ind);
-				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], TETRA_20, ind);
-				TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3], TETRA_20, ind);
-				TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3], TETRA_20, ind);
-				TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3], TETRA_20, ind);
+				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], CGNS_ENUMV(TETRA_20), ind);
+				TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3], CGNS_ENUMV(TETRA_20), ind);
+				TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3], CGNS_ENUMV(TETRA_20), ind);
+				TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3], CGNS_ENUMV(TETRA_20), ind);
 				addUniquely(partBdryTris, TFV012);
 				addUniquely(partBdryTris, TFV013);
 				addUniquely(partBdryTris, TFV123);
@@ -466,14 +466,14 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				cornerNodes.insert(conn, conn + 4);
 				break;
 			}
-			case PYRA_30: {
+			case CGNS_ENUMV(PYRA_30): {
 				nPyrs++;
 				conn = getPyrConn(ind);
-				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], PYRA_30, ind);
-				TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4], PYRA_30, ind);
-				TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4], PYRA_30, ind);
-				TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4], PYRA_30, ind);
-				TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4], PYRA_30, ind);
+				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3],CGNS_ENUMV(PYRA_30), ind);
+				TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4],CGNS_ENUMV (PYRA_30), ind);
+				TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4],CGNS_ENUMV (PYRA_30), ind);
+				TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4],CGNS_ENUMV (PYRA_30), ind);
+				TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4],CGNS_ENUMV (PYRA_30), ind);
 				addUniquely(partBdryQuads, QFV0123);
 				addUniquely(partBdryTris, TFV014);
 				addUniquely(partBdryTris, TFV124);
@@ -486,17 +486,17 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				cornerNodes.insert(conn, conn + 5);
 				break;
 			}
-			case PENTA_40: {
+			case CGNS_ENUMV(PENTA_40): {
 				nPrisms++;
 				conn = getPrismConn(ind);
-				QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3], PENTA_40,
+				QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3], CGNS_ENUMV(PENTA_40),
 															ind);
-				QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4], PENTA_40,
+				QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4], CGNS_ENUMV(PENTA_40),
 															ind);
-				QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5], PENTA_40,
+				QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5], CGNS_ENUMV(PENTA_40),
 															ind);
-				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], PENTA_40, ind);
-				TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5], PENTA_40, ind);
+				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], CGNS_ENUMV (PENTA_40), ind);
+				TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5], CGNS_ENUMV (PENTA_40), ind);
 				addUniquely(partBdryQuads, QFV0143);
 				addUniquely(partBdryQuads, QFV1254);
 				addUniquely(partBdryQuads, QFV2035);
@@ -510,15 +510,15 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				cornerNodes.insert(conn, conn + 6);
 				break;
 			}
-			case HEXA_64: {
+			case CGNS_ENUMV(HEXA_64): {
 				nHexes++;
 				conn = getHexConn(ind);
-				QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4], HEXA_64, ind);
-				QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5], HEXA_64, ind);
-				QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6], HEXA_64, ind);
-				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7], HEXA_64, ind);
-				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], HEXA_64, ind);
-				QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7], HEXA_64, ind);
+				QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4], CGNS_ENUMV(HEXA_64), ind);
+				QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5], CGNS_ENUMV(HEXA_64), ind);
+				QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6], CGNS_ENUMV(HEXA_64), ind);
+				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7], CGNS_ENUMV(HEXA_64), ind);
+				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], CGNS_ENUMV(HEXA_64), ind);
+				QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7], CGNS_ENUMV(HEXA_64), ind);
 				addUniquely(partBdryQuads, QFV0154);
 				addUniquely(partBdryQuads, QFV1265);
 				addUniquely(partBdryQuads, QFV2376);
@@ -636,25 +636,25 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				// Panic! Should never get here.
 				assert(0);
 				break;
-			case TETRA_20: {
+			case CGNS_ENUMV(TETRA_20): {
 				conn = getTetConn(ind);
 				remapIndices(20, newIndices, conn, newConn);
 				UCM->addTet(newConn);
 				break;
 			}
-			case PYRA_30: {
+			case CGNS_ENUMV(PYRA_30): {
 				conn = getPyrConn(ind);
 				remapIndices(30, newIndices, conn, newConn);
 				UCM->addPyramid(newConn);
 				break;
 			}
-			case PENTA_40: {
+			case CGNS_ENUMV(PENTA_40): {
 				conn = getPrismConn(ind);
 				remapIndices(40, newIndices, conn, newConn);
 				UCM->addPrism(newConn);
 				break;
 			}
-			case HEXA_64: {
+			case CGNS_ENUMV(HEXA_64): {
 				conn = getHexConn(ind);
 				remapIndices(64, newIndices, conn, newConn);
 				UCM->addHex(newConn);
@@ -683,7 +683,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 		emInt cellInd = tri.getVolElement();
 		emInt conn[10];
 		switch (tri.getVolElementType()) {
-			case TETRA_20: {
+			case CGNS_ENUMV(TETRA_20): {
 				emInt *elemConn = m_Tet20Conn[cellInd];
 				// Identify which face this is.  Has to be 012, 013, 123, or 203.
 				if (tri.getCorner(2) == elemConn[2]) {
@@ -764,7 +764,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				}
 				break;
 			}
-			case PYRA_30: {
+			case CGNS_ENUMV(PYRA_30): {
 				emInt *elemConn = m_Pyr30Conn[cellInd];
 				if (tri.getCorner(0) == elemConn[0]) {
 					assert(tri.getCorner(1) == elemConn[1]);
@@ -844,7 +844,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				}
 				break;
 			}
-			case PENTA_40: {
+			case CGNS_ENUMV(PENTA_40): {
 				emInt *elemConn = m_Prism40Conn[cellInd];
 				if (tri.getCorner(0)  == elemConn[0]) {
 					assert(tri.getCorner(1) == elemConn[1]);
@@ -922,7 +922,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 		emInt cellInd = quad.getVolElement();
 		emInt conn[16];
 		switch (quad.getVolElementType()) {
-			case PYRA_30: {
+			case CGNS_ENUMV (PYRA_30): {
 				// Only one quad here, so it had better be the right one.
 				emInt *elemConn = m_Pyr30Conn[cellInd];
 				assert(quad.getCorner(0) == elemConn[0]);
@@ -953,7 +953,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				conn[15] = elemConn[24];
 				break;
 			}
-			case PENTA_40: {
+			case CGNS_ENUMV( PENTA_40): {
 				emInt *elemConn = m_Prism40Conn[cellInd];
 
 				// Three possible quads: 0143 1254 2035
@@ -1047,7 +1047,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				}
 				break;
 			}
-			case HEXA_64: {
+			case CGNS_ENUMV(HEXA_64): {
 				emInt *elemConn = m_Hex64Conn[cellInd];
 
 				// Six quads: 0154 1265 2376 3047 0123 4567
@@ -1502,22 +1502,22 @@ void CubicMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 	// cost differential for different cell types.
 	for (emInt ii = 0; ii < numTets(); ii++) {
 		const emInt* verts = getTetConn(ii);
-		addCellToPartitionData(verts, 20, ii, TETRA_20, vecCPD, xmin, ymin, zmin,
+		addCellToPartitionData(verts, 20, ii, CGNS_ENUMV(TETRA_20), vecCPD, xmin, ymin, zmin,
 														xmax, ymax, zmax);
 	}
 	for (emInt ii = 0; ii < numPyramids(); ii++) {
 		const emInt* verts = getPyrConn(ii);
-		addCellToPartitionData(verts, 30, ii, PYRA_30, vecCPD, xmin, ymin, zmin,
+		addCellToPartitionData(verts, 30, ii, CGNS_ENUMV(PYRA_30), vecCPD, xmin, ymin, zmin,
 														xmax, ymax, zmax);
 	}
 	for (emInt ii = 0; ii < numPrisms(); ii++) {
 		const emInt* verts = getPrismConn(ii);
-		addCellToPartitionData(verts, 40, ii, PENTA_40, vecCPD, xmin, ymin, zmin,
+		addCellToPartitionData(verts, 40, ii, CGNS_ENUMV(PENTA_40), vecCPD, xmin, ymin, zmin,
 														xmax, ymax, zmax);
 	}
 	for (emInt ii = 0; ii < numHexes(); ii++) {
 		const emInt* verts = getHexConn(ii);
-		addCellToPartitionData(verts, 64, ii, HEXA_64, vecCPD, xmin, ymin, zmin,
+		addCellToPartitionData(verts, 64, ii, CGNS_ENUMV(HEXA_64), vecCPD, xmin, ymin, zmin,
 														xmax, ymax, zmax);
 	}
 }
@@ -1557,7 +1557,7 @@ void CubicMesh::partFaceMatching(
 					// Panic! Should never get here.
 					assert(0);
 					break;
-				case TETRA_20: {
+				case CGNS_ENUMV(TETRA_20): {
 
 					conn = getTetConn(ind);
 		
@@ -1575,7 +1575,7 @@ void CubicMesh::partFaceMatching(
 					addUniquely(partBdryTris,T203); 
 					break;
 				}
-				case PYRA_30: {
+				case CGNS_ENUMV(PYRA_30): {
 					//nPyrs++;
 					conn = getPyrConn(ind);
 					
@@ -1600,7 +1600,7 @@ void CubicMesh::partFaceMatching(
 					addUniquely(partBdryQuads,Q0123); 
 					break;
 				}
-				case PENTA_40: {
+				case CGNS_ENUMV(PENTA_40): {
 					//nPrisms++;
 					conn = getPrismConn(ind);
 
@@ -1624,7 +1624,7 @@ void CubicMesh::partFaceMatching(
 					addUniquely(partBdryQuads,Q2035);
 					break;
 				}
-				case HEXA_64: {
+				case CGNS_ENUMV(HEXA_64): {
 					//nHexes++;
 					conn = getHexConn(ind);
 

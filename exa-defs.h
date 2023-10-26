@@ -78,10 +78,11 @@
 #define FILE_NAME_LEN 1024
 #define TOLTEST 1e-9
 
-typedef int64_t emInt;
+typedef int32_t emInt;
 #define EMINT_MAX UINT_MAX
 
 #if (HAVE_CGNS == 0)
+#define CGNS_ENUMV(a) a
 #define TRI_3 5
 #define QUAD_4 7
 #define TETRA_4 10

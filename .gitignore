@@ -66,6 +66,8 @@ autoscan.log
 *.dat 
 # jpg files 
 *.jpg
+# eps files
+*.eps
 # Cubic Mesh generator for testing 
 *.png
 *.plt 
