@@ -509,17 +509,30 @@ namespace std {
 		typedef std::size_t result_type;
 		result_type operator()(const argument_type& TFV) const noexcept
 		{
-			if(TFV.getGlobalCompare()==false){
-				const result_type h0 = TFV.getSorted(0);
-				const result_type h1 = TFV.getSorted(1);
-				const result_type h2 = TFV.getSorted(2);
-				return (h0 ^ (h1 << 1)) ^ (h2 << 2);
-			}if(TFV.getGlobalCompare()==true){
-				const result_type h0 = TFV.getSortedGlobal(0);
-				const result_type h1 = TFV.getSortedGlobal(1);
-				const result_type h2 = TFV.getSortedGlobal(2);
-				return (h0 ^ (h1 << 1)) ^ (h2 << 2);
+			result_type h0,h1,h2;
+
+			if(TFV.getGlobalCompare()==false)
+			{
+				// const result_type h0 = TFV.getSorted(0);
+				// const result_type h1 = TFV.getSorted(1);
+				// const result_type h2 = TFV.getSorted(2);
+				h0 = TFV.getSorted(0); 
+				h1 = TFV.getSorted(1); 
+				h2 = TFV.getSorted(2); 
+				//return (h0 ^ (h1 << 1)) ^ (h2 << 2);
 			}
+			if(TFV.getGlobalCompare()==true)
+			{
+				h0 = TFV.getSortedGlobal(0); 
+				h1 = TFV.getSortedGlobal(1); 
+				h2 = TFV.getSortedGlobal(2); 
+
+				// const result_type h0 = TFV.getSortedGlobal(0);
+				// const result_type h1 = TFV.getSortedGlobal(1);
+				// const result_type h2 = TFV.getSortedGlobal(2);
+				//return (h0 ^ (h1 << 1)) ^ (h2 << 2);
+			}
+			return (h0 ^ (h1 << 1)) ^ (h2 << 2);
 
 			
 		}

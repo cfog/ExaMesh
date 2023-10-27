@@ -27,7 +27,7 @@ ParallelTester::testVecCellPartData(const vecCellPartData& inVecCellPartData) co
 void 
 ParallelTester::setInputTri (const vecHashTri& inTris)
 {
-    for(auto itri=0 ; itri<inTris.size(); itri++)
+    for(size_t itri=0 ; itri<inTris.size(); itri++)
     {
         hashTri Settri; 
         for(auto&iset:inTris[itri])
@@ -49,7 +49,7 @@ ParallelTester::setInputTri (const vecHashTri& inTris)
     
     }
     assert(m_tris.size()==inTris.size()); 
-    for(auto itri=0 ; itri<inTris.size(); itri++)
+    for(size_t itri=0 ; itri<inTris.size(); itri++)
     {
   
        assert(inTris[itri].size()==m_tris[itri].size()); 

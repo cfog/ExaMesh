@@ -1974,7 +1974,7 @@ BOOST_AUTO_TEST_CASE(CustomTypeRegisteration){
 			std::vector<Part> dummyPart; 
 			std::vector<CellPartData> dummyCellPartData; 
 
-			for(auto i =0 ; i<containerSize ; i++){
+			for(size_t i =0 ; i<containerSize ; i++){
 				setArbitraryTriDataForTesting(i,localTri,globalTri,remoteTri,
 				nDivs,partId,remoteId,type,elemInd,globalCompare); 
 
@@ -2026,7 +2026,7 @@ BOOST_AUTO_TEST_CASE(CustomTypeRegisteration){
 			world.recv(0,0,dummyCellPartData); 
 			
 
-			for(auto i=0 ; i<containerSize ; i++){
+			for(size_t i=0 ; i<containerSize ; i++){
 				setArbitraryTriDataForTesting(i,localTri,globalTri,remoteTri,
 				nDivs,partId,remoteId,type,elemInd,globalCompare); 
 

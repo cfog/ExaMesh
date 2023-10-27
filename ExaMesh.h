@@ -191,10 +191,12 @@ public:
 
 	}
 
-	emInt getSizePartTris()const{
+	size_t getSizePartTris()const
+	{
 		return m_partTris.size();
 	}
-	emInt getSizePartQuads()const{
+	size_t getSizePartQuads()const
+	{
 		return m_partQuads.size();
 	}
 	const exa_set<QuadFaceVerts>& getTempQuadPart    () const

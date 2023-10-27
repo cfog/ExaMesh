@@ -21,9 +21,20 @@ double TtriMatch, double TquadMatch, double Ttotal ,emInt nCells)
     // fprintf(file, "%-5u %-12f %-18f %-12f %-12f %-12f %-12f %-12f %-12" PRId64"\n",
     // nP,Tpartition,TpartFaceMatching,Textraction,Trefinement, 
     // TtriMatch,TquadMatch,Ttotal,nCells);
-    fprintf(file, "%-5u %-12f %-18f %-12f %-12f %-12f %-12f %-12f %-12" PRId64"\n",
-    nP,Tpartition,TpartFaceMatching,Textraction,Trefinement, 
-    TtriMatch,TquadMatch,Ttotal,nCells);
+    if(sizeof(nCells)==sizeof(int32_t))
+    {
+        fprintf(file, "%-5u %-12f %-18f %-12f %-12f %-12f %-12f %-12f %-12" PRId32"\n",
+        nP,Tpartition,TpartFaceMatching,Textraction,Trefinement, 
+        TtriMatch,TquadMatch,Ttotal,nCells);
+    }
+    // if(sizeof(nCells)==sizeof(int64_t))
+    // {
+    //     fprintf(file, "%-5u %-12f %-18f %-12f %-12f %-12f %-12f %-12f %-12" PRId64"\n",
+    //     nP,Tpartition,TpartFaceMatching,Textraction,Trefinement, 
+    //     TtriMatch,TquadMatch,Ttotal,nCells);
+
+    // }
+
 }
 
 void 
@@ -33,11 +44,13 @@ inline writeMeshStatics(FILE* file, int ndivs ,emInt nCells)
     long size = ftell(file);
     if (size == 0) 
 	{
-	 	fprintf(file, "%-12s %-12" PRId64"\n",
-          "nDivs", "nCells");
-   	}
-	
-    fprintf(file, "%-12u %-12u\n",
+        //if(sizeof(nCells)==sizeof(int64_t))
+        //    fprintf(file, "%-12s %-12" PRId64"\n","nDivs", "nCells");
+        if(sizeof(nCells)==sizeof(int32_t))
+            //fprintf(file, "%-12s %-12" PRId32"\n","nDivs", "nCells");
+            fprintf(file, "%-12s %-12s \n","nDivs", "nCells");
+    }
+	fprintf(file, "%-12u %-12u\n",
     ndivs,nCells);
 }
 

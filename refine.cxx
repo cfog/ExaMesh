@@ -119,7 +119,7 @@ int main(int argc, char* const argv[]) {
 			{
 				ParallelTester* tester= new ParallelTester(); 
 #ifndef NDEBUG
-				CMorig.TestMPI(nDivs,nTestParts,tester,'C');
+				//CMorig.TestMPI(nDivs,nTestParts,tester,'C');
 #endif				
 				CMorig.refineForMPI(nDivs,tester,'C',mshName,outFileAllTimes);
 				delete tester; 

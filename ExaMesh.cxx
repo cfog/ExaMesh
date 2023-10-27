@@ -357,7 +357,7 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 
 	// Calc number of parts.  This funky formula makes it so that, if you need
 	// N*maxCells, you'll get N parts.  With N*maxCells + 1, you'll get N+1.
-	emInt nParts = (outputCells - 1) / maxCellsPerPart + 1;
+	size_t nParts = (outputCells - 1) / maxCellsPerPart + 1;
 	if (nParts > numCells) nParts = numCells;
 
 	// Partition the mesh.
@@ -375,14 +375,14 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 	size_t totalFileSize = 0;
 	struct RefineStats RS;
 	double totalTime = partitionTime;
-	emInt ii;
+	size_t ii;
 //#pragma omp parallel for schedule(dynamic) reduction(+: totalRefineTime, totalExtractTime, totalTets, totalPyrs, totalPrisms, totalHexes, totalCells) num_threads(8)
 	for (ii = 0; ii < nParts; ii++) {
 		start = exaTime();
 //		char filename[100];
 //		sprintf(filename, "/tmp/submesh%03d.vtk", ii);
 //		writeVTKFile(filename);
-		printf("Part %3d: cells %5d-%5d.\n", ii, parts[ii].getFirst(),
+		printf("Part %zu: cells %5d-%5d.\n", ii, parts[ii].getFirst(),
 						parts[ii].getLast());
 		std::unique_ptr<UMesh> pUM = createFineUMesh(numDivs, parts[ii], vecCPD,
 																									RS);
@@ -404,7 +404,7 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 		// sprintf(filename, "TestCases/Testsubmesh%03d.vtk", ii);
 		// pUM->writeVTKFile(filename);
 	}
-	printf("\nDone parallel refinement with %d parts.\n", nParts);
+	printf("\nDone parallel refinement with %zu parts.\n", nParts);
 	printf("Time for partitioning:           %10.3F seconds\n",
 					partitionTime);
 	printf("Time for coarse mesh extraction: %10.3F seconds\n",
@@ -774,13 +774,13 @@ const
 		PartFaceMatchingTime= exaTime() -StartPartFaceMatching; 
 		 
 		serialTime = exaTime()- serialTimeStart; 
-		for(auto  itri=0 ; itri<VectrisHash.size(); itri++)
+		for(size_t  itri=0 ; itri<VectrisHash.size(); itri++)
 		{
 			vecTri TriVec; 
 			SetToVector(VectrisHash[itri],TriVec); 
 			VecTriVec.emplace_back(TriVec); 
 		}
-		for(auto iquad=0 ; iquad<VecquadsHash.size(); iquad++)
+		for(size_t iquad=0 ; iquad<VecquadsHash.size(); iquad++)
 		{
 			vecQuad QuadVec; 
 			SetToVector(VecquadsHash[iquad],QuadVec); 
