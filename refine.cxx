@@ -31,6 +31,7 @@
 #include "UMesh.h"
 #include "mpiImpl.h"
 #include "resultGenerator.cxx"
+#include <chrono>
 FILE*
 openFile (std::string fileName)
 {
@@ -43,6 +44,7 @@ openFile (std::string fileName)
 }
 
 int main(int argc, char* const argv[]) {
+	double startAppTime = exaTime(); 
 	char opt = EOF;
 	emInt nDivs = 1;
 	int   nTestParts=2; 
@@ -54,17 +56,26 @@ int main(int argc, char* const argv[]) {
 	char outFileName[1024];
 	bool isInputCGNS = false, isParallel = false, isMPI=false;
 	char InputMeshType ; 
+	bool meshScanning = false; 
 
-	sprintf(type, "vtk");
-	sprintf(infix, "b8");
+	double satrtScanningTime; 
+	double scanningTime; 
+	
+	double wallTime;  
+
+	sprintf(type, "ugrid");
+	sprintf(infix, "lb8");
 	sprintf(outFileName, "/dev/null");
 	sprintf(inFileBaseName, "/need/a/file/name");
 	sprintf(cgnsFileName, "/need/a/file/name");
 
-	while ((opt = getopt(argc, argv, "s:c:i:m:n:o:pt:u:q")) != EOF) 
+	while ((opt = getopt(argc, argv, "g:s:c:i:m:n:o:pt:u:q")) != EOF) 
 	{
 		switch (opt) 
 		{
+			case 'g': 
+				meshScanning= true; 
+				break;
 			case 's':
 				sscanf(optarg, "%d", &nTestParts);
 				break;
@@ -135,7 +146,7 @@ int main(int argc, char* const argv[]) {
 			UMesh UMrefined(CMorig, nDivs);
 			double time = exaTime() - start;
 			size_t cells = UMrefined.numCells();
-			writeAllTimeResults(outFileAllTimes,1,0,0,0,time,0,0,time,cells);
+			writeAllTimeResults(outFileAllTimes,1,0,0,0,time,0,0,0,0,0,time,0,0,cells);
 			writeMeshStatics(outFileMeshStatics,nDivs,cells); 
 
 			fprintf(stderr, "\nDone serial refinement.\n");
@@ -154,9 +165,12 @@ int main(int argc, char* const argv[]) {
 	}
 	else 
 	{
-		UMesh UMorig(inFileBaseName, type, infix);
-		if (isParallel)
+		
+		if (isParallel  && !meshScanning)
 		{
+			satrtScanningTime= exaTime(); 
+			UMesh UMorig(inFileBaseName, type, infix);
+			scanningTime= exaTime()-satrtScanningTime; 
 			if(isMPI)
 			{
 				ParallelTester* tester= new ParallelTester(); 
@@ -173,13 +187,14 @@ int main(int argc, char* const argv[]) {
 			}
 
 		}
-		if (!isParallel) 
+		if (!isParallel && !meshScanning) 
 		{
+			UMesh UMorig(inFileBaseName, type, infix);
 			double start = exaTime();
 			UMesh UMrefined(UMorig, nDivs);
 			double time = exaTime() - start;
 			size_t cells = UMrefined.numCells();
-			writeAllTimeResults(outFileAllTimes,1,0,0,0,time,0,0,time,cells);
+			writeAllTimeResults(outFileAllTimes,1,0,0,0,0,time,0,0,0,0,time,0,0,cells);
 			writeMeshStatics(outFileMeshStatics,nDivs,cells); 
 
 			//WrireSerialTime(mshName,time,cells,nDivs);
@@ -193,8 +208,25 @@ int main(int argc, char* const argv[]) {
 			//UMrefined.writeUGridFile(outFileName);
 			//UMrefined.writeVTKFile(outFileName);
 		}
+		if(meshScanning)
+		{
+			
+			UMesh UMorig(inFileBaseName, type, infix);
+			size_t fileSize = UMorig.getFileImageSize();
+			
+			std::cout<<"The mesh input size is: "
+			<<(static_cast<double>(fileSize)/1000000)<<" MB"<<std::endl;  
+			UMorig.calcMemoryRequirements(UMorig,nDivs); 
+			 
+			
+			// std::cout<< "Scan the mesh and give me an estimate of "
+          	// 		<< "least required cores took:" << std::endl;
+		}
 	}
-	printf("Exiting\n");
+	//printf("Exiting\n");
+	double Apptime= exaTime()-startAppTime; 
+	std::cout<<"Time taken by the whole application is: "<<Apptime<<std::endl; 
+	std::cout<<"Scanning Time: "<<scanningTime<<std::endl; 
 	exit(0);
 }
 

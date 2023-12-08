@@ -1525,7 +1525,7 @@ void CubicMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 void CubicMesh::partFaceMatching(
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )const{
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads,size_t &totalTriSize, size_t &totalQuadSize)const{
 	//std::set<TriFaceVerts>  SetTriPartbdry;
 
 	//std::set<QuadFaceVerts> SetQuadPartbdry; 
@@ -1658,6 +1658,8 @@ void CubicMesh::partFaceMatching(
 
 	}
 
+	totalTriSize  = partBdryTris.size(); 
+	totalQuadSize = partBdryQuads.size();
 	std::size_t k=0 ;  
 
 	for(auto itr=partBdryTris.begin(); itr!=partBdryTris.end();itr++){

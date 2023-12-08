@@ -563,8 +563,10 @@ const char MeshType)
 	partitionCells(this, nParts, parts, vecCPD);
 
 
-	
-	this->partFaceMatching(parts, vecCPD, tris, quads);
+	size_t totalTriSize; 
+	size_t totalQuadSize; 
+
+	this->partFaceMatching(parts, vecCPD, tris, quads,totalTriSize,totalQuadSize);
 	
 
 	
@@ -686,16 +688,19 @@ const
 	boost::mpi::environment   env; 
 	boost::mpi::communicator  world;
 
-	mshName = mshName + "-weakScaliblity.txt" ; 
+	 
 	
 	
-	auto    StartTotalTime = exaTime();
+	
 	double  MAXTotalTime;
+	double  MAXSyncTime; 
 
 	double  MAXExtractionTime; 
 	double  MAXRefineTime; 
 	double  MAXTriTime; 
-	double  MAXQuadTime; 
+	double  MAXQuadTime;
+	double  MAXSerialTime; 
+	double  MAXFaceExchangeTime;  
 
 	double  StartPartitinTime; 
 	double  StartPartFaceMatching; 
@@ -703,6 +708,10 @@ const
 	double  StartRefineTime; 
 	double  StartTriTime; 
 	double  StartQuadTime; 
+	double  StartSyncTimeForTri;
+	double  StartSyncTimeForQuad; 
+	double  StartFaceExchangeTime; 
+	//double  StartSerialTime; 
 
 	double  PartitinTime; 
 	double  ExtractionTime; 
@@ -710,6 +719,10 @@ const
 	double  TriTime; 
 	double  QuadTime; 
 	double  PartFaceMatchingTime;
+	double  SyncTimeForTri; 
+	double  SyncTimeForQuad; 
+	double  TotalSyncTime; 
+	double  faceExchangeTime; 
 
 	double  serialTime; 
 	
@@ -724,8 +737,10 @@ const
 	std::size_t    trisSize; 
 	std::size_t    quadsSize; 
 	std::size_t    nParts = world.size();
-	emInt          nCells;
-	emInt          totalCells;  
+	size_t         nCells;
+	size_t         totalCells;  
+	size_t         totalPartTriSize; 
+	size_t         totalPartQuadSize; 
 
 	hashTri  trisS; 
 	hashQuad quadsS;
@@ -752,9 +767,13 @@ const
 	TableTri2TableIndex2Index   matchedTris; 
 	TableQuad2TableIndex2Index  matchedQuads; 
 
+	auto    StartTotalTime = exaTime();
+
+	double StartSerialTime = exaTime();
+
 	if(world.rank()==MASTER)
 	{
-		double serialTimeStart = exaTime(); 
+		 
 		StartPartitinTime= exaTime(); 
 		partitionCells(this, nParts, parts,vecCPD); 
 		PartitinTime= exaTime()- StartPartitinTime; 
@@ -770,10 +789,10 @@ const
 		vecVecQuad  vecQuadVec; 
 
 		StartPartFaceMatching= exaTime(); 
-		this->partFaceMatching(parts,vecCPD,VectrisHash,VecquadsHash);
+		this->partFaceMatching(parts,vecCPD,VectrisHash,VecquadsHash,totalPartTriSize,totalPartQuadSize);
 		PartFaceMatchingTime= exaTime() -StartPartFaceMatching; 
 		 
-		serialTime = exaTime()- serialTimeStart; 
+		
 		for(size_t  itri=0 ; itri<VectrisHash.size(); itri++)
 		{
 			vecTri TriVec; 
@@ -821,6 +840,7 @@ const
 		vecCPD.resize(vecCPDSize); 
 		world.recv(MASTER,tag,vecCPD); 
 	}
+	serialTime = exaTime()- StartSerialTime; 
 	StartExtractionTime = exaTime(); 
 	auto coarse= this->extractCoarseMesh(parts[world.rank()],vecCPD,numDivs, 
 	 trisS,quadsS,world.rank()); 
@@ -847,7 +867,7 @@ const
 	//writeEachRankMeshStatics(world.rank(),refinedMeshVec[0]->numCells(),numDivs,world.size(),
 	//mshName); 
 
-
+	StartFaceExchangeTime = exaTime(); 
 	auto tris  = refinedMeshVec[0]->getRefinedPartTris();
 	auto quads = refinedMeshVec[0]->getRefinedPartQuads();
 	nCells     = refinedMeshVec[0]->numCells(); 
@@ -910,7 +930,13 @@ const
 		Trikk++; 
 	}
 
+	faceExchangeTime = exaTime()-StartFaceExchangeTime; 
+
+	StartSyncTimeForTri= exaTime(); 
+
 	boost::mpi::wait_all(triReqs.begin(),triReqs.end()); 
+
+	SyncTimeForTri = exaTime()- StartSyncTimeForTri; 
 
 	StartTriTime = exaTime(); 
 	for(const auto& tri: trisTobeRcvd)
@@ -934,7 +960,11 @@ const
 	}
 	TriTime = exaTime()-StartTriTime; 
 
+	StartSyncTimeForQuad= exaTime(); 
+
 	boost::mpi::wait_all(quadReqs.begin(),quadReqs.end()); 
+
+	SyncTimeForQuad = exaTime()- StartSyncTimeForQuad; 
 
 	StartQuadTime = exaTime(); 
 	for(const auto& quad:quadsTobeRcvd)
@@ -955,37 +985,63 @@ const
 	QuadTime         = exaTime()- StartQuadTime; 
 	
 	double Totaltime = exaTime() - StartTotalTime;
-	
-	boost::mpi::reduce(world, Totaltime      , MAXTotalTime      ,boost:: mpi::maximum<double>(), MASTER);
+	TotalSyncTime    = SyncTimeForQuad+SyncTimeForTri; 
 
-	boost::mpi::reduce(world, ExtractionTime , MAXExtractionTime ,boost:: mpi::maximum<double>(), MASTER);
+	FILE *TimeEachRank    = fopen((mshName+"TimeEachRank.txt").c_str(), "a");
 
-	boost::mpi::reduce(world, RefineTime     , MAXRefineTime     ,boost:: mpi::maximum<double>(), MASTER);
+	setlocale(LC_NUMERIC, "");
+	FILE *meshStaticsRank = fopen((mshName+"staticsEachRank.txt").c_str(), "a"); 
 
-	boost::mpi::reduce(world, TriTime        , MAXTriTime        ,boost:: mpi::maximum<double>(), MASTER);
+	writeEachRankMeshStatics(meshStaticsRank,world.rank(),refinedMeshVec[0]->numTets(),
+	refinedMeshVec[0]->numPyramids(),refinedMeshVec[0]->numPrisms(),
+	refinedMeshVec[0]->numHexes(), tris.size(), quads.size(), refinedMeshVec[0]->numCells()); 
 
-	boost::mpi::reduce(world, QuadTime       , MAXQuadTime       ,boost:: mpi::maximum<double>(), MASTER);
+	printTimeEachRank(TimeEachRank,world.rank(),PartitinTime,PartFaceMatchingTime,serialTime,
+	ExtractionTime,RefineTime,faceExchangeTime,TotalSyncTime, TriTime,QuadTime,Totaltime); 
 
-	boost::mpi::reduce(world, nCells         , totalCells        ,std::plus<emInt>()            , MASTER);
+	//if(world.rank()==0)
+	//{
+		boost::mpi::reduce(world, ExtractionTime   , MAXExtractionTime ,boost:: mpi::maximum<double>(), MASTER);
 
+		boost::mpi::reduce(world, TotalSyncTime    , MAXSyncTime         ,boost:: mpi::maximum<double>(), MASTER);
+
+		boost::mpi::reduce(world, Totaltime        , MAXTotalTime        ,boost:: mpi::maximum<double>(), MASTER);
+
+		boost::mpi::reduce(world, RefineTime       , MAXRefineTime       ,boost:: mpi::maximum<double>(), MASTER);
+
+		boost::mpi::reduce(world, TriTime          , MAXTriTime          ,boost:: mpi::maximum<double>(), MASTER);
+
+		boost::mpi::reduce(world, QuadTime         , MAXQuadTime         ,boost:: mpi::maximum<double>(), MASTER);
+
+		boost::mpi::reduce(world, serialTime       , MAXSerialTime       ,boost:: mpi::maximum<double>(), MASTER);
+
+		boost::mpi::reduce(world, faceExchangeTime , MAXFaceExchangeTime ,boost:: mpi::maximum<double>(), MASTER);
+	//}
+
+
+
+	boost::mpi::reduce(world, size_t(nCells) , totalCells        , std::plus<size_t>()          , MASTER);
+	mshName = mshName + "-weakScaliblity.txt" ;
 	if (world.rank() == MASTER) 
 	{	
 		writeAllTimeResults(fileAllTimes,world.size(),PartitinTime,
-		PartFaceMatchingTime,MAXExtractionTime,MAXRefineTime,MAXTriTime,
-		MAXQuadTime,MAXTotalTime,totalCells);
+		PartFaceMatchingTime,MAXSerialTime,MAXExtractionTime,MAXRefineTime,
+		MAXFaceExchangeTime,MAXSyncTime,MAXTriTime,
+		MAXQuadTime,MAXTotalTime,totalPartTriSize,totalPartQuadSize,totalCells);
 		FILE *fileWeakScaliblity = fopen(mshName.c_str(), "a");
     	if (fileWeakScaliblity == NULL) 
 		{
         	fprintf(stderr, "Error opening the file!\n");
    		}
 		writeAllTimeResults(fileWeakScaliblity,world.size(),PartitinTime,
-		PartFaceMatchingTime,MAXExtractionTime,MAXRefineTime,MAXTriTime,
-		MAXQuadTime,MAXTotalTime,totalCells);
+		PartFaceMatchingTime, MAXSerialTime ,MAXExtractionTime,MAXRefineTime,MAXFaceExchangeTime,
+		MAXSyncTime, MAXTriTime,
+		MAXQuadTime,MAXTotalTime,totalPartTriSize,totalPartQuadSize,totalCells);
 
     
 
 	} 
-	world.barrier();
+	//world.barrier();
 	//fprintf(stderr, "Rank of: %d has %lu tris and has %lu quads.\n", world.rank(), tris.size(), quads.size());
 #ifndef NDEBUG				
 	//tester->testMatchedTris(matchedTris,world.rank()); 

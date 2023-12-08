@@ -48,6 +48,7 @@
 #include "UMesh.h"
 #include <cstdint>
 #include <cstddef>
+#include "resultGenerator.cxx"
 #if (HAVE_CGNS == 1)
 #include <cgnslib.h>
 #endif
@@ -587,12 +588,14 @@ UMesh::UMesh(const UMesh &UMIn, const int nDivs, const emInt partID) : m_nVerts(
 	}
 
 	subdividePartMesh(&UMIn, this, nDivs, partID);
+#ifndef NDEBUG	
 	setlocale(LC_ALL, "");
 	fprintf(
 		stderr,
 		"Final mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15u cells total\n",
 		m_nVerts, m_nTris, m_nQuads, m_nTets, m_nPyrs, m_nPrisms, m_nHexes,
 		numCells());
+#endif		
 }
 
 UMesh::UMesh(const CubicMesh &CMIn, const int nDivs, const emInt partID) : m_nVerts(0), m_nBdryVerts(0), m_nTris(0), m_nQuads(0), m_nTets(0),
@@ -904,7 +907,7 @@ void UMesh::setupCellDataForPartitioning(std::vector<CellPartData> &vecCPD,
 void UMesh::partFaceMatching(
 	std::vector<Part> &parts, const std::vector<CellPartData> &vecCPD,
 	std::vector<std::unordered_set<TriFaceVerts>> &tris,
-	std::vector<std::unordered_set<QuadFaceVerts>> &quads) const
+	std::vector<std::unordered_set<QuadFaceVerts>> &quads,size_t &totalTriSize, size_t &totalQuadSize) const
 {
 
 	// std::set<TriFaceVerts>  SetTriPartbdry;
@@ -1042,6 +1045,11 @@ void UMesh::partFaceMatching(
 		}	  // end loop to gather information
 	}
 
+	
+
+	totalTriSize  = partBdryTris.size(); 
+	totalQuadSize = partBdryQuads.size(); 
+	
 	std::size_t k = 0;
 
 	for (auto itr = partBdryTris.begin(); itr != partBdryTris.end(); itr++)
@@ -1457,4 +1465,67 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMesh(Part &P,
 	assert(UUM->getSizePartQuads() == quads.size());
 
 	return UUM;
+}
+
+void UMesh::calcMemoryRequirements (const UMesh &UMIn, const int nDivs)
+{
+	setlocale(LC_ALL, "");
+	// Assuming that input cell is never on the order of billions, so use emInt 
+
+	// size_t totalInputCells = size_t(UMIn.m_nTets) 
+	// + UMIn.m_nPyrs + UMIn.m_nPrisms + UMIn.m_nHexes;
+
+	emInt totalInputCells = UMIn.m_nTets+ UMIn.m_nPyrs 
+						   + UMIn.m_nPrisms + UMIn.m_nHexes;
+
+	// fprintf(
+	// 	stderr,
+	// 	"Initial mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15u cells total\n",
+	// 	UMIn.m_nVerts, UMIn.m_nTris, UMIn.m_nQuads, UMIn.m_nTets, UMIn.m_nPyrs,
+	// 	UMIn.m_nPrisms, UMIn.m_nHexes, totalInputCells);
+
+	MeshSize MSOut = UMIn.computeFineMeshSize(nDivs);
+	// since we want to get error value as negative so ssize_t instead of size_t 
+
+
+
+	ssize_t nVerts     = MSOut.nVerts;
+	ssize_t nBdryVerts = MSOut.nBdryVerts ;
+	ssize_t nBdryTris  = MSOut.nBdryTris;
+	ssize_t nBdryQuads = MSOut.nBdryQuads;
+	ssize_t nTets      = MSOut.nTets;
+	ssize_t nPyramids  = MSOut.nPyrs;
+	ssize_t nPrisms    = MSOut.nPrisms;
+	ssize_t nHexes     = MSOut.nHexes;
+
+	// All sizes are computed in bytes.
+	// Work out buffer size, including padding to ensure 8-byte alignment for the coordinates.
+	size_t intSize = sizeof(emInt);
+	size_t headerSize = 7 * intSize;
+	// How many bytes to add to get eight-byte alignment for coordinates,
+	// assuming eight-byte alignment for the buffer overall.
+	size_t slack1Size = (intSize == 4) ? 4 : 0;
+	size_t coordSize = 3 * sizeof(double) * nVerts;
+	size_t connSize = (3 * nBdryTris + 4 * nBdryQuads + 4 * size_t(nTets) + 5 * size_t(nPyramids) + 6 * size_t(nPrisms) + 8 * size_t(nHexes)) * intSize;
+	size_t BCSize = (nBdryTris + nBdryQuads) * intSize;
+
+	// How many bytes to add to fill up the last eight-byte chunk?
+	size_t slack2Size =
+		((((connSize + BCSize) / 8 + 1) * 8) - (connSize + BCSize)) % 8;
+	size_t bufferBytes = headerSize + coordSize + connSize + BCSize + slack1Size + slack2Size;
+	assert((headerSize + slack1Size) % 8 == 0);
+	assert((connSize + BCSize + slack2Size) % 8 == 0);
+	assert(bufferBytes % 8 == 0);
+
+	size_t fileImageSize = bufferBytes - slack1Size - slack2Size;
+	std::cout<<"Final Image size: "<<static_cast<double>(fileImageSize)/1000000000<<" GB"<<std::endl;
+	setlocale(LC_ALL, "");
+	size_t numCells = nTets + nPyramids+ nPrisms + nHexes; 
+	fprintf(
+		stderr,
+		"Final mesh has:\n %'15zd verts,\n %'15zd bdry tris,\n %'15zd bdry quads,\n %'15zd tets,\n %'15zd pyramids,\n %'15zd prisms,\n %'15zd hexes,\n%'15zd cells total\n",
+		nVerts,nBdryTris, nBdryQuads, nTets, nPyramids, nPrisms, nHexes,
+		numCells);
+
+	
 }

@@ -43,7 +43,7 @@ class CubicMesh;
 using vecSharePtrUmesh     = std::vector<std::shared_ptr<UMesh>>; 
 using vecSharePtrCubicMesh = std::vector<std::shared_ptr<CubicMesh>>;
 struct MeshSize {
-	emInt nBdryVerts, nVerts, nBdryTris, nBdryQuads, nTets, nPyrs, nPrisms,
+	ssize_t nBdryVerts, nVerts, nBdryTris, nBdryQuads, nTets, nPyrs, nPrisms,
 			nHexes;
 };
 
@@ -218,7 +218,7 @@ public:
 	virtual void partFaceMatching(
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-		 std::vector<std::unordered_set<QuadFaceVerts>> &quads )const=0;	
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize )const=0;	
 	//void refineMPI();	 
 
 protected:

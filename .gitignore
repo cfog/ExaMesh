@@ -52,6 +52,8 @@ autoscan.log
 # vtk file
 *.vtk
 *.vtu 
+# ugrid files 
+*.ugrid 
 # vs code files
 *.json 
 # bash files 
@@ -77,3 +79,5 @@ globe_mats_cubic
 jobGenerator.cxx
 postProcessing.cxx
 jobGenerator.cxx
+TestCases/
+AIAAPaper/
