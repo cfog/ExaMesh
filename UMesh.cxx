@@ -407,16 +407,25 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 
 	// Identify any bdry tris and quads that aren't in the file
 
-	emInt numBdryTris = reader->getNumBdryTris();
+	emInt numBdryTris  = reader->getNumBdryTris();
 	emInt numBdryQuads = reader->getNumBdryQuads();
+
+	m_nTrisFromReader  = reader->getNumBdryTris(); 
+	m_nQuadsFromReader = reader->getNumBdryQuads(); 
 
 	std::set<vertTriple> setTris;
 	std::set<vertQuadruple> setQuads;
 
 	reader->seekStartOfConnectivity();
+
+	std::multimap < std::set<emInt>, std::pair<emInt,emInt>> face2cell; 
+	
+	vcellID2type.resize(reader->getNumCells()); 
+
 	for (emInt ii = 0; ii < reader->getNumCells(); ii++)
 	{
 		char cellType = reader->getCellType(ii);
+		vcellID2type[ii]= cellType; 
 		emInt nConn, connect[8];
 		reader->getNextCellConnectivity(nConn, connect);
 		checkConnectivitySize(cellType, nConn);
@@ -424,15 +433,29 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 		{
 		case BDRY_TRI:
 			updateTriSet(setTris, connect[0], connect[1], connect[2]);
+			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2],ii,BDRY_TRI);
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[2]);
 			break;
 		case BDRY_QUAD:
 			updateQuadSet(setQuads, connect[0], connect[1], connect[2], connect[3]);
+			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2], connect[3] ,ii,BDRY_QUAD);
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[2],connect[3]); 
 			break;
 		case TET:
 			updateTriSet(setTris, connect[0], connect[1], connect[2]);
 			updateTriSet(setTris, connect[0], connect[1], connect[3]);
 			updateTriSet(setTris, connect[1], connect[2], connect[3]);
 			updateTriSet(setTris, connect[2], connect[0], connect[3]);
+
+			updateMultiMapFace2Cell(face2cell, connect[0],  connect[1], connect[2] ,ii,TET);
+			updateMultiMapFace2Cell(face2cell, connect[0],  connect[1], connect[3] ,ii,TET);  
+			updateMultiMapFace2Cell(face2cell, connect[1],  connect[2], connect[3] ,ii,TET);
+			updateMultiMapFace2Cell(face2cell, connect[2],  connect[0], connect[3] ,ii,TET);
+
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[2]); 
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[3]); 
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[1],connect[2],connect[3]); 
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[2],connect[0],connect[3]); 
 			break;
 		case PYRAMID:
 			updateTriSet(setTris, connect[0], connect[1], connect[4]);
@@ -440,6 +463,19 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 			updateTriSet(setTris, connect[2], connect[3], connect[4]);
 			updateTriSet(setTris, connect[3], connect[0], connect[4]);
 			updateQuadSet(setQuads, connect[0], connect[1], connect[2], connect[3]);
+
+			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[4], ii ,PYRAMID); 
+			updateMultiMapFace2Cell(face2cell,connect[1],connect[2],connect[4], ii ,PYRAMID); 
+			updateMultiMapFace2Cell(face2cell,connect[2],connect[3],connect[4], ii ,PYRAMID);
+			updateMultiMapFace2Cell(face2cell,connect[3],connect[0],connect[4], ii ,PYRAMID);
+			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2],connect[3], ii ,PYRAMID); 
+
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[4]); 
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[1],connect[2],connect[4]); 
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[2],connect[3],connect[4]); 
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[3],connect[0],connect[4]);
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[2],connect[3]); 
+
 			break;
 		case PRISM:
 			updateTriSet(setTris, connect[0], connect[1], connect[2]);
@@ -447,6 +483,19 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 			updateQuadSet(setQuads, connect[0], connect[1], connect[4], connect[3]);
 			updateQuadSet(setQuads, connect[1], connect[2], connect[5], connect[4]);
 			updateQuadSet(setQuads, connect[2], connect[0], connect[3], connect[5]);
+
+			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2],ii,PRISM); 
+			updateMultiMapFace2Cell(face2cell,connect[3],connect[4],connect[5],ii,PRISM); 
+			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[4], connect[3] ,ii,PRISM);
+			updateMultiMapFace2Cell(face2cell,connect[1],connect[2],connect[5], connect[4] ,ii,PRISM); 
+			updateMultiMapFace2Cell(face2cell,connect[2],connect[0],connect[3], connect[5] ,ii,PRISM);
+
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[2]); 
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[3],connect[4],connect[5]); 
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[4],connect[3]); 
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[1],connect[2],connect[5],connect[4]); 
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[2],connect[0],connect[3],connect[5]); 
+
 			break;
 		case HEX:
 			updateQuadSet(setQuads, connect[0], connect[1], connect[2], connect[3]);
@@ -455,11 +504,30 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 			updateQuadSet(setQuads, connect[1], connect[2], connect[6], connect[5]);
 			updateQuadSet(setQuads, connect[2], connect[3], connect[7], connect[6]);
 			updateQuadSet(setQuads, connect[3], connect[0], connect[4], connect[7]);
+
+			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2], connect[3] ,ii,HEX);
+			updateMultiMapFace2Cell(face2cell,connect[4],connect[5],connect[6], connect[7] ,ii,HEX);
+			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[5], connect[4] ,ii,HEX);
+			updateMultiMapFace2Cell(face2cell,connect[1],connect[2],connect[6], connect[5] ,ii,HEX);
+			updateMultiMapFace2Cell(face2cell,connect[2],connect[3],connect[7], connect[6] ,ii,HEX);
+			updateMultiMapFace2Cell(face2cell,connect[3],connect[0],connect[4], connect[7] ,ii,HEX);
+
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[2],connect[3]);
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[4],connect[5],connect[6],connect[7]); 
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[5],connect[4]); 
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[1],connect[2],connect[6],connect[5]);
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[2],connect[3],connect[7],connect[6]);
+			buidCell2FacesConn(std::make_pair(ii,cellType),connect[3],connect[0],connect[4],connect[7]);
+
 			break;
 		default:
 			assert(0);
 		}
 	}
+#ifndef NDEBUG
+	//testCell2FaceConn(reader->getNumCells()); 
+#endif
+	buildCell2CellConn(face2cell,reader->getNumCells()); 
 
 	numBdryTris += setTris.size();
 	numBdryQuads += setQuads.size();
@@ -477,6 +545,11 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	}
 
 	reader->seekStartOfConnectivity();
+
+	// Initializing counters to be zero 
+	// Transforming enum 
+	emInt bdryTriCounter, bdryQuadCounter, tetCounter, pyrmCounter, prismCounter, hexCounter =0 ;
+	cellID2cellTypeLocalID.resize(reader->getNumCells());
 	for (emInt ii = 0; ii < reader->getNumCells(); ii++)
 	{
 		char cellType = reader->getCellType(ii);
@@ -486,26 +559,39 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 		switch (cellType)
 		{
 		case BDRY_TRI:
+			bdryTriCounter++;
+			cellID2cellTypeLocalID[ii]= std::make_pair(cellType,bdryTriCounter);
 			addBdryTri(connect);
 			break;
 		case BDRY_QUAD:
+			bdryQuadCounter++;
+			cellID2cellTypeLocalID[ii]= std::make_pair(cellType,bdryQuadCounter);
 			addBdryQuad(connect);
 			break;
 		case TET:
+			tetCounter++;
+			cellID2cellTypeLocalID[ii]= std::make_pair(CGNS_ENUMV(TETRA_4),tetCounter);
 			addTet(connect);
 			break;
 		case PYRAMID:
+			pyrmCounter++;
+			cellID2cellTypeLocalID[ii]= std::make_pair(CGNS_ENUMV(PYRA_5),pyrmCounter);
 			addPyramid(connect);
 			break;
 		case PRISM:
+			prismCounter++;
+			cellID2cellTypeLocalID[ii]= std::make_pair(CGNS_ENUMV(PENTA_6),prismCounter);
 			addPrism(connect);
 			break;
 		case HEX:
+			hexCounter++;
+			cellID2cellTypeLocalID[ii]= std::make_pair(CGNS_ENUMV(HEXA_8),hexCounter);
 			addHex(connect);
 			break;
 		default:
 			assert(0);
 		}
+		//cellID2cellTypeLocalID[ii]= std::make_pair(type,) ; 
 	}
 
 	for (auto VT : setTris)
@@ -1526,6 +1612,481 @@ void UMesh::calcMemoryRequirements (const UMesh &UMIn, const int nDivs)
 		"Final mesh has:\n %'15zd verts,\n %'15zd bdry tris,\n %'15zd bdry quads,\n %'15zd tets,\n %'15zd pyramids,\n %'15zd prisms,\n %'15zd hexes,\n%'15zd cells total\n",
 		nVerts,nBdryTris, nBdryQuads, nTets, nPyramids, nPrisms, nHexes,
 		numCells);
-
-	
 }
+void UMesh::buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>>& face2cell, const emInt nCells)
+{
+	auto it = face2cell.begin(); 
+	while (it!=face2cell.end())
+	{
+		auto current = it; 
+		it++; 
+		auto next = it; 
+		if(next !=face2cell.end())
+		{
+			if(current->first==next->first)
+			{
+				emInt currentCellID   = current->second.first ;
+				emInt currentCellType = current->second.second; 
+
+				emInt nextCellID      = next->second.first; 
+				emInt nextCellType    = next->second.second; 
+				cell2cell[std::make_pair(currentCellID,currentCellType)].insert(nextCellID); 
+				cell2cell[std::make_pair(nextCellID,nextCellType)].insert(currentCellID); 
+			}
+		}
+	}
+	assert(cell2cell.size()==nCells);
+
+	vcell2cell.resize(nCells); 
+
+    for (const auto& entry : cell2cell) 
+	{
+        const auto& cellInfo        = entry.first;
+        const auto& neighborSet     = entry.second;
+
+        emInt cellIndex   = cellInfo.first;
+		emInt neighbrSize = neighborSet.size(); 
+
+        vcell2cell[cellIndex].resize(neighbrSize);
+		vcell2cell[cellIndex] = std::vector<emInt>(neighborSet.begin(), neighborSet.end());
+    }; 
+ 
+}
+
+
+void UMesh:: testCell2CellConn(emInt nCells)
+{
+
+	// for(auto icell= cell2cell.begin(); icell!=cell2cell.end();icell++)
+	// {
+	// 	const int nNeigbrs = icell->second.size(); 
+	// 	assert(nNeigbrs!=0); // number of neighbours can't be zero 
+	// 	const auto cellType = icell->first.second;
+	// 	auto Itrcell = 
+	// 	cell2faces.find(std::make_pair(icell->first.first,icell->first.second));
+	// 	auto const& faces = Itrcell->second; 
+
+	// }
+    // for (const auto& entry : cell2cell) {
+    //     const auto& key = entry.first;
+    //     const auto& values = entry.second;
+
+    //     std::cout << "Cell ID: {" << key.first << ", " << key.second << "} Neighbors: {";
+    //     for (const auto& value : values) {
+    //         std::cout << value << " ";
+    //     }
+    //     std::cout << "}\n";
+    // }
+
+
+
+
+} 
+void 
+UMesh::buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2)
+{
+	std::set<emInt> faceVerts = {v0,v1,v2}; 
+	emInt cellID   = cellInfo.first; 
+	emInt cellType = cellInfo.second; 
+	cell2faces[std::make_pair(cellID,cellType)].insert(faceVerts); 
+} 
+void 
+UMesh::buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2, emInt v3)
+{
+	std::set<emInt> faceVerts = {v0,v1,v2,v3}; 
+	emInt cellID   = cellInfo.first; 
+	emInt cellType = cellInfo.second; 
+	cell2faces[std::make_pair(cellID,cellType)].insert(faceVerts); 
+}
+
+void
+UMesh::testCell2FaceConn(emInt nCells)
+{
+	
+	assert(cell2faces.size()==nCells); 
+	// Checking whethee info of all cells have captured 
+	// Then, checking whether each cell type has the correct number of faces 
+ 	for(auto icell= cell2faces.begin(); icell!=cell2faces.end(); icell++)
+	{
+		const auto& cellType= (icell->first).second; 
+		switch (cellType)
+		{
+		case TET:
+			assert(icell->second.size()==4);
+			break;
+		case PYRAMID:
+			assert(icell->second.size()==5);
+			break;  
+		case PRISM:
+			assert(icell->second.size()==5);
+			break;  
+		case HEX: 
+			assert(icell->second.size()==6);
+			break; 
+		// case BDRY_TRI: 
+		// 	assert(icell->second.size()==3);
+		// 	break; 
+		// case BDRY_QUAD: 
+		// 	assert(icell->second.size()==5); 
+		// 	break;
+		// default:
+		// 	assert(0);
+		}
+
+	}
+
+}
+
+std::unique_ptr<UMesh> UMesh::Extract( const std::vector<emInt> partcells , const int numDivs) const
+{
+	// Count the number of tris, quads, tets, pyrs, prisms and hexes.
+	//const emInt first = P.getFirst();
+	//const emInt last = P.getLast();
+
+	exa_set<TriFaceVerts> partBdryTris;
+	exa_set<QuadFaceVerts> partBdryQuads;
+
+	emInt nTris(0), nQuads(0), nTets(0), nPyrs(0), nPrisms(0), nHexes(0);
+	const emInt *conn;
+
+	std::vector<bool> isBdryVert(numVerts(), false);
+	std::vector<bool> isVertUsed(numVerts(), false);
+
+	for (emInt ii = 0; ii <partcells.size(); ii++)
+	{
+		// emInt type = vecCPD[ii].getCellType();
+		// emInt ind = vecCPD[ii].getIndex();
+		emInt globalInd = partcells[ii]; 
+		emInt ind       = (cellID2cellTypeLocalID[globalInd].second)-1; 
+		emInt type      = cellID2cellTypeLocalID[globalInd].first; 
+		
+
+		switch (type)
+		{
+		default:
+			// Panic! Should never get here.
+			assert(0);
+			break;
+		case BDRY_TRI:
+			break; 
+		case BDRY_QUAD:
+			break; 
+		case CGNS_ENUMV(TETRA_4):
+		//case TET:
+		{
+			nTets++;
+			conn = getTetConn(ind);
+			TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2]);
+			TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3]);
+			TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3]);
+			TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3]);
+			addUniquely(partBdryTris, TFV012);
+			addUniquely(partBdryTris, TFV013);
+			addUniquely(partBdryTris, TFV123);
+			addUniquely(partBdryTris, TFV203);
+			isVertUsed[conn[0]] = true;
+			isVertUsed[conn[1]] = true;
+			isVertUsed[conn[2]] = true;
+			isVertUsed[conn[3]] = true;
+			break;
+		}
+		case CGNS_ENUMV(PYRA_5):
+		//case PYRAMID:
+		{
+			nPyrs++;
+			conn = getPyrConn(ind);
+			QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3]);
+			TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4]);
+			TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4]);
+			TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4]);
+			TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4]);
+			addUniquely(partBdryQuads, QFV0123);
+			addUniquely(partBdryTris, TFV014);
+			addUniquely(partBdryTris, TFV124);
+			addUniquely(partBdryTris, TFV234);
+			addUniquely(partBdryTris, TFV304);
+			isVertUsed[conn[0]] = true;
+			isVertUsed[conn[1]] = true;
+			isVertUsed[conn[2]] = true;
+			isVertUsed[conn[3]] = true;
+			isVertUsed[conn[4]] = true;
+			break;
+		}
+		case CGNS_ENUMV(PENTA_6):
+		//case PRISM: 
+		{
+			nPrisms++;
+			conn = getPrismConn(ind);
+			QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3]);
+			QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4]);
+			QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5]);
+			TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2]);
+			TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5]);
+			addUniquely(partBdryQuads, QFV0143);
+			addUniquely(partBdryQuads, QFV1254);
+			addUniquely(partBdryQuads, QFV2035);
+			addUniquely(partBdryTris, TFV012);
+			addUniquely(partBdryTris, TFV345);
+			isVertUsed[conn[0]] = true;
+			isVertUsed[conn[1]] = true;
+			isVertUsed[conn[2]] = true;
+			isVertUsed[conn[3]] = true;
+			isVertUsed[conn[4]] = true;
+			isVertUsed[conn[5]] = true;
+			break;
+		}
+		case CGNS_ENUMV(HEXA_8):
+		//case HEX:
+		{
+			nHexes++;
+			conn = getHexConn(ind);
+			QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4]);
+			QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5]);
+			QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6]);
+			QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7]);
+			QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3]);
+			QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7]);
+			addUniquely(partBdryQuads, QFV0154);
+			addUniquely(partBdryQuads, QFV1265);
+			addUniquely(partBdryQuads, QFV2376);
+			addUniquely(partBdryQuads, QFV3047);
+			addUniquely(partBdryQuads, QFV0123);
+			addUniquely(partBdryQuads, QFV4567);
+			isVertUsed[conn[0]] = true;
+			isVertUsed[conn[1]] = true;
+			isVertUsed[conn[2]] = true;
+			isVertUsed[conn[3]] = true;
+			isVertUsed[conn[4]] = true;
+			isVertUsed[conn[5]] = true;
+			isVertUsed[conn[6]] = true;
+			isVertUsed[conn[7]] = true;
+			break;
+		}
+		} // end switch
+	}	  // end loop to gather information
+
+	// Now check to see which bdry entities are in this part.  That'll be the
+	// ones whose verts are all marked as used.  Unfortunately, this requires
+	// searching through -all- the bdry entities for each part.
+	std::vector<emInt> realBdryTris;
+	std::vector<emInt> realBdryQuads;
+	for (emInt ii = 0; ii < numBdryTris(); ii++)
+	{
+		conn = getBdryTriConn(ii);
+		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]])
+		{
+			TriFaceVerts TFV(numDivs, conn[0], conn[1], conn[2]);
+			auto iter = partBdryTris.find(TFV);
+			// If this bdry tri is an unmatched tri from this part, match it, and
+			// add the bdry tri to the list of things to copy to the part coarse
+			// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
+			// bdry face from slipping through.
+			if (iter != partBdryTris.end())
+			{
+				partBdryTris.erase(iter);
+				isBdryVert[conn[0]] = true;
+				isBdryVert[conn[1]] = true;
+				isBdryVert[conn[2]] = true;
+				realBdryTris.push_back(ii);
+				nTris++;
+			}
+		}
+	}
+	for (emInt ii = 0; ii < numBdryQuads(); ii++)
+	{
+		conn = getBdryQuadConn(ii);
+		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]] && isVertUsed[conn[3]])
+		{
+			QuadFaceVerts QFV(numDivs, conn[0], conn[1], conn[2], conn[3]);
+			auto iter = partBdryQuads.find(QFV);
+			// If this bdry tri is an unmatched tri from this part, match it, and
+			// add the bdry tri to the list of things to copy to the part coarse
+			// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
+			// bdry face from slipping through.
+			if (iter != partBdryQuads.end())
+			{
+				partBdryQuads.erase(iter);
+				isBdryVert[conn[0]] = true;
+				isBdryVert[conn[1]] = true;
+				isBdryVert[conn[2]] = true;
+				isBdryVert[conn[3]] = true;
+				realBdryQuads.push_back(ii);
+				nQuads++;
+			}
+		}
+	}
+
+	emInt nPartBdryTris = partBdryTris.size();
+	emInt nPartBdryQuads = partBdryQuads.size();
+
+	for (auto tri : partBdryTris)
+	{
+		isBdryVert[tri.getCorner(0)] = true;
+		isBdryVert[tri.getCorner(1)] = true;
+		isBdryVert[tri.getCorner(2)] = true;
+	}
+
+	for (auto quad : partBdryQuads)
+	{
+		isBdryVert[quad.getCorner(0)] = true;
+		isBdryVert[quad.getCorner(1)] = true;
+		isBdryVert[quad.getCorner(2)] = true;
+		isBdryVert[quad.getCorner(3)] = true;
+	}
+	emInt nBdryVerts = 0, nVerts = 0;
+	for (emInt ii = 0; ii < numVerts(); ii++)
+	{
+		if (isBdryVert[ii])
+			nBdryVerts++;
+		if (isVertUsed[ii])
+			nVerts++;
+	}
+
+	// Now set up the data structures for the new coarse UMesh
+	auto UUM = std::make_unique<UMesh>(nVerts, nBdryVerts, nTris + nPartBdryTris,
+									   nQuads + nPartBdryQuads, nTets, nPyrs,
+									   nPrisms, nHexes);
+
+	// Store the vertices, while keeping a mapping from the full list of verts
+	// to the restricted list so the connectivity can be copied properly.
+	std::vector<emInt> newIndices(numVerts(), EMINT_MAX);
+	for (emInt ii = 0; ii < numVerts(); ii++)
+	{
+		if (isVertUsed[ii])
+		{
+			double coords[3];
+			getCoords(ii, coords);
+			newIndices[ii] = UUM->addVert(coords);
+			// Copy length scale for vertices from the parent; otherwise, there will be
+			// mismatches in the refined meshes.
+			UUM->setLengthScale(newIndices[ii], getLengthScale(ii));
+		}
+	}
+
+	// Now copy connectivity.
+	emInt newConn[8];
+	for (emInt ii = 0; ii <partcells.size(); ii++)
+	{
+		//emInt type = vecCPD[ii].getCellType();
+		//emInt ind = vecCPD[ii].getIndex();
+		emInt globalInd = partcells[ii]; 
+		emInt ind       = (cellID2cellTypeLocalID[globalInd].second)-1; 
+		emInt type      = cellID2cellTypeLocalID[globalInd].first; 
+		switch (type)
+		{
+		default:
+			// Panic! Should never get here.
+			assert(0);
+			break;
+		case BDRY_TRI:
+			break; 
+		case BDRY_QUAD:
+			break; 
+		case CGNS_ENUMV(TETRA_4):
+		{
+			conn = getTetConn(ind);
+			remapIndices(4, newIndices, conn, newConn);
+			UUM->addTet(newConn);
+			break;
+		}
+		case CGNS_ENUMV(PYRA_5):
+		{
+			conn = getPyrConn(ind);
+			remapIndices(5, newIndices, conn, newConn);
+			UUM->addPyramid(newConn);
+			break;
+		}
+		case CGNS_ENUMV(PENTA_6):
+		{
+			conn = getPrismConn(ind);
+			remapIndices(6, newIndices, conn, newConn);
+			UUM->addPrism(newConn);
+			break;
+		}
+		case CGNS_ENUMV(HEXA_8):
+		{
+			conn = getHexConn(ind);
+			remapIndices(8, newIndices, conn, newConn);
+			UUM->addHex(newConn);
+			break;
+		}
+		} // end switch
+	}	  // end loop to copy most connectivity
+
+	for (std::size_t ii = 0; ii < realBdryTris.size(); ii++)
+	{
+		conn = getBdryTriConn(realBdryTris[ii]);
+		remapIndices(3, newIndices, conn, newConn);
+		UUM->addBdryTri(newConn);
+	}
+	for (std::size_t ii = 0; ii < realBdryQuads.size(); ii++)
+	{
+		conn = getBdryQuadConn(realBdryQuads[ii]);
+		remapIndices(4, newIndices, conn, newConn);
+		UUM->addBdryQuad(newConn);
+	}
+
+	// Now, finally, the part bdry connectivity.
+	// TODO: Currently, there's nothing in the data structure that marks which
+	// are part bdry faces.
+
+	//assert(partBdryTris.size() == tris.size());
+	for (auto tri : partBdryTris)
+	{
+		emInt conn[] = {newIndices[tri.getCorner(0)],
+						newIndices[tri.getCorner(1)],
+						newIndices[tri.getCorner(2)]};
+		emInt global[3] = {tri.getCorner(0), tri.getCorner(1),
+						   tri.getCorner(2)};
+		//TriFaceVerts TF(numDivs, global, partID, -1, true);
+		//auto itr = tris.find(TF);
+		//if (itr != tris.end())
+		//{
+		//	assert(itr->getGlobalCorner(0) == global[0] &&
+		//		   itr->getGlobalCorner(1) == global[1] &&
+		//		   itr->getGlobalCorner(2) == global[2] && itr->getPartid() == partID);
+		//	TriFaceVerts TFV(numDivs, conn, global, partID,
+		//					 itr->getRemoteId(), 0, EMINT_MAX,false);
+			// need to be corrected, I could not generate with correct bool value unless
+			// I pass all arguments
+
+		//	UUM->addPartTritoSet(TFV);
+		//}
+
+		UUM->addBdryTri(conn);
+	}
+
+	//assert(UUM->getSizePartTris() == tris.size());
+
+	//assert(partBdryQuads.size() == quads.size());
+	for (auto quad : partBdryQuads)
+	{
+		emInt conn[] = {newIndices[quad.getCorner(0)],
+						newIndices[quad.getCorner(1)],
+						newIndices[quad.getCorner(2)],
+						newIndices[quad.getCorner(3)]};
+		//emInt global[4] = {quad.getCorner(0),
+		//				   quad.getCorner(1), quad.getCorner(2), quad.getCorner(3)};
+		//QuadFaceVerts QF(numDivs, global, partID, -1, true);
+		//auto itr = quads.find(QF);
+		//if (itr != quads.end())
+		//{
+		//	assert(itr->getGlobalCorner(0) == global[0] &&
+		//		   itr->getGlobalCorner(1) == global[1] &&
+		//		   itr->getGlobalCorner(2) == global[2] &&
+		//		   itr->getGlobalCorner(3) == global[3] &&
+		//		   itr->getPartid() == partID);
+		//	QuadFaceVerts QFV(numDivs, conn, global, partID,
+		//					  itr->getRemoteId(), 0, EMINT_MAX, false);
+			// need to be corrected, I could not generate with correct bool value unless
+			// I pass all arguments
+		//	UUM->addPartQuadtoSet(QFV);
+		//}
+
+		UUM->addBdryQuad(conn);
+	}
+	//assert(UUM->getSizePartQuads() == quads.size());
+	return UUM; 
+}
+
+

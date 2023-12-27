@@ -74,10 +74,11 @@
 #define CALLGRIND_TOGGLE_COLLECT
 #endif
 
+#define MAXADJ 6
 #define MAX_DIVS 50
 #define FILE_NAME_LEN 1024
 #define TOLTEST 1e-9
-
+#define MASTER 0 
 typedef int32_t emInt;
 #define EMINT_MAX UINT_MAX
 
@@ -1018,6 +1019,51 @@ std::set<int> &neighbors)
 	}
 }
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(FaceVerts)
+
+void 
+inline updateMultiMapFace2Cell(std::multimap < std::set<emInt>, std::pair<emInt,emInt>> &map, 
+ emInt v0, emInt v1, emInt v2, emInt cellID, emInt cellType)
+{
+	std::set<emInt> faceVerts ;
+	faceVerts.insert(v0); 
+	faceVerts.insert(v1); 
+	faceVerts.insert(v2); 
+	map.insert(std::make_pair(faceVerts, std::make_pair(cellID, cellType)));
+
+	
+
+}
+void 
+inline updateMultiMapFace2Cell(std::multimap < std::set<emInt>, std::pair<emInt,emInt>> &map, 
+ emInt v0, emInt v1, emInt v2, emInt v3 ,emInt cellID,emInt cellType)
+{
+	std::set<emInt> faceVerts;
+	faceVerts.insert(v0); 
+	faceVerts.insert(v1); 
+	faceVerts.insert(v2); 
+	faceVerts.insert(v3); 
+	map.insert(std::make_pair(faceVerts, std::make_pair(cellID, cellType)));
+
+}
+inline 
+void printMultiMap(const std::multimap<std::set<emInt>, std::pair<emInt, emInt>> &map) 
+{
+    for (const auto &entry : map) 
+	{
+        const auto &key   = entry.first;
+        const auto &value = entry.second;
+
+        // Print the key (set of emInt)
+        std::cout << "Key: { ";
+        for (const auto &elem : key) {
+            std::cout << elem << " ";
+        }
+        std::cout << "} ";
+
+        // Print the value (pair of emInt and char*)
+        std::cout << "Value: {" << value.first << ", " << value.second << "}\n";
+    }
+}
 
 
 #endif /* SRC_EXA_DEFS_H_ */

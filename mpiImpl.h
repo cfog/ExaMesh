@@ -1,21 +1,20 @@
-//#include "exa-defs"
+#include <unistd.h>
+#include <cstdio>
+#include "ExaMesh.h"
 #include "CubicMesh.h"
+#include "PARMETIS.h"
 #include "UMesh.h"
-#include "exa-defs.h"
 
-#ifndef SRC_MPIIMPL_H_
-#define SRC_MPIIMPL_H_
 
-class mpiImpl 
-{
-private:
+std::unique_ptr<UMesh>  ReadMesh ( const char  baseFileName[] , const char type[], 
+                                     const char  ugridInfix[]   , const char CGNSFileName[], 
+                                     const char MeshType); 
 
-    const ExaMesh*   mCoarseMesh; // How to get pointer out of this ? 
 
-public: 
-    mpiImpl(const ExaMesh* const inCoarseMesh): mCoarseMesh(inCoarseMesh){};
-    void refineMPI(const int numDivs);  
-    ~mpiImpl(){}; 
-  
-};
-#endif // Do I need this ? 
+void refineForMPI ( const char  baseFileName[] , const char type[], 
+                    const char  ugridInfix[]   , const char CGNSFileName[],
+                    const int   numDivs        , const char MeshType, 
+                    std::string mshName        , FILE* fileAllTimes);
+
+
+

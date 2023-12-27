@@ -49,6 +49,8 @@ class CubicMesh: public ExaMesh {
 	exa_set<QuadFaceVerts> partQuads;
 	exa_set<TriFaceVerts>  refinedPartTris;
 
+	std::vector<std::vector<emInt>>   vcell2cell;
+
 	CubicMesh(const CubicMesh&);
 	CubicMesh& operator=(const CubicMesh&);
 	void readCGNSfile(const char CGNSfilename[]);
@@ -99,8 +101,22 @@ public:
 	virtual emInt numHexes() const {
 		return m_nHex64;
 	}
+	virtual emInt numCells() const {
+		// This needs to be changed and having number of boundary quads and tris as well 
+		return numTets() + numPyramids() + numPrisms() + numHexes();
+	}
 	virtual emInt numVertsToCopy() const {
 		return m_nVertNodes;
+	}
+	emInt numBdryTrisFromReader()  const
+	{
+		//return m_nTrisFromReader; 
+		// it needs to be implemented 
+	} 
+	emInt numBdryQuadsFromReader() const
+	{
+		//return m_nQuadsFromReader; 
+		// it needs to be implemented 
 	}
 
 	emInt addVert(const double newCoords[3]);
@@ -207,6 +223,17 @@ public:
 
 	void setNVertNodes(emInt nVertNodes) {
 		m_nVertNodes = nVertNodes;
+	}
+	void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>>& face2cell, const emInt nCells);
+	std::size_t getCellConnSize (const emInt cellID)
+	const 
+	{
+		return vcell2cell[cellID].size(); 
+	}
+	emInt getCellConn (const emInt cellID, const emInt neighID)
+	const 
+	{
+		return vcell2cell[cellID][neighID]; 
 	}
 };
 

@@ -53,6 +53,7 @@ public:
 		m_coords[1] = y;
 		m_coords[2] = z;
 	}
+	CellPartData (const emInt ind, const emInt type): m_index(ind),m_cellType(type){}; 
 	double getCoord(const int which) const {
 		assert(which >= 0 && which < 3);
 		return m_coords[which];

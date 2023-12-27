@@ -748,7 +748,7 @@ const
 	vecTri   triV;
 	vecQuad  quadV;  
 
-	int MASTER = 0; 
+	//int MASTER = 0; 
 	int tag    = 0; 
 
 	intToVecTri  remoteTovecTris;

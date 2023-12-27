@@ -33,10 +33,16 @@
 
 class UMesh: public ExaMesh {
 	emInt m_nVerts, m_nBdryVerts, m_nTris, m_nQuads, m_nTets, m_nPyrs, m_nPrisms,
-			m_nHexes;
+			m_nHexes, m_nTrisFromReader, m_nQuadsFromReader;
 	enum {
 		eVert = 0, eTri, eQuad, eTet, ePyr, ePrism, eHex
 	};
+	friend class boost::serialization::access;
+	template <class Archive>
+	void serialize(Archive &ar,const unsigned int /*version*/)
+	{
+		
+	}
 	size_t m_fileImageSize;
 	emInt *m_header;
 	double (*m_coords)[3];
@@ -49,6 +55,12 @@ class UMesh: public ExaMesh {
 	emInt (*m_PrismConn)[6];
 	emInt (*m_HexConn)[8];
 	char *m_buffer, *m_fileImage;
+	std::map < std::pair<emInt,emInt>, std::set<emInt>>             cell2cell; 
+	std::map < std::pair<emInt,emInt>, std::set<std::set<emInt>>>   cell2faces; 
+	std::unordered_map<emInt, std::set<std::set<emInt>>>            cell2bdryfaces; 
+	std::vector<std::vector<emInt>>                                 vcell2cell;
+	std::vector<emInt>                                              vcellID2type; 
+	std::vector<std::pair<emInt,emInt>>                             cellID2cellTypeLocalID; 
 	UMesh(const UMesh&);
 	UMesh& operator=(const UMesh&);
 
@@ -109,8 +121,18 @@ public:
 	emInt numHexes() const {
 		return m_header[eHex];
 	}
+	emInt numBdryTrisFromReader()  const
+	{
+		return m_nTrisFromReader; 
+	} 
+	emInt numBdryQuadsFromReader() const
+	{
+		return m_nQuadsFromReader; 
+	}
 	emInt numCells() const {
-		return numTets() + numPyramids() + numPrisms() + numHexes();
+		return numTets() + numPyramids() + numPrisms() 
+		+ numHexes() 
+		+ numBdryTrisFromReader() + numBdryQuadsFromReader();
 	}
 
 	emInt addVert(const double newCoords[3]);
@@ -174,6 +196,22 @@ public:
 		return m_HexConn[hex];
 	}
 
+	std::size_t getCellConnSize (const emInt cellID)
+	const 
+	{
+		return vcell2cell[cellID].size(); 
+	}
+	emInt getCellConn (const emInt cellID, const emInt neighID)
+	const
+	{
+		return vcell2cell[cellID][neighID]; 
+	}
+	emInt getCellType (const emInt cellID) 
+	const
+	{
+		return vcellID2type[cellID]; 
+	}
+
 	Mapping::MappingType getDefaultMappingType() const {
 		return Mapping::Uniform;
 	}
@@ -201,6 +239,14 @@ public:
 
 	void incrementVertIndices(emInt* conn, emInt size, int inc);
 	void calcMemoryRequirements (const UMesh &UMIn, const int nDivs); 
+	void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>>& face2cell, const emInt nCells);
+	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2); 
+	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2, emInt v3);
+	void testCell2CellConn(emInt nCells); 
+	void testCell2FaceConn(emInt nCells);
+
+	std::unique_ptr<UMesh> Extract(std::vector<emInt>,const int numDivs) const;
+
 
 	// Writing with compression reduces file size by a little over a factor of two,
 	// at the expense of making file write slower by two orders of magnitude.

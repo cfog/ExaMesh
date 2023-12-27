@@ -74,10 +74,14 @@ public:
 	virtual emInt numBdryVerts() const = 0;
 	virtual emInt numBdryTris() const = 0;
 	virtual emInt numBdryQuads() const = 0;
+	virtual emInt numBdryTrisFromReader()  const= 0 ; 
+	virtual emInt numBdryQuadsFromReader() const= 0 ;
 	virtual emInt numTets() const = 0;
 	virtual emInt numPyramids() const = 0;
 	virtual emInt numPrisms() const = 0;
 	virtual emInt numHexes() const = 0;
+	virtual emInt numCells() const = 0 ; 
+		
 	virtual emInt numVertsToCopy() const {
 		return numVerts();
 	}
@@ -219,7 +223,10 @@ public:
 		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
 		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize )const=0;	
-	//void refineMPI();	 
+	//void refineMPI();
+	virtual void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>> & face2cell, const emInt nCells)=0; 	 
+	virtual std::size_t getCellConnSize (const emInt cellID) const = 0; 
+	virtual emInt getCellConn (const emInt cellID, const emInt neighID) const = 0; 
 
 protected:
 	void addCellToPartitionData(const emInt* verts, emInt nPts, emInt ii,
