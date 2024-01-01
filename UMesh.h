@@ -55,7 +55,7 @@ class UMesh: public ExaMesh {
 	emInt (*m_PrismConn)[6];
 	emInt (*m_HexConn)[8];
 	char *m_buffer, *m_fileImage;
-	std::map < std::pair<emInt,emInt>, std::set<emInt>>             cell2cell; 
+	TableCell2Cell                                                  cell2cell; 
 	std::map < std::pair<emInt,emInt>, std::set<std::set<emInt>>>   cell2faces; 
 	std::unordered_map<emInt, std::set<std::set<emInt>>>            cell2bdryfaces; 
 	std::vector<std::vector<emInt>>                                 vcell2cell;
@@ -239,13 +239,20 @@ public:
 
 	void incrementVertIndices(emInt* conn, emInt size, int inc);
 	void calcMemoryRequirements (const UMesh &UMIn, const int nDivs); 
-	void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>>& face2cell, const emInt nCells);
+	void buildCell2CellConn(multimpFace2Cell& face2cell, const emInt nCells);
 	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2); 
 	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2, emInt v3);
 	void testCell2CellConn(emInt nCells); 
 	void testCell2FaceConn(emInt nCells);
 
-	std::unique_ptr<UMesh> Extract(std::vector<emInt>,const int numDivs) const;
+	std::unique_ptr<UMesh> 
+	Extract(const emInt partID, const std::vector<emInt> partcells , const int numDivs, 
+	const std::unordered_set<TriFaceVerts> &tris= std::unordered_set<TriFaceVerts>(), 
+	const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>()) const;
+	void 
+	partFaceMatching(const std::vector<std::vector<emInt>> &part2cells,	
+		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize) const;
 
 
 	// Writing with compression reduces file size by a little over a factor of two,

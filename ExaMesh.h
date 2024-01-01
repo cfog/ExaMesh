@@ -224,7 +224,7 @@ public:
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
 		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize )const=0;	
 	//void refineMPI();
-	virtual void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>> & face2cell, const emInt nCells)=0; 	 
+	//virtual void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>> & face2cell, const emInt nCells)=0; 	 
 	virtual std::size_t getCellConnSize (const emInt cellID) const = 0; 
 	virtual emInt getCellConn (const emInt cellID, const emInt neighID) const = 0; 
 

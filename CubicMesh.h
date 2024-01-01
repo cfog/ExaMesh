@@ -224,7 +224,7 @@ public:
 	void setNVertNodes(emInt nVertNodes) {
 		m_nVertNodes = nVertNodes;
 	}
-	void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>>& face2cell, const emInt nCells);
+	//void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>>& face2cell, const emInt nCells);
 	std::size_t getCellConnSize (const emInt cellID)
 	const 
 	{

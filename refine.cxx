@@ -63,8 +63,8 @@ int main(int argc, char* const argv[]) {
 	
 	double wallTime;  
 
-	sprintf(type, "ugrid");
-	sprintf(infix, "lb8");
+	sprintf(type, "vtk");
+	sprintf(infix, "b8");
 	sprintf(outFileName, "/dev/null");
 	sprintf(inFileBaseName, "/need/a/file/name");
 	sprintf(cgnsFileName, "/need/a/file/name");
@@ -117,10 +117,20 @@ int main(int argc, char* const argv[]) {
 	auto outFileAllTimes       = openFile(mshName+"-nDivs-"+std::to_string(nDivs)+ "AllTimes.txt");
 	auto outFileMeshStatics    = openFile(mshName+"-mshStatics.txt");
 
-	
+	if(isInputCGNS)
+	{
+		InputMeshType='C'; 
+	}
+	else
+	{
+		InputMeshType='U'; 
+	}
 
 
-	if (isInputCGNS) 
+	refineForMPI(inFileBaseName,type, infix, cgnsFileName,nDivs,InputMeshType,mshName,outFileAllTimes); 
+
+
+/* 	if (isInputCGNS) 
 	{
 #if (HAVE_CGNS == 1)
 		CubicMesh CMorig(cgnsFileName);
@@ -226,7 +236,7 @@ int main(int argc, char* const argv[]) {
 	//printf("Exiting\n");
 	double Apptime= exaTime()-startAppTime; 
 	std::cout<<"Time taken by the whole application is: "<<Apptime<<std::endl; 
-	std::cout<<"Scanning Time: "<<scanningTime<<std::endl; 
+	std::cout<<"Scanning Time: "<<scanningTime<<std::endl;  */
 	exit(0);
 }
 

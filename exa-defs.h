@@ -980,6 +980,35 @@ std::unordered_set<T>& destinationSet) {
     }
 	assert(destinationSet.size()==sourceVector.size()); 
 }
+struct hashFunctionCell2Cell 
+{
+    std::size_t operator()(const std::pair<emInt, emInt>& p) const 
+	{
+        // Combine the hash values of the pair's components
+        std::size_t hashValue = std::hash<emInt>()(p.first);
+        hashValue ^= std::hash<emInt>()(p.second) + 0x9e3779b9 + (hashValue << 6) + (hashValue >> 2);
+        return hashValue;
+    }
+};
+
+
+
+struct hashFunctionFace2Cell 
+{
+    std::size_t operator()(const std::set<int>& s) const {
+        // Implement a custom hash function for std::set<int>
+        // You might want to combine the hash values of individual elements in the set
+        // to create a hash value for the entire set.
+        // Example:
+        std::size_t hash_value = 0;
+        for (int element : s) {
+            hash_value ^= std::hash<int>()(element) + 0x9e3779b9 + (hash_value << 6) + (hash_value >> 2);
+        }
+        return hash_value;
+    }
+};
+using setTri         			 = std::set<TriFaceVerts>; 
+using setQuad                    = std::set<QuadFaceVerts>; 
 using hashTri                    = std::unordered_set<TriFaceVerts>; 
 using hashQuad                   = std::unordered_set<QuadFaceVerts>; 
 using vecHashTri                 = std::vector<hashTri>; 
@@ -992,6 +1021,8 @@ using intToVecTri		         = std::map<int,vecTri> ;
 using intToVecQuad               = std::map<int,vecQuad>; 
 using TableTri2TableIndex2Index	 = std::unordered_map< TriFaceVerts , std::unordered_map<emInt,emInt>>;
 using TableQuad2TableIndex2Index = std::unordered_map< QuadFaceVerts, std::unordered_map<emInt,emInt>>;
+using multimpFace2Cell			 = std::unordered_multimap < std::set<emInt>, std::pair<emInt,emInt>, hashFunctionFace2Cell>;
+using TableCell2Cell			 = std::unordered_map < std::pair<emInt,emInt>, std::set<emInt>, hashFunctionCell2Cell>;
 void
 inline buildTrisMap(hashTri const& tris, std::map<int, vecTri> &remoteTotris,
 std::set<int> &neighbors)
@@ -1019,9 +1050,8 @@ std::set<int> &neighbors)
 	}
 }
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(FaceVerts)
-
 void 
-inline updateMultiMapFace2Cell(std::multimap < std::set<emInt>, std::pair<emInt,emInt>> &map, 
+inline updateMultiMapFace2Cell(multimpFace2Cell &map, 
  emInt v0, emInt v1, emInt v2, emInt cellID, emInt cellType)
 {
 	std::set<emInt> faceVerts ;
@@ -1030,11 +1060,9 @@ inline updateMultiMapFace2Cell(std::multimap < std::set<emInt>, std::pair<emInt,
 	faceVerts.insert(v2); 
 	map.insert(std::make_pair(faceVerts, std::make_pair(cellID, cellType)));
 
-	
-
 }
 void 
-inline updateMultiMapFace2Cell(std::multimap < std::set<emInt>, std::pair<emInt,emInt>> &map, 
+inline updateMultiMapFace2Cell(multimpFace2Cell &map, 
  emInt v0, emInt v1, emInt v2, emInt v3 ,emInt cellID,emInt cellType)
 {
 	std::set<emInt> faceVerts;
