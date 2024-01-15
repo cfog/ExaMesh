@@ -1007,6 +1007,24 @@ struct hashFunctionFace2Cell
         return hash_value;
     }
 };
+
+
+struct pairHash {
+    template <class T1, class T2>
+    std::size_t operator () (std::pair<T1,T2> const& pair) const {
+        auto first = std::min(pair.first, pair.second);
+        auto second = std::max(pair.first, pair.second);
+
+        std::size_t h1 = std::hash<T1>{}(first);
+        std::size_t h2 = std::hash<T2>{}(second);
+
+        // Mainly for demonstration purposes, i.e. works but is overly simple
+        // In the real world, use sth. like boost.hash_combine
+        return h1 ^ h2;  
+    }
+};
+
+
 using setTri         			 = std::set<TriFaceVerts>; 
 using setQuad                    = std::set<QuadFaceVerts>; 
 using hashTri                    = std::unordered_set<TriFaceVerts>; 
@@ -1093,5 +1111,144 @@ void printMultiMap(const std::multimap<std::set<emInt>, std::pair<emInt, emInt>>
     }
 }
 
+
+
+
+inline 
+void printTriFaceVerts(const std::vector<TriFaceVerts>& tris) 
+{
+	for (const auto& tri : tris) 
+	{
+
+		std::cout << "Global corners: [" << tri.getGlobalCorner(0) << ", " << tri.getGlobalCorner(1) << ", " << tri.getGlobalCorner(2) << "]" << std::endl;
+		std::cout << "Part ID: " << tri.getPartid() << std::endl;
+		std::cout << "Remote Part ID: " << tri.getRemoteId() << std::endl;
+		std::cout << "Is True: " << std::boolalpha << tri.getGlobalCompare() << std::endl;
+		std::cout << std::endl;
+	}
+}
+inline 
+void preMatchingPartBdryTris(const emInt numDivs,const setTri& partBdryTris, vecVecTri &tris)
+{
+	std::size_t k = 0;
+	for (auto itr = partBdryTris.begin(); itr != partBdryTris.end(); itr++)
+	{
+		k++;
+		auto next = std::next(itr, 1);
+		if (k != partBdryTris.size())
+		{
+			if (
+				itr->getSortedGlobal(0) == next->getSortedGlobal(0) &&
+
+				itr->getSortedGlobal(1) == next->getSortedGlobal(1) &&
+				itr->getSortedGlobal(2) == next->getSortedGlobal(2)
+				)
+			{
+
+				emInt global[3] = {itr->getGlobalCorner(0),
+								itr->getGlobalCorner(1), itr->getGlobalCorner(2)};
+				emInt globalNext[3] = {next->getGlobalCorner(0),
+									next->getGlobalCorner(1), next->getGlobalCorner(2)};
+
+				TriFaceVerts tripart(numDivs, global, itr->getPartid(),
+									next->getPartid(), true);
+
+				TriFaceVerts tripartNext(numDivs, globalNext, next->getPartid(), itr->getPartid(), true);
+
+				tris[itr->getPartid()].push_back(tripart);
+				tris[next->getPartid()].push_back(tripartNext);
+			}
+		}
+	}
+}
+
+
+inline
+void preMatchingPartBdryQuads(const emInt numDivs,const setQuad& partBdryQuads, vecVecQuad &quads)
+{
+	std::size_t kquad = 0;
+	for (auto itr = partBdryQuads.begin();
+		 itr != partBdryQuads.end(); itr++)
+	{
+
+		auto next = std::next(itr, 1);
+		kquad++;
+		if (kquad != partBdryQuads.size())
+		{
+			emInt v0Global = next->getGlobalCorner(0);
+			emInt v1Global = next->getGlobalCorner(1);
+			emInt v2Global = next->getGlobalCorner(2);
+			emInt v3Global = next->getGlobalCorner(3);
+
+			emInt partid = next->getPartid();
+
+			emInt v0SortedGlobal = next->getSortedGlobal(0);
+			emInt v1SortedGlobal = next->getSortedGlobal(1);
+			emInt v2SortedGlobal = next->getSortedGlobal(2);
+			emInt v3SortedGlobal = next->getSortedGlobal(3);
+
+			emInt v0Global_ = itr->getGlobalCorner(0);
+			emInt v1Global_ = itr->getGlobalCorner(1);
+			emInt v2Global_ = itr->getGlobalCorner(2);
+			emInt v3Global_ = itr->getGlobalCorner(3);
+
+			emInt partid_ = itr->getPartid();
+
+			emInt v0SortedGlobal_ = itr->getSortedGlobal(0);
+			emInt v1SortedGlobal_ = itr->getSortedGlobal(1);
+			emInt v2SortedGlobal_ = itr->getSortedGlobal(2);
+			emInt v3SortedGlobal_ = itr->getSortedGlobal(3);
+
+			if (v0SortedGlobal_ == v0SortedGlobal &&
+				v1SortedGlobal == v1SortedGlobal_ &&
+				v2SortedGlobal == v2SortedGlobal_ &&
+				v3SortedGlobal == v3SortedGlobal_)
+			{
+				emInt global[4] = {v0Global, v1Global, v2Global, v3Global};
+				emInt global_[4] = {v0Global_, v1Global_, v2Global_, v3Global_};
+
+				QuadFaceVerts quadpart(numDivs, global, partid, partid_, true);
+				QuadFaceVerts quadpart_(numDivs, global_, partid_, partid, true);
+				quads[partid].push_back(quadpart);
+				quads[partid_].push_back(quadpart_);
+			}
+		}
+	}
+}
+
+
+inline
+void TestPartFaceMatching( const std::size_t nPart, 
+const vecHashTri  &HashTri, 
+const vecHashQuad &HashQuad,
+const vecVecTri   &vecTris, 
+const vecVecQuad  &vecquads)
+{
+	assert(HashTri.size()==nPart);
+	assert(vecTris.size()==nPart);
+	assert(HashQuad.size()==nPart);
+	assert(vecquads.size()==nPart);
+	for(auto i=0; i<nPart; i++)
+	{
+		assert(vecTris[i].size()==HashTri[i].size()); 
+		assert(vecquads[i].size()==HashQuad[i].size());
+		for(auto itri: HashTri[i])
+		{
+			auto find= std::find(vecTris[i].begin(),vecTris[i].end(),itri);
+			assert(find!=vecTris[i].end());
+			
+		}
+		for(auto iquad: HashQuad[i])
+		{
+			auto find= std::find(vecquads[i].begin(),vecquads[i].end(),iquad);
+			if(find==vecquads[i].end())
+			{
+				assert(find!=vecquads[i].end());
+			}
+		}
+
+	}
+	std::cout<<"Successful Testing Part Face Matching"<<std::endl;
+}
 
 #endif /* SRC_EXA_DEFS_H_ */

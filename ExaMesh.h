@@ -117,6 +117,10 @@ public:
 			return 1;
 		}
 	}
+	const double* getAllLenghtScale() const
+	{
+		return m_lenScale; 
+	}
 	void setLengthScale(const emInt vert, const double len) const {
 		assert(vert < numVerts());
 		assert(len > 0);

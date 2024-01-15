@@ -182,6 +182,97 @@ UMesh::UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 		 nHexes);
 }
 
+UMesh::UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
+			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
+			const emInt nPrisms, const emInt nHexes, 
+			const std::vector<std::vector<emInt>> &tetConns, const std::vector<emInt> &header,
+			const std::vector<std::pair<emInt,emInt>> &cellID2cellTypeLocal, 
+			const std::vector<std::vector<emInt>> &vTriConns,
+			const std::vector<double> &vLengthSclae,
+			const std::vector<std::vector<emInt>> &vQuadConn,
+			const std::vector<std::vector<emInt>> &vPyrConn, 
+			const std::vector<std::vector<emInt>> &vPrsimConn, 
+			const std::vector<std::vector<emInt>> &vHexConn) 
+			 : m_nVerts(nVerts), m_nBdryVerts(nBdryVerts), m_nTris(nBdryTris),
+														m_nQuads(nBdryQuads), m_nTets(nTets), m_nPyrs(nPyramids),
+														m_nPrisms(nPrisms), m_nHexes(nHexes), m_fileImageSize(0),
+														m_header(nullptr), m_coords(nullptr), m_TriConn(nullptr),
+														m_QuadConn(nullptr), m_TetConn(nullptr), m_PyrConn(nullptr),
+														m_PrismConn(nullptr), m_HexConn(nullptr), m_buffer(nullptr),
+														m_fileImage(nullptr)
+{
+
+	// All sizes are computed in bytes.
+
+	// Work out buffer size, including padding to ensure 8-byte alignment for the coordinates.
+	init(nVerts, nBdryVerts, nBdryTris, nBdryQuads, nTets, nPyramids, nPrisms,
+		 nHexes);
+
+
+	for(auto i=0; i<7; i++)
+	{
+		m_header[i]=header[i]; 
+	}	 
+
+	for(auto iTet=0 ; iTet<nTets; iTet++)
+	{
+		for(auto iConn=0 ; iConn<4; iConn++)
+		{
+			m_TetConn[iTet][iConn]= tetConns[iTet][iConn]; 
+		}
+	}
+
+	cellID2cellTypeLocalID=cellID2cellTypeLocal; 
+
+	for(auto iTri=0 ; iTri<header[eTri];iTri++)
+	{
+		for(auto j=0; j<3; j++)
+		{
+			m_TriConn[iTri][j]=vTriConns[iTri][j]; 
+		}
+	}
+
+	for(auto iVert=0; iVert<header[eVert];iVert++)
+	{
+		m_lenScale[iVert]=vLengthSclae[iVert];
+	}
+	for(auto iQuad=0 ; iQuad<header[eQuad]; iQuad++)
+	{
+		for(auto j=0; j<4; j++)
+		{
+			m_QuadConn[iQuad][j]=vQuadConn[iQuad][j];
+		}
+	}
+	for(auto iPyr=0 ; iPyr<header[ePyr]; iPyr++)
+	{
+		for(auto j=0 ; j<5; j++)
+		{
+			m_PyrConn[iPyr][j]=vPyrConn[iPyr][j]; 
+		}
+	}
+	for(auto iPrism=0 ; iPrism<header[ePrism]; iPrism++)
+	{
+		for(auto j=0 ;j<6; j++)
+		{
+			m_PrismConn[iPrism][j]= vPrsimConn[iPrism][j]; 
+		}
+	}
+	for(auto iHex=0; iHex<header[eHex];iHex++)
+	{
+		for(auto j=0; j<8; j++)
+		{
+			m_HexConn[iHex][j]=vHexConn[iHex][j]; 
+		}
+	}
+
+
+
+}
+
+
+
+
+
 emInt UMesh::addVert(const double newCoords[3])
 {
 	assert(m_header[eVert] < m_nVerts);
@@ -200,6 +291,7 @@ emInt UMesh::addBdryTri(const emInt verts[3])
 		assert(verts[ii] < m_header[eVert]);
 		m_TriConn[m_header[eTri]][ii] = verts[ii];
 	}
+	vTriConns.push_back({verts[0],verts[1],verts[2]}); 
 	return (m_header[eTri]++);
 }
 
@@ -211,6 +303,7 @@ emInt UMesh::addBdryQuad(const emInt verts[4])
 		assert(verts[ii] < m_header[eVert]);
 		m_QuadConn[m_header[eQuad]][ii] = verts[ii];
 	}
+	vQuadConns.push_back({verts[0],verts[1],verts[2],verts[3]});
 	return (m_header[eQuad]++);
 }
 
@@ -221,6 +314,7 @@ emInt UMesh::addTet(const emInt verts[4])
 	emInt *thisConn = m_TetConn[thisTetInd];
 	assert(memoryCheck(thisConn, 4 * sizeof(emInt)));
 	std::copy(verts, verts + 4, thisConn);
+	vTetConns.push_back({verts[0],verts[1],verts[2],verts[3]});
 	return thisTetInd;
 #else
 	assert(memoryCheck(m_TetConn[m_header[eTet]], 4 * sizeof(emInt)));
@@ -229,6 +323,7 @@ emInt UMesh::addTet(const emInt verts[4])
 		assert(verts[ii] < m_header[eVert]);
 		m_TetConn[m_header[eTet]][ii] = verts[ii];
 	}
+	vTetConns.push_back({verts[0],verts[1],verts[2],verts[3]});
 	return (m_header[eTet]++);
 #endif
 }
@@ -240,6 +335,7 @@ emInt UMesh::addPyramid(const emInt verts[5])
 	emInt *thisConn = m_PyrConn[thisPyrInd];
 	assert(memoryCheck(thisConn, 5 * sizeof(emInt)));
 	std::copy(verts, verts + 5, thisConn);
+	vPyrmConns.push_back({verts[0],verts[1],verts[2],verts[3],verts[4]});
 	return thisPyrInd;
 #else
 	assert(memoryCheck(m_PyrConn[m_header[ePyr]], 5 * sizeof(emInt)));
@@ -248,6 +344,7 @@ emInt UMesh::addPyramid(const emInt verts[5])
 		assert(verts[ii] < m_header[eVert]);
 		m_PyrConn[m_header[ePyr]][ii] = verts[ii];
 	}
+	vPyrmConns.push_back({verts[0],verts[1],verts[2],verts[3],verts[4]});
 	return (m_header[ePyr]++);
 #endif
 }
@@ -259,6 +356,7 @@ emInt UMesh::addPrism(const emInt verts[6])
 	emInt *thisConn = m_PrismConn[thisPrismInd];
 	assert(memoryCheck(thisConn, 6 * sizeof(emInt)));
 	std::copy(verts, verts + 6, thisConn);
+	vPrsimConns.push_back({verts[0],verts[1],verts[2],verts[3],verts[4],verts[5]});
 	return thisPrismInd;
 #else
 	assert(memoryCheck(m_PrismConn[m_header[ePrism]], 6 * sizeof(emInt)));
@@ -267,6 +365,7 @@ emInt UMesh::addPrism(const emInt verts[6])
 		assert(verts[ii] < m_header[eVert]);
 		m_PrismConn[m_header[ePrism]][ii] = verts[ii];
 	}
+	vPrsimConns.push_back({verts[0],verts[1],verts[2],verts[3],verts[4],verts[5]});
 	return (m_header[ePrism]++);
 #endif
 }
@@ -278,6 +377,7 @@ emInt UMesh::addHex(const emInt verts[8])
 	emInt *thisConn = m_HexConn[thisHexInd];
 	assert(memoryCheck(thisConn, 8 * sizeof(emInt)));
 	std::copy(verts, verts + 8, thisConn);
+	vHexConns.push_back({verts[0],verts[1],verts[2],verts[3],verts[4],verts[5],verts[6],verts[7]}); 
 	return thisHexInd;
 #else
 	assert(memoryCheck(m_HexConn[m_header[eHex]], 8 * sizeof(emInt)));
@@ -286,6 +386,7 @@ emInt UMesh::addHex(const emInt verts[8])
 		assert(verts[ii] < m_header[eVert]);
 		m_HexConn[m_header[eHex]][ii] = verts[ii];
 	}
+	vHexConns.push_back({verts[0],verts[1],verts[2],verts[3],verts[4],verts[5],verts[6],verts[7]}); 
 	return (m_header[eHex]++);
 #endif
 }
@@ -538,6 +639,10 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	numBdryTris += setTris.size();
 	numBdryQuads += setQuads.size();
 
+	BdryVertsTrisQuads.push_back(reader->getNumBdryVerts());
+	BdryVertsTrisQuads.push_back(numBdryTris); 
+	BdryVertsTrisQuads.push_back(numBdryQuads); 
+
 	init(reader->getNumVerts(), reader->getNumBdryVerts(), numBdryTris,
 		 numBdryQuads, reader->getNumTets(), reader->getNumPyramids(),
 		 reader->getNumPrisms(), reader->getNumHexes());
@@ -649,9 +754,13 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	assert(m_nPrisms == m_header[ePrism]);
 	assert(m_nHexes == m_header[eHex]);
 
+	
+    vheader.assign(m_header, m_header+7); 
+
 	delete reader;
 
 	setupLengthScales();
+	vLengthScale.assign(m_lenScale,m_lenScale+m_header[0]); 
 }
 
 UMesh::UMesh(const UMesh &UMIn, const int nDivs, const emInt partID) : m_nVerts(0), m_nBdryVerts(0), m_nTris(0), m_nQuads(0), m_nTets(0),
@@ -1740,9 +1849,9 @@ UMesh::testCell2FaceConn(emInt nCells)
 
 }
 
-std::unique_ptr<UMesh> UMesh::Extract(const emInt partID, const std::vector<emInt> partcells , const int numDivs, 
-const std::unordered_set<TriFaceVerts> &tris, 
-const std::unordered_set<QuadFaceVerts> &quads) const
+void UMesh::Extract(const emInt partID, const std::vector<emInt> &partcells, const int numDivs, 
+const std::unordered_set<TriFaceVerts> tris, 
+const std::unordered_set<QuadFaceVerts> quads) const
 {
 	// Count the number of tris, quads, tets, pyrs, prisms and hexes.
 	// const emInt first = P.getFirst();
@@ -2091,7 +2200,7 @@ const std::unordered_set<QuadFaceVerts> &quads) const
 		UUM->addBdryQuad(conn);
 	}
 	assert(UUM->getSizePartQuads() == quads.size());
-	return UUM; 
+	//return UUM; It needs to be changed, It must return Umesh object 
 };
 
 
@@ -2152,10 +2261,10 @@ const
 				TriFaceVerts T013(numDivs, global013, iPart);
 				TriFaceVerts T123(numDivs, global123, iPart);
 				TriFaceVerts T203(numDivs, global203, iPart);
-				//addUniquely(partBdryTris, T012);
-				//addUniquely(partBdryTris, T013);
-				//addUniquely(partBdryTris, T123);
-				//addUniquely(partBdryTris, T203);
+				addUniquely(partBdryTris, T012);
+				addUniquely(partBdryTris, T013);
+				addUniquely(partBdryTris, T123);
+				addUniquely(partBdryTris, T203);
 				break;
 			}
 			case CGNS_ENUMV(PYRA_5):
@@ -2177,11 +2286,11 @@ const
 				TriFaceVerts T234(numDivs, global234, iPart);
 				TriFaceVerts T304(numDivs, global304, iPart);
 				QuadFaceVerts Q0123(numDivs, global0123, iPart);
-				//addUniquely(partBdryTris, T014);
-				//addUniquely(partBdryTris, T124);
-				//addUniquely(partBdryTris, T234);
-				//addUniquely(partBdryTris, T304);
-				//addUniquely(partBdryQuads, Q0123);
+				addUniquely(partBdryTris, T014);
+				addUniquely(partBdryTris, T124);
+				addUniquely(partBdryTris, T234);
+				addUniquely(partBdryTris, T304);
+				addUniquely(partBdryQuads, Q0123);
 				break;
 			}
 			case CGNS_ENUMV(PENTA_6):
@@ -2202,11 +2311,11 @@ const
 				QuadFaceVerts Q1254(numDivs, global1254, iPart);
 				QuadFaceVerts Q2035(numDivs, global2035, iPart);
 
-				//addUniquely(partBdryTris, T012);
-				//addUniquely(partBdryTris, T345);
-				//addUniquely(partBdryQuads, Q0143);
-				//addUniquely(partBdryQuads, Q1254);
-				//addUniquely(partBdryQuads, Q2035);
+				addUniquely(partBdryTris, T012);
+				addUniquely(partBdryTris, T345);
+				addUniquely(partBdryQuads, Q0143);
+				addUniquely(partBdryQuads, Q1254);
+				addUniquely(partBdryQuads, Q2035);
 				break;
 			}
 			case CGNS_ENUMV(HEXA_8):
@@ -2227,12 +2336,12 @@ const
 				QuadFaceVerts Q3047(numDivs, global3047, iPart);
 				QuadFaceVerts Q0123(numDivs, global0123, iPart);
 				QuadFaceVerts Q4567(numDivs, global4567, iPart);
-				//addUniquely(partBdryQuads, Q0154);
-				//addUniquely(partBdryQuads, Q1265);
-				//addUniquely(partBdryQuads, Q2376);
-				//addUniquely(partBdryQuads, Q3047);
-				//addUniquely(partBdryQuads, Q0123);
-				//addUniquely(partBdryQuads, Q4567);
+				addUniquely(partBdryQuads, Q0154);
+				addUniquely(partBdryQuads, Q1265);
+				addUniquely(partBdryQuads, Q2376);
+				addUniquely(partBdryQuads, Q3047);
+				addUniquely(partBdryQuads, Q0123);
+				addUniquely(partBdryQuads, Q4567);
 
 				break;
 			}
@@ -2240,97 +2349,363 @@ const
 		}	  // end loop to gather information
 	}
 
-	double end = exaTime()-start; 
-
-	std::cout<<" First part of part face Matching: "<<end<<std::endl; 
-
-	// totalTriSize  = partBdryTris.size(); 
-	// totalQuadSize = partBdryQuads.size(); 
+	totalTriSize  = partBdryTris.size(); 
+	totalQuadSize = partBdryQuads.size(); 
 	
-	// std::size_t k = 0;
 
-	// double start1 = exaTime(); 
 
-	// for (auto itr = partBdryTris.begin(); itr != partBdryTris.end(); itr++)
-	// {
-	// 	k++;
+	std::size_t k = 0;
+	for (auto itr = partBdryTris.begin(); itr != partBdryTris.end(); itr++)
+	{
+		k++;
 
-	// 	auto next = std::next(itr, 1);
-	// 	if (k != partBdryTris.size())
-	// 	{
-	// 		if (
-	// 			itr->getSortedGlobal(0) == next->getSortedGlobal(0) &&
+		auto next = std::next(itr, 1);
+		if (k != partBdryTris.size())
+		{
+			if (
+				itr->getSortedGlobal(0) == next->getSortedGlobal(0) &&
 
-	// 			itr->getSortedGlobal(1) == next->getSortedGlobal(1) &&
-	// 			itr->getSortedGlobal(2) == next->getSortedGlobal(2))
-	// 		{
+				itr->getSortedGlobal(1) == next->getSortedGlobal(1) &&
+				itr->getSortedGlobal(2) == next->getSortedGlobal(2))
+			{
 
-	// 			emInt global[3] = {itr->getGlobalCorner(0),
-	// 							   itr->getGlobalCorner(1), itr->getGlobalCorner(2)};
-	// 			emInt globalNext[3] = {next->getGlobalCorner(0),
-	// 								   next->getGlobalCorner(1), next->getGlobalCorner(2)};
+				emInt global[3] = {itr->getGlobalCorner(0),
+								   itr->getGlobalCorner(1), itr->getGlobalCorner(2)};
+				emInt globalNext[3] = {next->getGlobalCorner(0),
+									   next->getGlobalCorner(1), next->getGlobalCorner(2)};
 
-	// 			TriFaceVerts tripart(numDivs, global, itr->getPartid(),
-	// 								 next->getPartid(), true);
+				TriFaceVerts tripart(numDivs, global, itr->getPartid(),
+									 next->getPartid(), true);
 
-	// 			TriFaceVerts tripartNext(numDivs, globalNext, next->getPartid(), itr->getPartid(), true);
+				TriFaceVerts tripartNext(numDivs, globalNext, next->getPartid(), itr->getPartid(), true);
 
-	// 			addUniquely(tris[itr->getPartid()], tripart);
-	// 			addUniquely(tris[next->getPartid()], tripartNext);
-	// 		}
-	// 	}
-	// }
+				addUniquely(tris[itr->getPartid()], tripart);
+				addUniquely(tris[next->getPartid()], tripartNext);
+			}
+		}
+	}
 
-	// std::size_t kquad = 0;
-	// for (auto itr = partBdryQuads.begin();
-	// 	 itr != partBdryQuads.end(); itr++)
-	// {
+	std::size_t kquad = 0;
+	for (auto itr = partBdryQuads.begin();
+		 itr != partBdryQuads.end(); itr++)
+	{
 
-	// 	auto next = std::next(itr, 1);
-	// 	kquad++;
-	// 	if (kquad != partBdryQuads.size())
-	// 	{
-	// 		emInt v0Global = next->getGlobalCorner(0);
-	// 		emInt v1Global = next->getGlobalCorner(1);
-	// 		emInt v2Global = next->getGlobalCorner(2);
-	// 		emInt v3Global = next->getGlobalCorner(3);
+		auto next = std::next(itr, 1);
+		kquad++;
+		if (kquad != partBdryQuads.size())
+		{
+			emInt v0Global = next->getGlobalCorner(0);
+			emInt v1Global = next->getGlobalCorner(1);
+			emInt v2Global = next->getGlobalCorner(2);
+			emInt v3Global = next->getGlobalCorner(3);
 
-	// 		emInt partid = next->getPartid();
+			emInt partid = next->getPartid();
 
-	// 		emInt v0SortedGlobal = next->getSortedGlobal(0);
-	// 		emInt v1SortedGlobal = next->getSortedGlobal(1);
-	// 		emInt v2SortedGlobal = next->getSortedGlobal(2);
-	// 		emInt v3SortedGlobal = next->getSortedGlobal(3);
+			emInt v0SortedGlobal = next->getSortedGlobal(0);
+			emInt v1SortedGlobal = next->getSortedGlobal(1);
+			emInt v2SortedGlobal = next->getSortedGlobal(2);
+			emInt v3SortedGlobal = next->getSortedGlobal(3);
 
-	// 		emInt v0Global_ = itr->getGlobalCorner(0);
-	// 		emInt v1Global_ = itr->getGlobalCorner(1);
-	// 		emInt v2Global_ = itr->getGlobalCorner(2);
-	// 		emInt v3Global_ = itr->getGlobalCorner(3);
+			emInt v0Global_ = itr->getGlobalCorner(0);
+			emInt v1Global_ = itr->getGlobalCorner(1);
+			emInt v2Global_ = itr->getGlobalCorner(2);
+			emInt v3Global_ = itr->getGlobalCorner(3);
 
-	// 		emInt partid_ = itr->getPartid();
+			emInt partid_ = itr->getPartid();
 
-	// 		emInt v0SortedGlobal_ = itr->getSortedGlobal(0);
-	// 		emInt v1SortedGlobal_ = itr->getSortedGlobal(1);
-	// 		emInt v2SortedGlobal_ = itr->getSortedGlobal(2);
-	// 		emInt v3SortedGlobal_ = itr->getSortedGlobal(3);
+			emInt v0SortedGlobal_ = itr->getSortedGlobal(0);
+			emInt v1SortedGlobal_ = itr->getSortedGlobal(1);
+			emInt v2SortedGlobal_ = itr->getSortedGlobal(2);
+			emInt v3SortedGlobal_ = itr->getSortedGlobal(3);
 
-	// 		if (v0SortedGlobal_ == v0SortedGlobal &&
-	// 			v1SortedGlobal == v1SortedGlobal_ &&
-	// 			v2SortedGlobal == v2SortedGlobal_ &&
-	// 			v3SortedGlobal == v3SortedGlobal_)
-	// 		{
-	// 			emInt global[4] = {v0Global, v1Global, v2Global, v3Global};
-	// 			emInt global_[4] = {v0Global_, v1Global_, v2Global_, v3Global_};
+			if (v0SortedGlobal_ == v0SortedGlobal &&
+				v1SortedGlobal == v1SortedGlobal_ &&
+				v2SortedGlobal == v2SortedGlobal_ &&
+				v3SortedGlobal == v3SortedGlobal_)
+			{
+				emInt global[4] = {v0Global, v1Global, v2Global, v3Global};
+				emInt global_[4] = {v0Global_, v1Global_, v2Global_, v3Global_};
 
-	// 			QuadFaceVerts quadpart(numDivs, global, partid, partid_, true);
-	// 			QuadFaceVerts quadpart_(numDivs, global_, partid_, partid, true);
-	// 			addUniquely(quads[partid], quadpart);
-	// 			addUniquely(quads[partid_], quadpart_);
-	// 		}
-	// 	}
-	// }
-
-	// double end1= exaTime()-start1; 
-	// std::cout<<" Second part of part face Matching: "<<end1<<std::endl; 
+				QuadFaceVerts quadpart(numDivs, global, partid, partid_, true);
+				QuadFaceVerts quadpart_(numDivs, global_, partid_, partid, true);
+				addUniquely(quads[partid], quadpart);
+				addUniquely(quads[partid_], quadpart_);
+			}
+		}
+	}
 
 }
+void UMesh::convertToUmeshFormat()
+{
+	// num of bdry verts
+
+	init(vheader[0],BdryVertsTrisQuads[0], 
+	BdryVertsTrisQuads[1], BdryVertsTrisQuads[2], vheader[3], vheader[4], vheader[5],
+		 vheader[6]);
+
+	m_header  = vheader.data(); 
+	//m_TriConn = reinterpret_cast<emInt (*)[3]> (vTriConns.data()); 
+	//m_TetConn = reinterpret_cast<emInt (*)[4]> (vTetConns.data()); 
+
+	for(auto iTet=0 ; iTet<m_header[eTet]; iTet++)
+	{
+		for(auto iConn=0 ; iConn<4; iConn++)
+		{
+			m_TetConn[iTet][iConn]= vTetConns[iTet][iConn]; 
+		}
+	}
+
+
+	for(auto iTri=0 ; iTri<m_header[eTri];iTri++)
+	{
+		for(auto j=0; j<3; j++)
+		{
+			m_TriConn[iTri][j]=vTriConns[iTri][j]; 
+		}
+	}
+
+	for(auto iVert=0; iVert<m_header[eVert];iVert++)
+	{
+		m_lenScale[iVert]=vLengthScale[iVert];
+	}
+
+	for(auto iQuad=0 ; iQuad<m_header[eQuad]; iQuad++)
+	{
+		for(auto j=0; j<4; j++)
+		{
+			m_QuadConn[iQuad][j]=vQuadConns[iQuad][j];
+		}
+	}
+	for(auto iPyr=0 ; iPyr<m_header[ePyr]; iPyr++)
+	{
+		for(auto j=0 ; j<5; j++)
+		{
+			m_PyrConn[iPyr][j]=vPyrmConns[iPyr][j]; 
+		}
+	}
+	for(auto iPrism=0 ; iPrism<m_header[ePrism]; iPrism++)
+	{
+		for(auto j=0 ;j<6; j++)
+		{
+			m_PrismConn[iPrism][j]= vPrsimConns[iPrism][j]; 
+		}
+	}
+	for(auto iHex=0; iHex<m_header[eHex];iHex++)
+	{
+		for(auto j=0; j<8; j++)
+		{
+			m_HexConn[iHex][j]=vHexConns[iHex][j]; 
+		}
+	}
+};
+
+void
+UMesh:: FastpartFaceMatching(
+	const emInt nParts, 
+	const std::vector<std::vector<emInt>> &part2cells,
+	const std::vector<emInt> &cell2part,
+	vecVecTri &tris, vecVecQuad &quads) 
+const
+{
+	tris.resize(nParts);
+	quads.resize(nParts);
+	emInt numDivs = 1;
+
+	// Mark the cells that are cell parts in fact 
+	std::unordered_set< std::pair<emInt,emInt>,pairHash> cellParts; 
+	for(auto icell=0 ; icell<cell2part.size(); icell++)
+	{
+		emInt ipart       = cell2part[icell]; 
+		emInt ineighsize  = getCellConnSize(icell); 
+		std::vector<emInt> vneighs; 
+		for(auto ineigh=0 ; ineigh<ineighsize; ineigh++)
+		{
+			vneighs.push_back(getCellConn(icell,ineigh)); 
+		} 
+		// icell belongs to ipart 
+		// Check whether all of my neibours are in this part
+		for(auto ineigh=0; ineigh<ineighsize; ineigh++)
+		{
+			emInt neighCellID = vneighs[ineigh];
+			emInt neighPartID = cell2part[neighCellID]; 
+			if(neighPartID!=ipart)
+			{
+        		if (neighCellID < icell) 
+				{
+            		cellParts.emplace(neighCellID, icell);
+        		} else 
+				{
+            		cellParts.emplace(icell, neighCellID);
+        		}
+
+			} 
+		}
+
+	}
+
+	for(const auto &icellPart:cellParts)
+	{
+		emInt cellID1 = icellPart.first;
+		emInt cellID2 = icellPart.second;
+
+		emInt partID1 = cell2part[cellID1];	
+		emInt partID2 = cell2part[cellID2];
+
+		emInt ind1 = (cellID2cellTypeLocalID[cellID1].second)-1;
+		emInt ind2 = (cellID2cellTypeLocalID[cellID2].second)-1;
+
+
+
+		emInt type1 = cellID2cellTypeLocalID[cellID1].first;
+		emInt type2 = cellID2cellTypeLocalID[cellID2].first;
+
+		std::vector<TriFaceVerts>  tris1, tris2;
+		std::vector<QuadFaceVerts> quads1, quads2;
+
+
+		getFaceLists(ind1, type1, partID1, 1, tris1, quads1);
+		getFaceLists(ind2, type2, partID2, 1, tris2, quads2);
+
+		setTri partBdryTris;
+		setQuad partBdryQuads;
+
+		for(auto itri=0 ; itri<tris1.size(); itri++)
+		{
+			partBdryTris.insert(tris1[itri]); 
+		}
+		for(auto itri=0 ; itri<tris2.size(); itri++)
+		{
+			partBdryTris.insert(tris2[itri]); 
+		}
+
+		for(auto iquad=0 ; iquad<quads1.size(); iquad++)
+		{
+			partBdryQuads.insert(quads1[iquad]); 
+		}
+
+		for(auto iquad=0 ; iquad<quads2.size(); iquad++)
+		{
+			partBdryQuads.insert(quads2[iquad]); 
+		}
+		preMatchingPartBdryTris(numDivs,partBdryTris,tris); 
+		preMatchingPartBdryQuads(numDivs,partBdryQuads,quads);
+	}
+
+};
+
+void 
+UMesh::
+getFaceLists (const emInt ind, const emInt type, 
+const emInt partID, const emInt numDivs,
+std::vector<TriFaceVerts> &tris, 
+std::vector<QuadFaceVerts> &quads) const 
+{
+	const emInt *conn;
+	switch (type)
+	{
+		default:
+		// Panic! Should never get here.
+		assert(0);
+		break;
+		case BDRY_TRI:
+			break; 
+		case BDRY_QUAD:
+			break; 
+		case CGNS_ENUMV(TETRA_4):
+		{
+
+			conn = getTetConn(ind);
+
+			emInt global012[3] = {conn[0], conn[1], conn[2]};
+			emInt global013[3] = {conn[0], conn[1], conn[3]};
+			emInt global123[3] = {conn[1], conn[2], conn[3]};
+			emInt global203[3] = {conn[2], conn[0], conn[3]};
+			TriFaceVerts T012(numDivs, global012, partID);
+			TriFaceVerts T013(numDivs, global013, partID);
+			TriFaceVerts T123(numDivs, global123, partID);
+			TriFaceVerts T203(numDivs, global203, partID);
+			tris.emplace_back(T012);
+			tris.emplace_back(T013);
+			tris.emplace_back(T123);
+			tris.emplace_back(T203); 
+
+			break;
+		}
+		case CGNS_ENUMV(PYRA_5):
+		{
+
+			conn = getPyrConn(ind);
+
+
+			emInt global0123[4] = {conn[0], conn[1], conn[2], conn[3]};
+			emInt global014[3]  = {conn[0], conn[1], conn[4]};
+			emInt global124[3]  = {conn[1], conn[2], conn[4]};
+			emInt global234[3]  = {conn[2], conn[3], conn[4]};
+			emInt global304[3]  = {conn[3], conn[0], conn[4]};
+			TriFaceVerts  T014(numDivs, global014, partID);
+			TriFaceVerts  T124(numDivs, global124, partID);
+			TriFaceVerts  T234(numDivs, global234, partID);
+			TriFaceVerts  T304(numDivs, global304, partID);
+			QuadFaceVerts Q0123(numDivs, global0123, partID);
+			tris.emplace_back(T014);
+			tris.emplace_back(T124);
+			tris.emplace_back(T234);
+			tris.emplace_back(T304);
+			quads.emplace_back(Q0123);
+
+			break;
+		}
+		case CGNS_ENUMV(PENTA_6):
+		{
+
+			conn = getPrismConn(ind);
+
+			emInt global0143[4] = {conn[0], conn[1], conn[4], conn[3]};
+			emInt global1254[4] = {conn[1], conn[2], conn[5], conn[4]};
+			emInt global2035[4] = {conn[2], conn[0], conn[3], conn[5]};
+
+			emInt global012[3] = {conn[0], conn[1], conn[2]};
+			emInt global345[3] = {conn[3], conn[4], conn[5]};
+
+			TriFaceVerts T012(numDivs, global012, partID);
+			TriFaceVerts T345(numDivs, global345, partID);
+			QuadFaceVerts Q0143(numDivs, global0143, partID);
+			QuadFaceVerts Q1254(numDivs, global1254, partID);
+			QuadFaceVerts Q2035(numDivs, global2035, partID);
+			tris.emplace_back(T012);
+			tris.emplace_back(T345);
+			quads.emplace_back(Q0143);
+			quads.emplace_back(Q1254);
+			quads.emplace_back(Q2035);
+		break;
+		}
+		case CGNS_ENUMV(HEXA_8):
+		{
+
+			conn = getHexConn(ind);
+
+			emInt global0154[4] = {conn[0], conn[1], conn[5], conn[4]};
+			emInt global1265[4] = {conn[1], conn[2], conn[6], conn[5]};
+			emInt global2376[4] = {conn[2], conn[3], conn[7], conn[6]};
+			emInt global3047[4] = {conn[3], conn[0], conn[4], conn[7]};
+			emInt global0123[4] = {conn[0], conn[1], conn[2], conn[3]};
+			emInt global4567[4] = {conn[4], conn[5], conn[6], conn[7]};
+
+			QuadFaceVerts Q0154(numDivs, global0154, partID);
+			QuadFaceVerts Q1265(numDivs, global1265, partID);
+			QuadFaceVerts Q2376(numDivs, global2376, partID);
+			QuadFaceVerts Q3047(numDivs, global3047, partID);
+			QuadFaceVerts Q0123(numDivs, global0123, partID);
+			QuadFaceVerts Q4567(numDivs, global4567, partID);
+			quads.emplace_back(Q0154);
+			quads.emplace_back(Q1265);
+			quads.emplace_back(Q2376);
+			quads.emplace_back(Q3047);
+			quads.emplace_back(Q0123);
+			quads.emplace_back(Q4567);
+			break;
+		}
+	} 
+}
+
+

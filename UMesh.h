@@ -41,6 +41,16 @@ class UMesh: public ExaMesh {
 	template <class Archive>
 	void serialize(Archive &ar,const unsigned int /*version*/)
 	{
+		ar    &cellID2cellTypeLocalID; 
+		ar    &vTriConns;
+		ar    &vQuadConns;
+    	ar    &vTetConns; 
+    	ar    &vPyrmConns; 
+    	ar    &vPrsimConns; 
+    	ar    &vHexConns; 
+		ar    &vLengthScale;
+		ar    &vheader;
+		ar    &BdryVertsTrisQuads; 
 		
 	}
 	size_t m_fileImageSize;
@@ -61,8 +71,21 @@ class UMesh: public ExaMesh {
 	std::vector<std::vector<emInt>>                                 vcell2cell;
 	std::vector<emInt>                                              vcellID2type; 
 	std::vector<std::pair<emInt,emInt>>                             cellID2cellTypeLocalID; 
-	UMesh(const UMesh&);
-	UMesh& operator=(const UMesh&);
+	std::vector<std::vector<emInt>>                                 vTriConns;
+	std::vector<std::vector<emInt>>                                 vQuadConns;
+    std::vector<std::vector<emInt>>                                 vTetConns; 
+    std::vector<std::vector<emInt>>                                 vPyrmConns; 
+    std::vector<std::vector<emInt>>                                 vPrsimConns; 
+    std::vector<std::vector<emInt>>                                 vHexConns; 
+	std::vector<double>                                             vLengthScale;
+	std::vector<emInt>                                              vheader;
+	std::vector<emInt>                                              BdryVertsTrisQuads; 
+
+	UMesh& operator=(const UMesh& inPut);
+	// {
+	// 	//vheader= inPut.vheader; 
+	// 	std::cout<<"Am I called at all?"<<std::endl;
+	// }
 
 public:
 	void partFaceMatching(
@@ -72,9 +95,22 @@ public:
 	UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
+	UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
+			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
+			const emInt nPrisms, const emInt nHexes, 
+			const std::vector<std::vector<emInt>> &tetConns, const std::vector<emInt> &header,
+			const std::vector<std::pair<emInt,emInt>> &cellID2cellTypeLocal,
+			const std::vector<std::vector<emInt>> &vTriConns,
+			const std::vector<double> &vLengthSclae, 
+			const std::vector<std::vector<emInt>> &vQuadConn,
+			const std::vector<std::vector<emInt>> &vPyrConn, 
+			const std::vector<std::vector<emInt>> &vPrsimConn, 
+			const std::vector<std::vector<emInt>> &vHexConn);		
 	UMesh(const char baseFileName[], const char type[], const char ugridInfix[]);
 	UMesh(const UMesh& UM_in, const int nDivs, const emInt partID=-1);
 	UMesh(const CubicMesh& CM, const int nDivs, const emInt partID=-1);
+	friend void sendUMesh(boost::mpi::communicator  world, UMesh* pEM);
+
 	~UMesh();
 	emInt maxNVerts() const {
 		return m_nVerts;
@@ -211,9 +247,44 @@ public:
 	{
 		return vcellID2type[cellID]; 
 	}
-
+	const double (*getAllCoords() const)[3]
+	{
+		return m_coords; 
+	}
+	const emInt  (*getAllTetConn() const)[4]
+	{
+		return m_TetConn;
+	}
+	const emInt (*getAllTriConn() const) [3]
+	{
+		return m_TriConn;
+	}
+	const emInt (*getAllQuadConn() const) [4]
+	{
+		return m_QuadConn; 
+	}
+	const emInt (*getAllPyrConn() const ) [5]
+	{
+		return m_PyrConn; 
+	}
+	const emInt (*getAllPrismConn() const) [6]
+	{
+		return m_PrismConn; 
+	}
+	const emInt (*getAllHexConn() const) [8]
+	{
+		return m_HexConn; 
+	}
+	const emInt* getHeader() const
+	{
+		return m_header; 
+	}
 	Mapping::MappingType getDefaultMappingType() const {
 		return Mapping::Uniform;
+	}
+	std::vector<std::pair<emInt,emInt>> getCellID2CellType2LocalID() const 
+	{
+		return cellID2cellTypeLocalID;
 	}
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
@@ -244,17 +315,35 @@ public:
 	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2, emInt v3);
 	void testCell2CellConn(emInt nCells); 
 	void testCell2FaceConn(emInt nCells);
+	std::vector<std::pair<emInt,emInt>> getCellID2CellType () const 
+	{
+		return cellID2cellTypeLocalID; 
+	}
+	void setCellId2CellTypeLocal (const std::vector<std::pair<emInt,emInt>>& cellIDs )
+	{
+		cellID2cellTypeLocalID=cellIDs; 
+	}
 
-	std::unique_ptr<UMesh> 
-	Extract(const emInt partID, const std::vector<emInt> partcells , const int numDivs, 
-	const std::unordered_set<TriFaceVerts> &tris= std::unordered_set<TriFaceVerts>(), 
-	const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>()) const;
+	void 
+	Extract(const emInt partID, const std::vector<emInt> &partcells , const int numDivs, 
+	const std::unordered_set<TriFaceVerts> tris= std::unordered_set<TriFaceVerts>(), 
+	const std::unordered_set<QuadFaceVerts> quads= std::unordered_set<QuadFaceVerts>()) const;
+
+	void convertToUmeshFormat(); 
 	void 
 	partFaceMatching(const std::vector<std::vector<emInt>> &part2cells,	
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
 		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize) const;
 
+	void 
+	FastpartFaceMatching(const emInt nParts, const std::vector<std::vector<emInt>> &part2cells,
+	const std::vector<emInt> &cell2part, 
+	vecVecTri &tris, vecVecQuad &quads) const;	 
 
+	void getFaceLists (const emInt ind, const emInt type, 
+	const emInt partID, const emInt numDivs,
+	std::vector<TriFaceVerts> &tris, 
+	std::vector<QuadFaceVerts> &quads) const;; 					
 	// Writing with compression reduces file size by a little over a factor of two,
 	// at the expense of making file write slower by two orders of magnitude.
 	// So don't do it.
