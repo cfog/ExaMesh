@@ -127,6 +127,8 @@ RecvUMesh(boost::mpi::communicator  world)
 void sendTrisQuads(boost::mpi::communicator  world, 
     const  vecHashTri  &tris,  
 	const  vecHashQuad &quads, 
+    const  vecVecTri   &vtris, 
+    const  vecVecQuad  &vquads,
     hashTri  &trisS, 
 	hashQuad &quadsS)
 {
@@ -136,230 +138,200 @@ void sendTrisQuads(boost::mpi::communicator  world,
     int tag=0; 
 
 
-    for(size_t  itri=0 ; itri<tris.size(); itri++)
-	{
-		vecTri TriVec; 
-		SetToVector(tris[itri],TriVec); 
-		VecTriVec.emplace_back(TriVec); 
-	}
-	for(size_t iquad=0 ; iquad<quads.size(); iquad++)
-	{
-		vecQuad QuadVec; 
-		SetToVector(quads[iquad],QuadVec); 
-		vecQuadVec.emplace_back(QuadVec); 
-	}
+    // for(size_t  itri=0 ; itri<tris.size(); itri++)
+	// {
+	// 	vecTri TriVec; 
+	// 	SetToVector(tris[itri],TriVec); 
+	// 	VecTriVec.emplace_back(TriVec); 
+	// }
+	// for(size_t iquad=0 ; iquad<quads.size(); iquad++)
+	// {
+	// 	vecQuad QuadVec; 
+	// 	SetToVector(quads[iquad],QuadVec); 
+	// 	vecQuadVec.emplace_back(QuadVec); 
+	// }
 
-	trisS = tris[0]; // For MASTER 
-	quadsS= quads[0];
+	//trisS = tris[0]; // For MASTER 
+	//quadsS= quads[0];
+
+    for(auto itri=0; itri<vtris[0].size(); itri++)
+    {
+        trisS.insert(vtris[0][itri]);
+    }
+    for(auto iquad=0; iquad<vquads[0].size(); iquad++)
+    {
+        quadsS.insert(vquads[0][iquad]);
+    }
 		
 	for(auto irank=1 ; irank<world.size();irank++)
 	{
 
-		world.send(irank,tag,VecTriVec[irank]); 
-		world.send(irank,tag,vecQuadVec[irank]); 
+		world.send(irank,tag,vtris[irank]); 
+		world.send(irank,tag,vquads[irank]); 
 
 	}
 }
 
-
+void printHashTris(const hashTri& hashTris) 
+{
+    for (const auto& hashTri : hashTris)
+    {
+        std::cout << "Global ID: " << hashTri.getGlobalCorner(0)<<" "<< hashTri.getGlobalCorner(1)<<" "<< hashTri.getGlobalCorner(2) << std::endl;
+        std::cout << "Sorted Global ID: " << hashTri.getSortedGlobal(0)<<" "<< hashTri.getSortedGlobal(1)<<" "<< hashTri.getSortedGlobal(2) << std::endl;
+        std::cout << "Part ID: " <<hashTri.getPartid() << std::endl;
+        std::cout << "Remote Part ID: " << hashTri.getRemoteId()<< std::endl;
+    }
+}
+void printHashQuads(const hashQuad& hashQuads) 
+{
+    for (const auto& hashQuad : hashQuads)
+    {
+        std::cout << "Global ID: " << hashQuad.getGlobalCorner(0)<<" "<< hashQuad.getGlobalCorner(1)<<" "<< hashQuad.getGlobalCorner(2)<<" "<< hashQuad.getGlobalCorner(3) << std::endl;
+        std::cout << "Sorted Global ID: " << hashQuad.getSortedGlobal(0)<<" "<< hashQuad.getSortedGlobal(1)<<" "<< hashQuad.getSortedGlobal(2)<<" "<< hashQuad.getSortedGlobal(3) << std::endl;
+        std::cout << "Part ID: " <<hashQuad.getPartid() << std::endl;
+        std::cout << "Remote Part ID: " << hashQuad.getRemoteId()<< std::endl;
+    }
+}
 
 void refineForMPI ( const char  baseFileName[] , const char type[], 
                     const char  ugridInfix[]   , const char CGNSFileName[],
                     const int   numDivs        , const char MeshType, 
                     std::string mshName        , FILE* fileAllTimes)
 {
-    //boost::mpi::environment   env; 
-	//boost::mpi::communicator  world;
-    //double appTimeStart =exaTime(); 
 
-    emInt nParts = world.size(); 
 
-   // std::unique_ptr<UMesh> pEM(nullptr); 
 
-    std::vector<emInt> partCells; 
-
-    hashTri  trisS; 
-	hashQuad quadsS;
-
-    vecTri   triV;
-	vecQuad  quadV; 
-
-    int tag=0; 
+    double appTimeStart =exaTime();
+    boost::mpi::environment   env; 
+	boost::mpi::communicator  world;
    
 
-    //if(world.rank()==MASTER)
-   // {
-        double start = exaTime();
-        UMesh inimesh(baseFileName, type, ugridInfix); 
-        double time = exaTime()-start;
+    emInt nParts = world.size(); 
+    std::vector<boost::mpi::request> reqs;
+    std::vector<boost::mpi::request> sizes; 
+
+    std::vector<boost::mpi::request> reqforPartCellSizes;
+    std::vector<boost::mpi::request> temp;
+
+
+    std::vector<std::size_t>  partCellsizes(nParts);
+    std::vector<std::size_t>  trisizes(nParts); 
+    std::vector<std::size_t>  quadsize(nParts);
+    std::vector<std::vector<emInt>> partCells(nParts); 
+    
+
+
+    hashTri  hashTris; 
+	hashQuad hashQuads;
+
+    vecVecTri   triV(nParts);
+	vecVecQuad  quadV(nParts); 
+
+    double starttimereading=exaTime();
+   
+    UMesh inimesh(baseFileName, type, ugridInfix); 
+    double timereading=exaTime()-starttimereading;
+    std::cout<<"Reading mesh on rank: "<<world.rank()<<" took: "<<timereading<<std::endl;
+    
+    
+    if(world.rank()==MASTER)
+    {
         
-
-        std::cout<<"Reading mesh & building connectivities in total on MASTER took: "<<time<<std::endl; 
-        //auto celltypes= inimesh.getCellID2CellType2LocalID();
-        //emInt celltypesSize =celltypes.size(); 
-        //start=exaTime();
-       // for(auto irank=1 ; irank<world.size(); irank++)
-       // {
-            //world.send(irank,0,inimesh); 
-            //world.send(irank,0,celltypesSize);
-           // world.send(irank,0,celltypes);
-        //}
-        //time=exaTime()-start; 
-        //std::cout<<"Sending Umesh took: "<<time<<std::endl; 
-
-
-        start = exaTime(); 
         std::vector<emInt> vaicelltopart;
         auto part2cell= partitionMetis(inimesh,nParts,vaicelltopart); 
-       // partCells = part2cell[0];
-        time = exaTime()-start; 
-        std::cout<<"Metis Partitioning on MASTER took: "<<time<<std::endl;
+        partCells[world.rank()] = part2cell[0];
 
-        //for(auto irank=1; irank<world.size();irank++)
-        //{
-         //   world.send(irank,0,part2cell[irank]); 
-        //}
+ 
+        for(auto irank=1; irank<world.size();irank++)
+        {
+            boost::mpi::request rq0=world.isend(irank,0,part2cell[irank].size());
+            reqforPartCellSizes.emplace_back(rq0);
+
+            boost::mpi::request rq1 =world.isend(irank,1,part2cell[irank]); 
+            reqs.emplace_back(rq1);
+        }
         vecHashTri  hashtris; 
 	    vecHashQuad hashquads;
 
         vecVecTri  tris;
         vecVecQuad quads;
 
-        std::size_t triSize; 
-        std::size_t quadSize; 
- 
-        start = exaTime(); 
-        inimesh.partFaceMatching(part2cell,hashtris,hashquads,triSize,quadSize); 
-        time = exaTime()-start; 
-        std::cout<<"Old Part face Matching on MASTER took: "<<time<<std::endl; 
-
-        start = exaTime();
         inimesh.FastpartFaceMatching(nParts, part2cell,vaicelltopart,tris,quads); 
-        time = exaTime()-start;
-        std::cout<<"New Part face Matching on MASTER took: "<<time<<std::endl;
-        TestPartFaceMatching(nParts,hashtris,hashquads,tris,quads);
+        for(auto irank=1 ; irank<world.size();irank++)
+	    {
 
 
+            boost::mpi::request rq1= world.isend(irank,2,tris[irank].size());
+            sizes.emplace_back(rq1);
 
-        //start=exaTime(); 
-        //sendTrisQuads(world,tris,quads,trisS,quadsS);
-        //time=exaTime()-start; 
-        //std::cout<<"Sending Boundary Faces took: "<<time<<std::endl; 
+            boost::mpi::request rq2= world.isend(irank,3,quads[irank].size());
+            sizes.emplace_back(rq2);
 
-    //}
-    //if(world.rank()!=MASTER)
-   // {
-    //     std::vector<std::pair<emInt,emInt>> cellId2type;
-    //     emInt celltypesSize; 
-       // UMesh recvMesh; 
-        //world.recv(MASTER,0,recvMesh);
-    //     //world.recv(MASTER,0,celltypesSize); 
-    //    // cellId2type.resize(celltypesSize);
-    //    // world.recv(MASTER,0,cellId2type); 
-    //     world.recv(MASTER,0,partCells); 
+            boost::mpi::request rq3= world.isend(irank,4,tris[irank]); 
+            temp.emplace_back(rq3);
+
+            boost::mpi::request rq4= world.isend(irank,5,quads[irank]);
+            temp.emplace_back(rq4);
+
+        }
+        //vectorToSet(tris[MASTER],hashTris);
+       // vectorToSet(quads[MASTER],hashQuads);
+        //inimesh.Extract(world.rank(),partCells[MASTER],numDivs,hashTris,hashQuads);
+
+      
+    }
+    if(world.rank()!=MASTER)
+    {
+       
+        boost::mpi::request rq0=world.irecv(MASTER,0,partCellsizes[world.rank()]);
+        reqforPartCellSizes.emplace_back(rq0);
+
+        boost::mpi::wait_all(reqforPartCellSizes.begin(),reqforPartCellSizes.end());
+        partCells[world.rank()].resize(partCellsizes[world.rank()]);
 
 
-    //     recvMesh.setCellId2CellTypeLocal(cellId2type); 
+        boost::mpi::request req=world.irecv(MASTER,1,partCells[world.rank()]); 
+        reqs.emplace_back(req);
 
-    //     world.recv(MASTER,tag,triV); 
-	//  	world.recv(MASTER,tag,quadV);
 
-    //     vectorToSet(triV,trisS);
-	//  	vectorToSet(quadV,quadsS); 
-
-    //     double start = exaTime(); 
-    //     recvMesh.convertToUmeshFormat();
-    //     double time = exaTime()-start; 
-    //     std::cout<<"Converting Umesh pack: "<<time<<std::endl;
-       // recvMesh.Extract(world.rank(),partCells,numDivs,trisS,quadsS); 
         
-        
-        
-   // }
 
-    //world.barrier(); 
-    //double appTime = exaTime()-appTimeStart; 
-    //std::cout<<"My rank: "<<world.rank()<<" My total time: "<<appTime<<std::endl; 
+        boost::mpi::request rq1= world.irecv(MASTER,2,trisizes[world.rank()]);
+        sizes.emplace_back(rq1);
+        boost::mpi::request rq3= world.irecv(MASTER,3,quadsize[world.rank()]);
+        sizes.emplace_back(rq3);
+        boost::mpi::wait_all(sizes.begin(),sizes.end());
+        
 
+
+        triV[world.rank()].resize(trisizes[world.rank()]);
+        quadV[world.rank()].resize(quadsize[world.rank()]);
+
+        boost::mpi::request rq2= world.irecv(MASTER,4,triV[world.rank()]);
+        temp.emplace_back(rq2);
+
+        boost::mpi::request rq4= world.irecv(MASTER,5,quadV[world.rank()]);
+        temp.emplace_back(rq4);
+
+    }
+    boost::mpi::wait_all(reqs.begin(),reqs.end());
+    boost::mpi::wait_all(temp.begin(),temp.end());
   
-
-
-    // if(world.rank()==MASTER)
-    // {
-    //     double start = exaTime(); 
-    //     pEM = ReadMesh(baseFileName,type,ugridInfix,CGNSFileName,MeshType);
-        
-    //     double time = exaTime()-start; 
-    //     std::cout<<"Reading mesh & building connectivities in total on MASTER took: "<<time<<std::endl; 
-    //     assert(pEM!=nullptr); 
-
-
-    //     start=exaTime(); 
-    //     sendUMesh(world,pEM.get()); 
-    //     time= exaTime()-start; 
-    //     std::cout<<"Packing UMesh Data and sending it to others took: "<<time<<std::endl; 
-        
-    //     start = exaTime(); 
-    //     auto part2cell= partitionMetis(pEM,nParts); 
-    //     partCells = part2cell[0];
-    //     time = exaTime()-start; 
-    //     std::cout<<"Metis Partitioning on MASTER took: "<<time<<std::endl; 
-
-    //     vecHashTri  tris; 
-	//     vecHashQuad quads;
-
-    //     std::size_t triSize; 
-    //     std::size_t quadSize; 
-    //     for(auto irank=1; irank<world.size();irank++)
-    //     {
-    //         world.send(irank,0,part2cell[irank]); 
-    //     }
-
-    //     start = exaTime(); 
-    //     pEM->partFaceMatching(part2cell,tris,quads,triSize,quadSize); 
-    //     time = exaTime()-start; 
-    //     std::cout<<"Part face Matching on MASTER took: "<<time<<std::endl; 
-
-
-    //     start=exaTime(); 
-    //     sendTrisQuads(world,tris,quads,trisS,quadsS);
-    //     time=exaTime()-start; 
-    //     std::cout<<"Sending Boundary Faces took: "<<time<<std::endl; 
-
-    //     pEM->Extract(world.rank(),partCells,numDivs,trisS,quadsS); 
-    //     int a=3 ; 
-    //     world.isend(1,0,a);
-        
-        
-
-    // }
-
+  
+   
+   
     // if(world.rank()!=MASTER)
     // {
- 
-    //     pEM= RecvUMesh(world);
-    //     assert(pEM!=nullptr);
-    //     world.recv(MASTER,0,partCells); 
-
-    //     world.recv(MASTER,tag,triV); 
-	// 	world.recv(MASTER,tag,quadV);
-
-
-    //     hashTri trisHash;
-
-	// 	vectorToSet(triV,trisS);
-	// 	vectorToSet(quadV,quadsS); 
-
-
-    //    pEM->Extract(world.rank(),partCells,numDivs,trisS,quadsS);   
-   
- 
+    //    vectorToSet(triV[world.rank()],hashTris);
+    //    vectorToSet(quadV[world.rank()],hashQuads); 
+    //    inimesh.Extract(world.rank(),partCells[world.rank()],numDivs,hashTris,hashQuads);
     // }
+    double time=exaTime()-appTimeStart;
+    std::cout<<"My rank: "<<world.rank()<<" My total time: "<<time<<std::endl;
 
- 
-    // world.barrier(); 
-    // double appTime = exaTime()-appTimeStart; 
-    // std::cout<<"My rank: "<<world.rank()<<" My total time: "<<appTime<<std::endl; 
+
+  
+   
 
 }
 

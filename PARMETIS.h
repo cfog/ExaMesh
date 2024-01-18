@@ -5,9 +5,9 @@
 #endif
 //#include "ExaMesh.h"
 #include "UMesh.h"
-std::vector<std::vector<emInt>> partitionMetis(const std::unique_ptr<UMesh> &pEM, emInt iParts); 
+std::vector<std::vector<emInt>> partitionMetis(const UMesh &pEM, emInt iParts, std::vector<emInt> &vaicelltopart); 
 void extractPartitions(); 
-void mesh2MetisGraphs(const std::unique_ptr<UMesh> &pEM,
+void mesh2MetisGraphs(const UMesh &pEM,
 idx_t xadj[], idx_t adjncy[], idx_t adjwgt[]);
 
 void printPart2Cell (const std::vector<std::vector<idx_t>>& part2cell); 

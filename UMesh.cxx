@@ -530,19 +530,26 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 		emInt nConn, connect[8];
 		reader->getNextCellConnectivity(nConn, connect);
 		checkConnectivitySize(cellType, nConn);
+		std::set<emInt> faceVerts; 
 		switch (cellType)
 		{
 		case BDRY_TRI:
 			updateTriSet(setTris, connect[0], connect[1], connect[2]);
 //#ifndef _METIS
-			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2],ii,BDRY_TRI);
+			//updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2],ii,BDRY_TRI);
+			faceVerts={connect[0],connect[1],connect[2]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,BDRY_TRI));
+
+
 //#endif
 			//buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[2]);
 			break;
 		case BDRY_QUAD:
 			updateQuadSet(setQuads, connect[0], connect[1], connect[2], connect[3]);
-			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2], connect[3] ,ii,BDRY_QUAD);
+			//updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2], connect[3] ,ii,BDRY_QUAD);
 			//buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[2],connect[3]); 
+			faceVerts={connect[0],connect[1],connect[2],connect[3]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,BDRY_QUAD));
 			break;
 		case TET:
 			updateTriSet(setTris, connect[0], connect[1], connect[2]);
@@ -550,10 +557,18 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 			updateTriSet(setTris, connect[1], connect[2], connect[3]);
 			updateTriSet(setTris, connect[2], connect[0], connect[3]);
 
-			updateMultiMapFace2Cell(face2cell, connect[0],  connect[1], connect[2] ,ii,TET);
-			updateMultiMapFace2Cell(face2cell, connect[0],  connect[1], connect[3] ,ii,TET);  
-			updateMultiMapFace2Cell(face2cell, connect[1],  connect[2], connect[3] ,ii,TET);
-			updateMultiMapFace2Cell(face2cell, connect[2],  connect[0], connect[3] ,ii,TET);
+			//updateMultiMapFace2Cell(face2cell, connect[0],  connect[1], connect[2] ,ii,TET);
+			//updateMultiMapFace2Cell(face2cell, connect[0],  connect[1], connect[3] ,ii,TET);  
+			//updateMultiMapFace2Cell(face2cell, connect[1],  connect[2], connect[3] ,ii,TET);
+		//	updateMultiMapFace2Cell(face2cell, connect[2],  connect[0], connect[3] ,ii,TET);
+			faceVerts={connect[0],connect[1],connect[2]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,TET));
+			faceVerts={connect[0],connect[1],connect[3]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,TET));
+			faceVerts={connect[1],connect[2],connect[3]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,TET));
+			faceVerts={connect[2],connect[0],connect[3]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,TET));
 
 			//buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[2]); 
 			//buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[3]); 
@@ -567,11 +582,21 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 			updateTriSet(setTris, connect[3], connect[0], connect[4]);
 			updateQuadSet(setQuads, connect[0], connect[1], connect[2], connect[3]);
 
-			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[4], ii ,PYRAMID); 
-			updateMultiMapFace2Cell(face2cell,connect[1],connect[2],connect[4], ii ,PYRAMID); 
-			updateMultiMapFace2Cell(face2cell,connect[2],connect[3],connect[4], ii ,PYRAMID);
-			updateMultiMapFace2Cell(face2cell,connect[3],connect[0],connect[4], ii ,PYRAMID);
-			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2],connect[3], ii ,PYRAMID); 
+			//updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[4], ii ,PYRAMID); 
+			//updateMultiMapFace2Cell(face2cell,connect[1],connect[2],connect[4], ii ,PYRAMID); 
+			//updateMultiMapFace2Cell(face2cell,connect[2],connect[3],connect[4], ii ,PYRAMID);
+			//updateMultiMapFace2Cell(face2cell,connect[3],connect[0],connect[4], ii ,PYRAMID);
+			//updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2],connect[3], ii ,PYRAMID); 
+			faceVerts={connect[0],connect[1],connect[4]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,PYRAMID));
+			faceVerts={connect[1],connect[2],connect[4]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,PYRAMID));
+			faceVerts={connect[2],connect[3],connect[4]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,PYRAMID));
+			faceVerts={connect[3],connect[0],connect[4]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,PYRAMID));
+			faceVerts={connect[0],connect[1],connect[2],connect[3]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,PYRAMID));
 
 			//buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[4]); 
 			//buidCell2FacesConn(std::make_pair(ii,cellType),connect[1],connect[2],connect[4]); 
@@ -587,11 +612,21 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 			updateQuadSet(setQuads, connect[1], connect[2], connect[5], connect[4]);
 			updateQuadSet(setQuads, connect[2], connect[0], connect[3], connect[5]);
 
-			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2],ii,PRISM); 
-			updateMultiMapFace2Cell(face2cell,connect[3],connect[4],connect[5],ii,PRISM); 
-			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[4], connect[3] ,ii,PRISM);
-			updateMultiMapFace2Cell(face2cell,connect[1],connect[2],connect[5], connect[4] ,ii,PRISM); 
-			updateMultiMapFace2Cell(face2cell,connect[2],connect[0],connect[3], connect[5] ,ii,PRISM);
+			//updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2],ii,PRISM); 
+			//updateMultiMapFace2Cell(face2cell,connect[3],connect[4],connect[5],ii,PRISM); 
+			//updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[4], connect[3] ,ii,PRISM);
+			//updateMultiMapFace2Cell(face2cell,connect[1],connect[2],connect[5], connect[4] ,ii,PRISM); 
+			//updateMultiMapFace2Cell(face2cell,connect[2],connect[0],connect[3], connect[5] ,ii,PRISM);
+			faceVerts={connect[0],connect[1],connect[2]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,PRISM));
+			faceVerts={connect[3],connect[4],connect[5]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,PRISM));
+			faceVerts={connect[0],connect[1],connect[4],connect[3]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,PRISM));
+			faceVerts={connect[1],connect[2],connect[5],connect[4]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,PRISM));
+			faceVerts={connect[2],connect[0],connect[3],connect[5]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,PRISM));
 
 			//buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[2]); 
 			//buidCell2FacesConn(std::make_pair(ii,cellType),connect[3],connect[4],connect[5]); 
@@ -608,12 +643,25 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 			updateQuadSet(setQuads, connect[2], connect[3], connect[7], connect[6]);
 			updateQuadSet(setQuads, connect[3], connect[0], connect[4], connect[7]);
 
-			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2], connect[3] ,ii,HEX);
-			updateMultiMapFace2Cell(face2cell,connect[4],connect[5],connect[6], connect[7] ,ii,HEX);
-			updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[5], connect[4] ,ii,HEX);
-			updateMultiMapFace2Cell(face2cell,connect[1],connect[2],connect[6], connect[5] ,ii,HEX);
-			updateMultiMapFace2Cell(face2cell,connect[2],connect[3],connect[7], connect[6] ,ii,HEX);
-			updateMultiMapFace2Cell(face2cell,connect[3],connect[0],connect[4], connect[7] ,ii,HEX);
+			// updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[2], connect[3] ,ii,HEX);
+			// updateMultiMapFace2Cell(face2cell,connect[4],connect[5],connect[6], connect[7] ,ii,HEX);
+			// updateMultiMapFace2Cell(face2cell,connect[0],connect[1],connect[5], connect[4] ,ii,HEX);
+			// updateMultiMapFace2Cell(face2cell,connect[1],connect[2],connect[6], connect[5] ,ii,HEX);
+			// updateMultiMapFace2Cell(face2cell,connect[2],connect[3],connect[7], connect[6] ,ii,HEX);
+			// updateMultiMapFace2Cell(face2cell,connect[3],connect[0],connect[4], connect[7] ,ii,HEX);
+			faceVerts={connect[0],connect[1],connect[2],connect[3]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,HEX));
+			faceVerts={connect[4],connect[5],connect[6],connect[7]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,HEX));
+			faceVerts={connect[0],connect[1],connect[5],connect[4]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,HEX));
+			faceVerts={connect[1],connect[2],connect[6],connect[5]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,HEX));
+			faceVerts={connect[2],connect[3],connect[7],connect[6]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,HEX));
+			faceVerts={connect[3],connect[0],connect[4],connect[7]};
+			face2cell.emplace(faceVerts, std::make_pair(ii,HEX));
+
 
 			//buidCell2FacesConn(std::make_pair(ii,cellType),connect[0],connect[1],connect[2],connect[3]);
 			//buidCell2FacesConn(std::make_pair(ii,cellType),connect[4],connect[5],connect[6],connect[7]); 
