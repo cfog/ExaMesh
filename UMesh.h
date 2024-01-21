@@ -41,16 +41,16 @@ class UMesh: public ExaMesh {
 	template <class Archive>
 	void serialize(Archive &ar,const unsigned int /*version*/)
 	{
-		ar    &cellID2cellTypeLocalID; 
-		ar    &vTriConns;
-		ar    &vQuadConns;
-    	ar    &vTetConns; 
-    	ar    &vPyrmConns; 
-    	ar    &vPrsimConns; 
-    	ar    &vHexConns; 
-		ar    &vLengthScale;
-		ar    &vheader;
-		ar    &BdryVertsTrisQuads; 
+		// ar    &cellID2cellTypeLocalID; 
+		// ar    &vTriConns;
+		// ar    &vQuadConns;
+    	// ar    &vTetConns; 
+    	// ar    &vPyrmConns; 
+    	// ar    &vPrsimConns; 
+    	// ar    &vHexConns; 
+		// ar    &vLengthScale;
+		// ar    &vheader;
+		// ar    &BdryVertsTrisQuads; 
 		
 	}
 	size_t m_fileImageSize;
@@ -71,15 +71,15 @@ class UMesh: public ExaMesh {
 	std::vector<std::vector<emInt>>                                 vcell2cell;
 	std::vector<emInt>                                              vcellID2type; 
 	std::vector<std::pair<emInt,emInt>>                             cellID2cellTypeLocalID; 
-	std::vector<std::vector<emInt>>                                 vTriConns;
-	std::vector<std::vector<emInt>>                                 vQuadConns;
-    std::vector<std::vector<emInt>>                                 vTetConns; 
-    std::vector<std::vector<emInt>>                                 vPyrmConns; 
-    std::vector<std::vector<emInt>>                                 vPrsimConns; 
-    std::vector<std::vector<emInt>>                                 vHexConns; 
-	std::vector<double>                                             vLengthScale;
-	std::vector<emInt>                                              vheader;
-	std::vector<emInt>                                              BdryVertsTrisQuads; 
+	// std::vector<std::vector<emInt>>                                 vTriConns;
+	// std::vector<std::vector<emInt>>                                 vQuadConns;
+    // std::vector<std::vector<emInt>>                                 vTetConns; 
+    // std::vector<std::vector<emInt>>                                 vPyrmConns; 
+    // std::vector<std::vector<emInt>>                                 vPrsimConns; 
+    // std::vector<std::vector<emInt>>                                 vHexConns; 
+	// std::vector<double>                                             vLengthScale;
+	// std::vector<emInt>                                              vheader;
+	// std::vector<emInt>                                              BdryVertsTrisQuads; 
 
 	UMesh& operator=(const UMesh& inPut);
 	// {

@@ -48,25 +48,25 @@ void printTetConn(const emInt (*tetconn)[4], const emInt nTets)
 void sendUMesh(boost::mpi::communicator  world, UMesh* pEM)
 {
 
-    emInt nCells       =   pEM->cellID2cellTypeLocalID.size();
-    auto lengthscale   =   pEM->getAllLenghtScale(); 
+    // emInt nCells       =   pEM->cellID2cellTypeLocalID.size();
+    // auto lengthscale   =   pEM->getAllLenghtScale(); 
 
-    std::vector<double> vLengthScale(lengthscale,lengthscale+ pEM->m_header[0]); 
-    std::vector<emInt>  vheader(pEM->m_header, pEM->m_header+7); 
+    // std::vector<double> vLengthScale(lengthscale,lengthscale+ pEM->m_header[0]); 
+    // std::vector<emInt>  vheader(pEM->m_header, pEM->m_header+7); 
 
-    for(auto irank=1 ; irank<world.size();irank++)
-    {
-        world.send(irank,0,vheader);
-        world.send(irank,0,nCells); 
-        world.send(irank,0, pEM-> cellID2cellTypeLocalID);
-        world.send(irank,0, pEM->vTetConns);
-        world.send(irank,0, pEM->vTriConns);
-        world.send(irank,0, vLengthScale); 
-        world.send(irank,0, pEM->vQuadConns); 
-        world.send(irank,0, pEM->vPyrmConns); 
-        world.send(irank,0, pEM->vPrsimConns); 
-        world.send(irank,0, pEM->vHexConns); 
-    }
+    // for(auto irank=1 ; irank<world.size();irank++)
+    // {
+    //     world.send(irank,0,vheader);
+    //     world.send(irank,0,nCells); 
+    //     world.send(irank,0, pEM-> cellID2cellTypeLocalID);
+    //     world.send(irank,0, pEM->vTetConns);
+    //     world.send(irank,0, pEM->vTriConns);
+    //     world.send(irank,0, vLengthScale); 
+    //     world.send(irank,0, pEM->vQuadConns); 
+    //     world.send(irank,0, pEM->vPyrmConns); 
+    //     world.send(irank,0, pEM->vPrsimConns); 
+    //     world.send(irank,0, pEM->vHexConns); 
+    // }
      
 
 }
@@ -75,52 +75,52 @@ std::unique_ptr<UMesh>
 RecvUMesh(boost::mpi::communicator  world)
 {
    
-    emInt nCells; 
+    // emInt nCells; 
  
 
-    std::vector<std::pair<emInt,emInt>> cellId2type;
-    std::vector<emInt>  vheader(7);  
+    // std::vector<std::pair<emInt,emInt>> cellId2type;
+    // std::vector<emInt>  vheader(7);  
     
 
-    world.recv(MASTER,0,vheader); 
+    // world.recv(MASTER,0,vheader); 
 
-    std::vector<std::vector<emInt>> vTriConns  (vheader[1],std::vector<emInt>(3)); 
-    std::vector<std::vector<emInt>> vQuadConn  (vheader[2],std::vector<emInt>(4));
-    std::vector<std::vector<emInt>> vTetConns  (vheader[3],std::vector<emInt>(4)); 
-    std::vector<std::vector<emInt>> vPyrmConn  (vheader[4],std::vector<emInt>(5)); 
-    std::vector<std::vector<emInt>> vPrsimConn (vheader[5],std::vector<emInt>(6)); 
-    std::vector<std::vector<emInt>> vHexConn   (vheader[6],std::vector<emInt>(8)); 
+    // std::vector<std::vector<emInt>> vTriConns  (vheader[1],std::vector<emInt>(3)); 
+    // std::vector<std::vector<emInt>> vQuadConn  (vheader[2],std::vector<emInt>(4));
+    // std::vector<std::vector<emInt>> vTetConns  (vheader[3],std::vector<emInt>(4)); 
+    // std::vector<std::vector<emInt>> vPyrmConn  (vheader[4],std::vector<emInt>(5)); 
+    // std::vector<std::vector<emInt>> vPrsimConn (vheader[5],std::vector<emInt>(6)); 
+    // std::vector<std::vector<emInt>> vHexConn   (vheader[6],std::vector<emInt>(8)); 
 
  
 
 
-    world.recv(MASTER,0,nCells);
+    // world.recv(MASTER,0,nCells);
 
-    cellId2type.resize(nCells); 
-    world.recv(MASTER,0,cellId2type);
+    // cellId2type.resize(nCells); 
+    // world.recv(MASTER,0,cellId2type);
 
-    world.recv(MASTER,0,vTetConns);
+    // world.recv(MASTER,0,vTetConns);
     
 
   
-    world.recv(MASTER,0,vTriConns); 
+    // world.recv(MASTER,0,vTriConns); 
 
-    std::vector<double> vLengthScale(vheader[0]);
-    world.recv(MASTER,0,vLengthScale); 
-    world.recv(MASTER,0,vQuadConn); 
-    world.recv(MASTER,0,vPyrmConn);
-    world.recv(MASTER,0,vPrsimConn); 
-    world.recv(MASTER,0,vHexConn); 
+    // std::vector<double> vLengthScale(vheader[0]);
+    // world.recv(MASTER,0,vLengthScale); 
+    // world.recv(MASTER,0,vQuadConn); 
+    // world.recv(MASTER,0,vPyrmConn);
+    // world.recv(MASTER,0,vPrsimConn); 
+    // world.recv(MASTER,0,vHexConn); 
 
 
 
-    auto    iniMesh = std::make_unique<UMesh>(vheader[0],0,vheader[1],vheader[2],
-    vheader[3],vheader[4],vheader[5],vheader[6],vTetConns,vheader,cellId2type,vTriConns,vLengthScale,
-    vQuadConn,vPyrmConn,vPrsimConn,vHexConn); 
+    // auto    iniMesh = std::make_unique<UMesh>(vheader[0],0,vheader[1],vheader[2],
+    // vheader[3],vheader[4],vheader[5],vheader[6],vTetConns,vheader,cellId2type,vTriConns,vLengthScale,
+    // vQuadConn,vPyrmConn,vPrsimConn,vHexConn); 
 
   
 
-    return iniMesh; 
+    // return iniMesh; 
 
 
 }
@@ -231,7 +231,9 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
    
     UMesh inimesh(baseFileName, type, ugridInfix); 
     double timereading=exaTime()-starttimereading;
+   
     std::cout<<"Reading mesh on rank: "<<world.rank()<<" took: "<<timereading<<std::endl;
+   
     
     
     if(world.rank()==MASTER)
@@ -274,9 +276,9 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
             temp.emplace_back(rq4);
 
         }
-        //vectorToSet(tris[MASTER],hashTris);
-       // vectorToSet(quads[MASTER],hashQuads);
-        //inimesh.Extract(world.rank(),partCells[MASTER],numDivs,hashTris,hashQuads);
+        vectorToSet(tris[MASTER],hashTris);
+        vectorToSet(quads[MASTER],hashQuads);
+        inimesh.Extract(world.rank(),partCells[MASTER],numDivs,hashTris,hashQuads);
 
       
     }
@@ -320,12 +322,12 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
   
    
    
-    // if(world.rank()!=MASTER)
-    // {
-    //    vectorToSet(triV[world.rank()],hashTris);
-    //    vectorToSet(quadV[world.rank()],hashQuads); 
-    //    inimesh.Extract(world.rank(),partCells[world.rank()],numDivs,hashTris,hashQuads);
-    // }
+    if(world.rank()!=MASTER)
+    {
+       vectorToSet(triV[world.rank()],hashTris);
+       vectorToSet(quadV[world.rank()],hashQuads); 
+       inimesh.Extract(world.rank(),partCells[world.rank()],numDivs,hashTris,hashQuads);
+    }
     double time=exaTime()-appTimeStart;
     std::cout<<"My rank: "<<world.rank()<<" My total time: "<<time<<std::endl;
 

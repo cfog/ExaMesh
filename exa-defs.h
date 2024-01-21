@@ -995,7 +995,7 @@ struct hashFunctionCell2Cell
 
 struct hashFunctionFace2Cell 
 {
-    std::size_t operator()(const std::set<int>& s) const {
+    std::size_t operator()(const std::vector<int>& s) const {
         // Implement a custom hash function for std::set<int>
         // You might want to combine the hash values of individual elements in the set
         // to create a hash value for the entire set.
@@ -1039,7 +1039,7 @@ using intToVecTri		         = std::map<int,vecTri> ;
 using intToVecQuad               = std::map<int,vecQuad>; 
 using TableTri2TableIndex2Index	 = std::unordered_map< TriFaceVerts , std::unordered_map<emInt,emInt>>;
 using TableQuad2TableIndex2Index = std::unordered_map< QuadFaceVerts, std::unordered_map<emInt,emInt>>;
-using multimpFace2Cell			 = std::unordered_multimap < std::set<emInt>, std::pair<emInt,emInt>, hashFunctionFace2Cell>;
+using multimpFace2Cell			 = std::unordered_multimap < std::vector<emInt>, std::pair<emInt,emInt>, hashFunctionFace2Cell>;
 using TableCell2Cell			 = std::unordered_map < std::pair<emInt,emInt>, std::set<emInt>, hashFunctionCell2Cell>;
 void
 inline buildTrisMap(hashTri const& tris, std::map<int, vecTri> &remoteTotris,
@@ -1068,29 +1068,7 @@ std::set<int> &neighbors)
 	}
 }
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(FaceVerts)
-void 
-inline updateMultiMapFace2Cell(multimpFace2Cell &map, 
- emInt v0, emInt v1, emInt v2, emInt cellID, emInt cellType)
-{
-	std::set<emInt> faceVerts ;
-	faceVerts.insert(v0); 
-	faceVerts.insert(v1); 
-	faceVerts.insert(v2); 
-	map.insert(std::make_pair(faceVerts, std::make_pair(cellID, cellType)));
 
-}
-void 
-inline updateMultiMapFace2Cell(multimpFace2Cell &map, 
- emInt v0, emInt v1, emInt v2, emInt v3 ,emInt cellID,emInt cellType)
-{
-	std::set<emInt> faceVerts;
-	faceVerts.insert(v0); 
-	faceVerts.insert(v1); 
-	faceVerts.insert(v2); 
-	faceVerts.insert(v3); 
-	map.insert(std::make_pair(faceVerts, std::make_pair(cellID, cellType)));
-
-}
 inline 
 void printMultiMap(const std::multimap<std::set<emInt>, std::pair<emInt, emInt>> &map) 
 {
