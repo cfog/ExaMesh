@@ -48,7 +48,8 @@ buildPart2Cell (const idx_t* aicelltopart, emInt numCells,emInt numParts)
     }
     return part2cell; 
 }
-std::vector<std::vector<emInt>> partitionMetis(const UMesh &pEM, emInt iParts, std::vector<emInt> &vaicelltopart)
+std::vector<std::vector<emInt>> partitionMetis(const UMesh* const pEM, 
+emInt iParts, std::vector<emInt> &vaicelltopart)
 {
 //   int METIS PartGraphKway(idx t *nvtxs, idx t *ncon,    idx t *xadj,   idx t *adjncy,
 //                           idx t  *vwgt, idx t *vsize,   idx t *adjwgt, idx t *nparts, real t *tpwgts,
@@ -61,18 +62,18 @@ std::vector<std::vector<emInt>> partitionMetis(const UMesh &pEM, emInt iParts, s
     idx_t *xadj   = nullptr;
     idx_t *adjncy = nullptr;
     idx_t *adjwgt = nullptr;
-    idx_t *aicelltopart = new idx_t[pEM.numCells()];
+    idx_t *aicelltopart = new idx_t[pEM->numCells()];
 
     idx_t ncon=1; 
     idx_t objval; 
     idx_t npart  = iParts; 
 
     
-    idx_t nCells = pEM.numCells(); 
+    idx_t nCells = pEM->numCells(); 
 
-    xadj    = (idx_t*)calloc((size_t)(pEM.numCells()+1), sizeof(idx_t));
-    adjncy  = (idx_t*)calloc((size_t)(pEM.numCells()*MAXADJ), sizeof(idx_t));
-    adjwgt  = (idx_t*)calloc((size_t)(pEM.numCells()*MAXADJ), sizeof(idx_t));
+    xadj    = (idx_t*)calloc((size_t)(pEM->numCells()+1), sizeof(idx_t));
+    adjncy  = (idx_t*)calloc((size_t)(pEM->numCells()*MAXADJ), sizeof(idx_t));
+    adjwgt  = (idx_t*)calloc((size_t)(pEM->numCells()*MAXADJ), sizeof(idx_t));
 
     setMetisOptions(options); 
     mesh2MetisGraphs(pEM,xadj,adjncy,adjwgt); 
@@ -80,7 +81,7 @@ std::vector<std::vector<emInt>> partitionMetis(const UMesh &pEM, emInt iParts, s
                         NULL, NULL, adjwgt,&npart, NULL,
                         NULL, options, &objval,aicelltopart); 
 
-    auto part2cell = buildPart2Cell(aicelltopart,pEM.numCells(),npart);
+    auto part2cell = buildPart2Cell(aicelltopart,pEM->numCells(),npart);
     
     vaicelltopart.resize(nCells);
 
@@ -99,19 +100,19 @@ std::vector<std::vector<emInt>> partitionMetis(const UMesh &pEM, emInt iParts, s
     return part2cell; 
 }; 
 void extractPartitions(){}; 
-void mesh2MetisGraphs(const UMesh &pEM, idx_t xadj[], idx_t adjncy[], idx_t adjwgt[])
+void mesh2MetisGraphs(const UMesh* const pEM, idx_t xadj[], idx_t adjncy[], idx_t adjwgt[])
 {
     xadj [0] = 0 ;
 
 
 
-    for (emInt icell=0 ; icell< pEM.numCells(); icell++)
+    for (emInt icell=0 ; icell< pEM->numCells(); icell++)
     {
         xadj[icell+1] = xadj[icell]; 
 
-        for (int iNeigh = 0 ; iNeigh < pEM.getCellConnSize(icell) ; iNeigh++)
+        for (int iNeigh = 0 ; iNeigh < pEM->getCellConnSize(icell) ; iNeigh++)
         {
-            adjncy[ xadj[icell+1] ] = pEM.getCellConn(icell,iNeigh);
+            adjncy[ xadj[icell+1] ] = pEM->getCellConn(icell,iNeigh);
             adjwgt[ xadj[icell+1] ] = 1;	
             xadj[icell+1]++;
         } 

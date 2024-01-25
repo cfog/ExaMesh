@@ -465,15 +465,19 @@ void updateTriSet(std::set<vertTriple> &triSet, const emInt v0, const emInt v1,
 	vertTriple VT(v0, v1, v2);
 	typename std::set<vertTriple>::iterator vertIter, VIend = triSet.end();
 
-	vertIter = triSet.find(VT);
-	if (vertIter == VIend)
+	//vertIter = triSet.find(VT);
+	//if (vertIter == VIend)
+	//{
+	auto inserResult = triSet.insert(VT);
+	if(!inserResult.second)
 	{
-		triSet.insert(VT);
+		triSet.erase(inserResult.first);
 	}
-	else
-	{
-		triSet.erase(vertIter);
-	}
+	//}
+	//else
+	//{
+		//triSet.erase(vertIter);
+	//}
 }
 
 void updateQuadSet(std::set<vertQuadruple> &quadSet, const emInt v0,
@@ -482,15 +486,20 @@ void updateQuadSet(std::set<vertQuadruple> &quadSet, const emInt v0,
 	vertQuadruple VQ(v0, v1, v2, v3);
 	typename std::set<vertQuadruple>::iterator vertIter, VQend = quadSet.end();
 
-	vertIter = quadSet.find(VQ);
-	if (vertIter == VQend)
+	//vertIter = quadSet.find(VQ);
+	//if (vertIter == VQend)
+	//{
+	auto inserResult = quadSet.insert(VQ);
+	if(!inserResult.second)
 	{
-		quadSet.insert(VQ);
+		quadSet.erase(inserResult.first);
 	}
-	else
-	{
-		quadSet.erase(vertIter);
-	}
+	//}
+	//else
+	//{
+		// If the elmenet is already in the set, remove it.
+		//quadSet.erase(vertIter);
+	//}
 }
 
 UMesh::UMesh(const char baseFileName[], const char type[],
@@ -677,11 +686,11 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 #ifndef NDEBUG
 	//testCell2FaceConn(reader->getNumCells()); 
 #endif
-	double start = exaTime(); 
+	//double start = exaTime(); 
 	buildCell2CellConn(face2cell,reader->getNumCells()); 
-	double time  = exaTime()-start; 
+	//double time  = exaTime()-start; 
 
-	std::cout<<"Building cell2cell connectivity took: "<<time<<std::endl; 
+	//std::cout<<"Building cell2cell connectivity took: "<<time<<std::endl; 
 
 	numBdryTris += setTris.size();
 	numBdryQuads += setQuads.size();
@@ -689,6 +698,8 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	//BdryVertsTrisQuads.push_back(reader->getNumBdryVerts());
 	//BdryVertsTrisQuads.push_back(numBdryTris); 
 	//BdryVertsTrisQuads.push_back(numBdryQuads); 
+
+	
 
 	init(reader->getNumVerts(), reader->getNumBdryVerts(), numBdryTris,
 		 numBdryQuads, reader->getNumTets(), reader->getNumPyramids(),
@@ -807,6 +818,12 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	delete reader;
 
 	setupLengthScales();
+
+	
+
+
+
+
 	//vLengthScale.assign(m_lenScale,m_lenScale+m_header[0]); 
 }
 
@@ -1796,10 +1813,10 @@ void UMesh::buildCell2CellConn(multimpFace2Cell& face2cell, const emInt nCells)
 		if(next !=face2cell.end() && current->first==next->first)
 		{
 			emInt currentCellID     = current->second.first ;
-			emInt currentCellType   = current->second.second; 
+			//emInt currentCellType   = current->second.second; 
 
 			emInt nextCellID        = next->second.first; 
-			emInt nextCellType      = next->second.second; 
+			//emInt nextCellType      = next->second.second; 
 
 			auto& currentCellVector = vcell2cell[currentCellID];
         	auto& nextCellVector    = vcell2cell[nextCellID];
@@ -1896,7 +1913,7 @@ UMesh::testCell2FaceConn(emInt nCells)
 
 }
 
-void UMesh::Extract(const emInt partID, const std::vector<emInt> &partcells, const int numDivs, 
+std::unique_ptr<UMesh> UMesh::Extract(const emInt partID, const std::vector<emInt> &partcells, const int numDivs, 
 const std::unordered_set<TriFaceVerts> tris, 
 const std::unordered_set<QuadFaceVerts> quads) const
 {
@@ -2247,7 +2264,8 @@ const std::unordered_set<QuadFaceVerts> quads) const
 		UUM->addBdryQuad(conn);
 	}
 	assert(UUM->getSizePartQuads() == quads.size());
-	//return UUM; It needs to be changed, It must return Umesh object 
+	return UUM; 
+	//It needs to be changed, It must return Umesh object 
 };
 
 

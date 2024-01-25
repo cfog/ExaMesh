@@ -200,16 +200,15 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
 {
 
 
-
+    emInt nParts = world.size(); 
     double appTimeStart =exaTime();
+
     boost::mpi::environment   env; 
 	boost::mpi::communicator  world;
    
 
-    emInt nParts = world.size(); 
     std::vector<boost::mpi::request> reqs;
     std::vector<boost::mpi::request> sizes; 
-
     std::vector<boost::mpi::request> reqforPartCellSizes;
     std::vector<boost::mpi::request> temp;
 
@@ -217,10 +216,11 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
     std::vector<std::size_t>  partCellsizes(nParts);
     std::vector<std::size_t>  trisizes(nParts); 
     std::vector<std::size_t>  quadsize(nParts);
+    
     std::vector<std::vector<emInt>> partCells(nParts); 
     
 
-
+    
     hashTri  hashTris; 
 	hashQuad hashQuads;
 
@@ -229,19 +229,17 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
 
     double starttimereading=exaTime();
    
-    UMesh inimesh(baseFileName, type, ugridInfix); 
+    std::unique_ptr<UMesh> inimesh = std::make_unique<UMesh>(baseFileName, type, ugridInfix);
     double timereading=exaTime()-starttimereading;
    
-    std::cout<<"Reading mesh on rank: "<<world.rank()<<" took: "<<timereading<<std::endl;
+    //std::cout<<"Reading mesh on rank: "<<world.rank()<<" took: "<<timereading<<std::endl;
    
-    
-    
     if(world.rank()==MASTER)
     {
         
         std::vector<emInt> vaicelltopart;
-        auto part2cell= partitionMetis(inimesh,nParts,vaicelltopart); 
-        partCells[world.rank()] = part2cell[0];
+        auto part2cell= partitionMetis(inimesh.get(),nParts,vaicelltopart); 
+        partCells[0] = part2cell[0];
 
  
         for(auto irank=1; irank<world.size();irank++)
@@ -258,11 +256,9 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
         vecVecTri  tris;
         vecVecQuad quads;
 
-        inimesh.FastpartFaceMatching(nParts, part2cell,vaicelltopart,tris,quads); 
+        inimesh->FastpartFaceMatching(nParts, part2cell,vaicelltopart,tris,quads); 
         for(auto irank=1 ; irank<world.size();irank++)
 	    {
-
-
             boost::mpi::request rq1= world.isend(irank,2,tris[irank].size());
             sizes.emplace_back(rq1);
 
@@ -278,9 +274,6 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
         }
         vectorToSet(tris[MASTER],hashTris);
         vectorToSet(quads[MASTER],hashQuads);
-        inimesh.Extract(world.rank(),partCells[MASTER],numDivs,hashTris,hashQuads);
-
-      
     }
     if(world.rank()!=MASTER)
     {
@@ -318,16 +311,19 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
     }
     boost::mpi::wait_all(reqs.begin(),reqs.end());
     boost::mpi::wait_all(temp.begin(),temp.end());
-  
-  
-   
-   
+
     if(world.rank()!=MASTER)
     {
-       vectorToSet(triV[world.rank()],hashTris);
-       vectorToSet(quadV[world.rank()],hashQuads); 
-       inimesh.Extract(world.rank(),partCells[world.rank()],numDivs,hashTris,hashQuads);
+        vectorToSet(triV[world.rank()],hashTris);
+        vectorToSet(quadV[world.rank()],hashQuads); 
+     
     }
+
+
+    auto extractedMsh =
+    inimesh->Extract(world.rank(),partCells[world.rank()],numDivs,hashTris,hashQuads);
+
+
     double time=exaTime()-appTimeStart;
     std::cout<<"My rank: "<<world.rank()<<" My total time: "<<time<<std::endl;
 
