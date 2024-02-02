@@ -243,13 +243,23 @@ private:
 
 template<typename T>
 void addUniquely(exa_set<T>& mySet, T& val) {
-	auto iter = mySet.find(val);
-	if (iter != mySet.end()) {
-		mySet.erase(iter);
+
+	typename exa_set<T>::iterator vertIter, VIend = mySet.end();
+
+	auto inserResult = mySet.insert(val);
+
+	if(!inserResult.second)
+	{
+		mySet.erase(inserResult.first);
 	}
-	else {
-		mySet.insert(val);
-	}
+
+	// auto iter = mySet.find(val);
+	// if (iter != mySet.end()) {
+	// 	mySet.erase(iter);
+	// }
+	// else {
+	// 	mySet.insert(val);
+	// }
 }
 template<typename T>
 void addUniquely(std::set<T> &mySet, T& val) {

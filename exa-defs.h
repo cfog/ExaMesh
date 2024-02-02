@@ -1227,6 +1227,53 @@ const vecVecQuad  &vecquads)
 
 	}
 	std::cout<<"Successful Testing Part Face Matching"<<std::endl;
-}
+};
+struct timeResults
+{
+	double total; 
+	double read; 
+	double extract; 
+	double refine;
+	double sendtris;
+	double sendquads;
+	double recvtris;	
+	double recvquads;
+	double matchtris;
+	double matchquads; 
+	double syncTri; 
+	double syncQuad;
+	double serial; 
+	double partfacematching; 
+	double partition;
+	double triExchange = sendtris+recvtris; 
+	double quadExchange = sendquads+recvquads;
+	double calculatedTotal()
+	{
+		total=serial+extract+refine+sendtris+sendquads+recvtris
+		+recvquads+matchtris+matchquads+syncTri+syncQuad; 
+		return total; 
+	}
+
+	void printTimeResults() 
+	{
+		std::cout << "Read: " << read << std::endl;
+		std::cout << "Partition: " << partition << std::endl;
+		std::cout << "Part face matching: " << partfacematching << std::endl;
+		std::cout << "Serial: " << serial << std::endl;
+		std::cout << "Extract: " << extract << std::endl;
+		std::cout << "Refine: " << refine << std::endl;
+		std::cout << "Send tris: " << sendtris << std::endl;		
+		std::cout << "Send quads: " << sendquads << std::endl;
+		std::cout << "Receive tris: " << recvtris << std::endl;
+		std::cout << "Receive quads: " << recvquads << std::endl;
+		std::cout << "Sync tris: " << syncTri << std::endl;
+		std::cout << "Sync quads: " << syncQuad << std::endl;
+		std::cout << "Match tris: " << matchtris << std::endl;
+		std::cout << "Match quads: " << matchquads << std::endl;
+		std::cout << "Total time: " << total << std::endl;
+		
+	}
+
+};
 
 #endif /* SRC_EXA_DEFS_H_ */
