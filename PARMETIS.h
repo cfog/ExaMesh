@@ -1,5 +1,5 @@
-#include </home/kebriti/local/include/metis.h>
-
+//#include </home/kebriti/local/include/metis.h>
+#include <metis.h>
 #if (HAVE_CGNS == 1)
 #include "cgnslib.h"
 #endif
