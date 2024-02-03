@@ -329,9 +329,9 @@ bool computeMeshSize(const struct MeshSize &MSIn, const emInt nDivs,
 	MSOut.nHexes = MSIn.nHexes * volFactor;
 
 
-	setlocale(LC_ALL, "");
-	ssize_t totalCells = MSOut.nPyrs+MSOut.nPrisms+MSOut.nHexes+MSOut.nTets; 
-	fprintf(stderr, "Total expected cells: %'zd \n", totalCells);
+	//setlocale(LC_ALL, "");
+	//ssize_t totalCells = MSOut.nPyrs+MSOut.nPrisms+MSOut.nHexes+MSOut.nTets; 
+	//fprintf(stderr, "Total expected cells: %'zd \n", totalCells);
 	
 	
 

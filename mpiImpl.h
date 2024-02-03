@@ -14,7 +14,7 @@ std::unique_ptr<UMesh>  ReadMesh ( const char  baseFileName[] , const char type[
 void refineForMPI ( const char  baseFileName[] , const char type[], 
                     const char  ugridInfix[]   , const char CGNSFileName[],
                     const int   numDivs        , const char MeshType, 
-                    std::string mshName        , FILE* fileAllTimes);
+                    std::string mshName        );
 
 
 

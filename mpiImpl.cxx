@@ -8,6 +8,30 @@
 #include "UMesh.h"
 #include <boost/serialization/unique_ptr.hpp>
 
+void inline NewWriteTimes(
+    FILE *file, int nP, const timeResults &times,
+    size_t nCells)
+{
+    setlocale(LC_ALL, "");
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file);
+    if (size == 0)
+    {
+        fprintf(file, "%-5s %-10s %-14s %-14s %-12s %-12s %-14s %-14s %-14s %-14s %-14s %-14s %-14s %-12s %-14s\n",
+                "nP", "Read", "Partition", "PartFaceMatch", "Serial",
+                "Extract", "Refine", "TriExchange", "QuadExchange",
+                "SyncTri", "SyncQuad", "triMatch", "quadMatch", "Total",
+                "nCells");
+    }
+
+    fprintf(file, "%-5u %-10.2f %-14.2f %-14.2f %-12.2f %-12.2f %-14.2f %-14.2f %-14.2f %-14.2f %-14.2f %-14.2f %-14.2f %-12.2f %'-zd\n",
+            nP, times.read, times.partition, times.partfacematching, times.serial,
+            times.extract, times.refine, times.recvtris+times.sendtris,times.sendquads+times.recvquads,
+            times.syncTri, times.syncQuad, times.matchtris, times.matchquads, times.total, nCells);
+
+
+
+}
 std::unique_ptr<UMesh>  ReadMesh ( const char  baseFileName[] , const char type[], 
                                      const char  ugridInfix[]   , const char CGNSFileName[], 
                                      const char MeshType)
@@ -193,63 +217,75 @@ void printHashQuads(const hashQuad& hashQuads)
     }
 }
 
+void printPartCells (const std::vector<emInt>& partCells, const emInt myRank)
+{
+    std::cout<<"My rank: "<<myRank<<std::endl;
+    for(auto irank=0 ; irank<10; irank++)
+    {
+        std::cout<<partCells[irank]<<std::endl;
+    }
+}
+
 void refineForMPI ( const char  baseFileName[] , const char type[], 
                     const char  ugridInfix[]   , const char CGNSFileName[],
-                    const int   numDivs        , const char MeshType, 
-                    std::string mshName        , FILE* fileAllTimes)
+                    const int   numDivs        , const char MeshType, std::string mshName 
+                    )
 {
 
+    size_t lastSlashPos        = std::string(baseFileName).find_last_of('/');
+	mshName                    = std::string(baseFileName).substr(lastSlashPos + 1)+"_WeakScaleTimes.txt";
+    std::string totalTimeFile  = std::string(baseFileName).substr(lastSlashPos + 1)+"_WeakOnlyTotalTime.txt";
 
-    emInt nParts = world.size(); 
-    double appTimeStart =exaTime();
-
+   
     boost::mpi::environment   env; 
 	boost::mpi::communicator  world;
-   
-
-    std::vector<boost::mpi::request> reqs;
-    std::vector<boost::mpi::request> sizes; 
-    std::vector<boost::mpi::request> reqforPartCellSizes;
-    std::vector<boost::mpi::request> temp;
-
-
-    std::vector<std::size_t>  partCellsizes(nParts);
-    std::vector<std::size_t>  trisizes(nParts); 
-    std::vector<std::size_t>  quadsize(nParts);
+    emInt nParts = world.size(); 
     
-    std::vector<std::vector<emInt>> partCells(nParts); 
     
+    std::vector<boost::mpi::request>  reqForPartCells;
+    std::vector<std::vector<emInt>>   partCells; 
 
-    
+    std::vector<boost::mpi::request> reqForCoarseFaces;
+    std::vector<boost::mpi::request> triReqs;
+	std::vector<boost::mpi::request> quadReqs;
+
+
     hashTri  hashTris; 
 	hashQuad hashQuads;
 
     vecVecTri   triV(nParts);
-	vecVecQuad  quadV(nParts); 
+	vecVecQuad  quadV(nParts);
 
-    double starttimereading=exaTime();
+    intToVecTri  remoteTovecTris;
+	intToVecQuad remoteTovecQuads; 
+
+	std::set<int> triNeighbrs;  
+	std::set<int> quadNeighbrs; 
+
+    std::vector<vecTri>  trisTobeRcvd; 
+	std::vector<vecQuad> quadsTobeRcvd;
+
+    hashTri  recvdTris;
+	hashQuad recvdQuads; 
+
+	TableTri2TableIndex2Index   matchedTris; 
+	TableQuad2TableIndex2Index  matchedQuads; 
+
+    std::vector<std::size_t>  trisizes(nParts); 
+    std::vector<std::size_t>  quadsize(nParts);
+    
    
-    std::unique_ptr<UMesh> inimesh = std::make_unique<UMesh>(baseFileName, type, ugridInfix);
-    double timereading=exaTime()-starttimereading;
-   
-    //std::cout<<"Reading mesh on rank: "<<world.rank()<<" took: "<<timereading<<std::endl;
-   
+	std::unique_ptr<UMesh> inimesh = 
+    std::make_unique<UMesh>(baseFileName, type, ugridInfix);
+  
+    
     if(world.rank()==MASTER)
     {
-        
         std::vector<emInt> vaicelltopart;
+
         auto part2cell= partitionMetis(inimesh.get(),nParts,vaicelltopart); 
-        partCells[0] = part2cell[0];
+        partCells = part2cell;
 
- 
-        for(auto irank=1; irank<world.size();irank++)
-        {
-            boost::mpi::request rq0=world.isend(irank,0,part2cell[irank].size());
-            reqforPartCellSizes.emplace_back(rq0);
-
-            boost::mpi::request rq1 =world.isend(irank,1,part2cell[irank]); 
-            reqs.emplace_back(rq1);
-        }
         vecHashTri  hashtris; 
 	    vecHashQuad hashquads;
 
@@ -257,81 +293,59 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
         vecVecQuad quads;
 
         inimesh->FastpartFaceMatching(nParts, part2cell,vaicelltopart,tris,quads); 
+       
+
         for(auto irank=1 ; irank<world.size();irank++)
 	    {
-            boost::mpi::request rq1= world.isend(irank,2,tris[irank].size());
-            sizes.emplace_back(rq1);
+            boost::mpi::request rq0 =world.isend(irank,1,part2cell); 
+            reqForPartCells.emplace_back(rq0);
 
-            boost::mpi::request rq2= world.isend(irank,3,quads[irank].size());
-            sizes.emplace_back(rq2);
+            boost::mpi::request rq1= world.isend(irank,2,tris[irank]); 
+            reqForCoarseFaces.emplace_back(rq1);
 
-            boost::mpi::request rq3= world.isend(irank,4,tris[irank]); 
-            temp.emplace_back(rq3);
-
-            boost::mpi::request rq4= world.isend(irank,5,quads[irank]);
-            temp.emplace_back(rq4);
+            boost::mpi::request rq2= world.isend(irank,3,quads[irank]);
+            reqForCoarseFaces.emplace_back(rq2);
 
         }
         vectorToSet(tris[MASTER],hashTris);
         vectorToSet(quads[MASTER],hashQuads);
+
     }
     if(world.rank()!=MASTER)
     {
-       
-        boost::mpi::request rq0=world.irecv(MASTER,0,partCellsizes[world.rank()]);
-        reqforPartCellSizes.emplace_back(rq0);
+        boost::mpi::request rq0=world.irecv(MASTER,1,partCells);
+        reqForPartCells.emplace_back(rq0);
 
-        boost::mpi::wait_all(reqforPartCellSizes.begin(),reqforPartCellSizes.end());
-        partCells[world.rank()].resize(partCellsizes[world.rank()]);
+        boost::mpi::request rq1= world.irecv(MASTER,2,triV[world.rank()]);
+        reqForCoarseFaces.emplace_back(rq1);
 
-
-        boost::mpi::request req=world.irecv(MASTER,1,partCells[world.rank()]); 
-        reqs.emplace_back(req);
-
-
-        
-
-        boost::mpi::request rq1= world.irecv(MASTER,2,trisizes[world.rank()]);
-        sizes.emplace_back(rq1);
-        boost::mpi::request rq3= world.irecv(MASTER,3,quadsize[world.rank()]);
-        sizes.emplace_back(rq3);
-        boost::mpi::wait_all(sizes.begin(),sizes.end());
-        
-
-
-        triV[world.rank()].resize(trisizes[world.rank()]);
-        quadV[world.rank()].resize(quadsize[world.rank()]);
-
-        boost::mpi::request rq2= world.irecv(MASTER,4,triV[world.rank()]);
-        temp.emplace_back(rq2);
-
-        boost::mpi::request rq4= world.irecv(MASTER,5,quadV[world.rank()]);
-        temp.emplace_back(rq4);
-
+        boost::mpi::request rq2= world.irecv(MASTER,3,quadV[world.rank()]);
+        reqForCoarseFaces.emplace_back(rq2);
     }
-    boost::mpi::wait_all(reqs.begin(),reqs.end());
-    boost::mpi::wait_all(temp.begin(),temp.end());
+
+    boost::mpi::wait_all(reqForPartCells.begin(),reqForPartCells.end());
+    boost::mpi::wait_all(reqForCoarseFaces.begin(),reqForCoarseFaces.end());
 
     if(world.rank()!=MASTER)
     {
-        vectorToSet(triV[world.rank()],hashTris);
-        vectorToSet(quadV[world.rank()],hashQuads); 
-     
+         vectorToSet(triV[world.rank()],hashTris);
+         vectorToSet(quadV[world.rank()],hashQuads); 
     }
 
-
-    auto extractedMsh =
-    inimesh->Extract(world.rank(),partCells[world.rank()],numDivs,hashTris,hashQuads);
-
-
-    double time=exaTime()-appTimeStart;
-    std::cout<<"My rank: "<<world.rank()<<" My total time: "<<time<<std::endl;
-
-
-  
+    std::unique_ptr<UMesh>  extractedMsh =
+    inimesh->Extract(world.rank(),partCells[world.rank()],
+    numDivs,hashTris,hashQuads);
    
 
+    
+
+    
+    
+   
+    
+       
+
+   
+
+   
 }
-
-
-
