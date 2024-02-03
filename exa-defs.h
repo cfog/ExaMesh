@@ -1088,10 +1088,6 @@ void printMultiMap(const std::multimap<std::set<emInt>, std::pair<emInt, emInt>>
         std::cout << "Value: {" << value.first << ", " << value.second << "}\n";
     }
 }
-
-
-
-
 inline 
 void printTriFaceVerts(const std::vector<TriFaceVerts>& tris) 
 {
@@ -1245,8 +1241,7 @@ struct timeResults
 	double serial; 
 	double partfacematching; 
 	double partition;
-	double triExchange = sendtris+recvtris; 
-	double quadExchange = sendquads+recvquads;
+	double faceExchange; 
 	double calculatedTotal()
 	{
 		total=serial+extract+refine+sendtris+sendquads+recvtris
