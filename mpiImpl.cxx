@@ -17,17 +17,17 @@ void inline NewWriteTimes(
     long size = ftell(file);
     if (size == 0)
     {
-        fprintf(file, "%-5s %-10s %-14s %-15s %-12s %-12s %-14s %-14s %-14s %-16s %-10s %-14s\n",
+        fprintf(file, "%-5s %-10s %-14s %-15s %-12s %-12s %-14s %-14s %-14s %-14s %-16s %-10s %-14s\n",
                 "nP", "Read", "Partition", "PartFaceMatch", "Serial",
                 "Extract", "Refine", "FaceExchange",
-                "TotalSync", "TotalMatchTime", "Total",
+                "TriSync", "QuadSync", "TotalMatchTime", "Total",
                 "nCells");
     }
 
-    fprintf(file, "%-5u %-10.2f %-14.2f %-15.2f %-12.2f %-12.2f %-14.2f %-14.2f %-14.2f %-16.2f %-10.2f %'-zd\n",
+    fprintf(file, "%-5u %-10.2f %-14.2f %-15.2f %-12.2f %-12.2f %-14.2f %-14.2f %-14.2f %-14.2f %-16.2f %-10.2f %'-zd\n",
             nP, times.read, times.partition, times.partfacematching, times.serial,
             times.extract, times.refine, times.faceExchange,
-            times.syncTri+times.syncQuad, times.matchtris+times.matchquads, times.total, nCells);
+            times.syncTri,times.syncQuad, times.matchtris+times.matchquads, times.total, nCells);
 
 
 
@@ -228,7 +228,7 @@ void printPartCells (const std::vector<emInt>& partCells, const emInt myRank)
 
 void refineForMPI ( const char  baseFileName[] , const char type[], 
                     const char  ugridInfix[]   , const char CGNSFileName[],
-                    const int   numDivs        , const char MeshType, std::string mshName 
+                    const int   numDivs        , const char MeshType, std::string mshName, FILE* eachRank
                     )
 {
 
@@ -279,6 +279,11 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
 	std::unique_ptr<UMesh> inimesh = 
     std::make_unique<UMesh>(baseFileName, type, ugridInfix);
     times.read=exaTime()-times.read;
+
+    // if(world.rank()==MASTER)
+    // {
+    //     inimesh->  calcMemoryRequirements(*(inimesh.get()),numDivs);
+    // }
 
 
     if(world.rank()==MASTER)
@@ -458,6 +463,10 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
     refinedMsh->numPrisms()+refinedMsh->numHexes()+refinedMsh->numTets()+ 
     refinedMsh->numBdryTris()+refinedMsh->numBdryQuads();
 
+    times.calculatedTotal= times.serial+times.extract+times.refine+times.faceExchange+times.syncTri+times.syncQuad+times.matchtris+times.matchquads;
+
+   // std::cout<<"My rank is: "<<world.rank()<<" my cells are: "<<nCells<<std::endl;
+
 	size_t         totalCells;
 
     boost::mpi::reduce(world, times.read            , maxTimes.read              ,boost:: mpi::maximum<double>(), MASTER);
@@ -511,9 +520,34 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
         fprintf(fileTotalTime, "%-5u %'-20zd %-12.2f \n",
             nParts,totalCells, maxTimes.total) ;
 
+        //std::cout<<"Total Cells: "<<totalCells<<std::endl;    
+
       
 
     }
-   
 
+    world.barrier();
+  
+    // if (world.rank() == MASTER) 
+    // {
+    //     fprintf(eachRank, "%-5s %-10s %-14s %-20s %-14s %-12s %-14s %-14s %-14s %-16s %-12s %-12s %-14s\n",
+    //         "Rank", "Read", "Partition", "PartFaceMatching","Serial",
+    //         "Extract","Refine","FaceExchange",
+    //         "TriSync","QuadSync","TotalMatch","CalculatedTotal", "Total", "nCells");
+    // }
+    // world.barrier();
+    // if(world.rank()!=MASTER)
+    // {
+    //     times.partition=0; 
+    //     times.partfacematching=0;
+
+    // }
+    // world.barrier();
+
+    // fprintf(eachRank, "%-5u %-10.2f %-14.2f %-20.2f %-14.2f %-12.2f %-14.2f %-14.2f %-14.2f %-14.2f %-16.2f %-12.2f %-12.2f %'-zd\n",
+    //     world.rank(), times.read, times.partition, times.partfacematching, times.serial,
+    //     times.extract, times.refine, times.faceExchange,
+    //     times.syncTri,times.syncQuad, times.matchtris+times.matchquads, times.calculatedTotal ,times.total, nCells);
+
+   
 }

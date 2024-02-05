@@ -1226,6 +1226,7 @@ const vecVecQuad  &vecquads)
 };
 struct timeResults
 {
+	double calculatedTotal; 
 	double total; 
 	double read; 
 	double extract; 
@@ -1242,12 +1243,12 @@ struct timeResults
 	double partfacematching; 
 	double partition;
 	double faceExchange; 
-	double calculatedTotal()
-	{
-		total=serial+extract+refine+sendtris+sendquads+recvtris
-		+recvquads+matchtris+matchquads+syncTri+syncQuad; 
-		return total; 
-	}
+	// double calculatedTotal()
+	// {
+	// 	total=serial+extract+refine+sendtris+sendquads+recvtris
+	// 	+recvquads+matchtris+matchquads+syncTri+syncQuad; 
+	// 	return total; 
+	// }
 
 	void printTimeResults() 
 	{
