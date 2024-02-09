@@ -17,17 +17,17 @@ void inline NewWriteTimes(
     long size = ftell(file);
     if (size == 0)
     {
-        fprintf(file, "%-5s %-10s %-14s %-15s %-12s %-12s %-14s %-14s %-14s %-14s %-16s %-10s %-14s\n",
-                "nP", "Read", "Partition", "PartFaceMatch", "Serial",
+        fprintf(file, "%-5s %-10s %-14s %-15s %-12s %-12s %-12s %-14s %-14s %-14s %-14s %-16s %-16s %-10s %-14s\n",
+                "nP", "Read", "Partition", "PartFaceMatch", "Sync" ,"Serial",
                 "Extract", "Refine", "FaceExchange",
-                "TriSync", "QuadSync", "TotalMatchTime", "Total",
+                "TriSync", "QuadSync", "TotalMatchTime", "CalculatedTotal" ,"Total",
                 "nCells");
     }
 
-    fprintf(file, "%-5u %-10.2f %-14.2f %-15.2f %-12.2f %-12.2f %-14.2f %-14.2f %-14.2f %-14.2f %-16.2f %-10.2f %'-zd\n",
-            nP, times.read, times.partition, times.partfacematching, times.serial,
+    fprintf(file, "%-5u %-10.2f %-14.2f %-15.2f %-12.2f %-12.2f %-12.2f %-14.2f %-14.2f %-14.2f %-14.2f %-16.2f %-16.2f %-10.2f %'-zd\n",
+            nP, times.read, times.partition, times.partfacematching,times.initialSync ,times.serial,
             times.extract, times.refine, times.faceExchange,
-            times.syncTri,times.syncQuad, times.matchtris+times.matchquads, times.total, nCells);
+            times.syncTri,times.syncQuad, times.matchtris+times.matchquads, times.calculatedTotal ,times.total, nCells);
 
 
 
@@ -332,9 +332,10 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
         boost::mpi::request rq2= world.irecv(MASTER,3,quadV[world.rank()]);
         reqForCoarseFaces.emplace_back(rq2);
     }
-
+    times.initialSync=exaTime();
     boost::mpi::wait_all(reqForPartCells.begin(),reqForPartCells.end());
     boost::mpi::wait_all(reqForCoarseFaces.begin(),reqForCoarseFaces.end());
+    times.initialSync=exaTime()-times.initialSync;
 
     if(world.rank()!=MASTER)
     {
@@ -488,6 +489,8 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
     boost::mpi::reduce(world, times.matchquads      , maxTimes.matchquads        ,boost:: mpi::maximum<double>(), MASTER);
 
     boost::mpi::reduce(world, times.total           , maxTimes.total             ,boost:: mpi::maximum<double>(), MASTER);
+
+    boost::mpi::reduce(world, times.initialSync     , maxTimes.initialSync       ,boost:: mpi::maximum<double>(), MASTER);
 
     boost::mpi::reduce(world, size_t(nCells)        , totalCells                 ,std::plus<size_t>()          , MASTER);
 

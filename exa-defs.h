@@ -1243,6 +1243,7 @@ struct timeResults
 	double partfacematching; 
 	double partition;
 	double faceExchange; 
+	double initialSync; 
 	// double calculatedTotal()
 	// {
 	// 	total=serial+extract+refine+sendtris+sendquads+recvtris
