@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <cstdio>
 #include <boost/mpi.hpp>
+#include <mutex>
 #include "ExaMesh.h"
 #include "CubicMesh.h"
 #include "PARMETIS.h"
@@ -17,17 +18,17 @@ void inline NewWriteTimes(
     long size = ftell(file);
     if (size == 0)
     {
-        fprintf(file, "%-5s %-10s %-14s %-15s %-12s %-12s %-12s %-14s %-14s %-14s %-14s %-16s %-16s %-10s %-14s\n",
-                "nP", "Read", "Partition", "PartFaceMatch", "Sync" ,"Serial",
+        fprintf(file, "%-5s %-10s %-14s %-15s %-12s %-12s %-14s %-14s %-14s %-14s %-16s %-10s %-14s\n",
+                "nP", "Read", "Partition", "PartFaceMatch","Serial",
                 "Extract", "Refine", "FaceExchange",
-                "TriSync", "QuadSync", "TotalMatchTime", "CalculatedTotal" ,"Total",
+                "TriSync", "QuadSync", "TotalMatchTime","Total",
                 "nCells");
     }
 
-    fprintf(file, "%-5u %-10.2f %-14.2f %-15.2f %-12.2f %-12.2f %-12.2f %-14.2f %-14.2f %-14.2f %-14.2f %-16.2f %-16.2f %-10.2f %'-zd\n",
-            nP, times.read, times.partition, times.partfacematching,times.initialSync ,times.serial,
+    fprintf(file, "%-5u %-10.2f %-14.2f %-15.2f %-12.2f %-12.2f %-14.2f %-14.2f %-14.2f %-14.2f %-16.2f %-10.2f %'-zd\n",
+            nP, times.read, times.partition, times.partfacematching,times.serial,
             times.extract, times.refine, times.faceExchange,
-            times.syncTri,times.syncQuad, times.matchtris+times.matchquads, times.calculatedTotal ,times.total, nCells);
+            times.syncTri,times.syncQuad, times.matchtris+times.matchquads,times.total, nCells);
 
 
 
@@ -231,6 +232,7 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
                     const int   numDivs        , const char MeshType, std::string mshName, FILE* eachRank
                     )
 {
+    std::mutex fileMutex;
 
     size_t lastSlashPos        = std::string(baseFileName).find_last_of('/');
 	mshName                    = std::string(baseFileName).substr(lastSlashPos + 1)+"_WeakScaleTimes.txt";
@@ -244,18 +246,17 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
 	boost::mpi::communicator  world;
     emInt nParts = world.size(); 
 
-    std::vector<boost::mpi::request> reqForPartCells,reqForCoarseFaces;
+    std::vector<boost::mpi::request> reqForPartCells,reqForCoarseFaces,rqforSizes;
+    std::vector<boost::mpi::request> rqForInitmesh; 
     std::vector<boost::mpi::request> triReqs, quadReqs;
-    std::vector<std::vector<emInt>>   partCells; 
+    std::vector<std::vector<emInt>>  partCells; 
 
-   
-  
-
+ 
     hashTri  hashTris; 
 	hashQuad hashQuads;
 
-    vecVecTri   triV(nParts);
-	vecVecQuad  quadV(nParts);
+    vecVecTri   tris(nParts);
+	vecVecQuad  quads(nParts);
 
     intToVecTri  remoteTovecTris;
 	intToVecQuad remoteTovecQuads; 
@@ -274,80 +275,169 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
 
     std::vector<std::size_t>  trisizes(nParts); 
     std::vector<std::size_t>  quadsize(nParts);
-    
-    times.read=exaTime(); 
-	std::unique_ptr<UMesh> inimesh = 
-    std::make_unique<UMesh>(baseFileName, type, ugridInfix);
-    times.read=exaTime()-times.read;
 
-    // if(world.rank()==MASTER)
-    // {
-    //     inimesh->  calcMemoryRequirements(*(inimesh.get()),numDivs);
-    // }
+    char*  recvBuffer  = nullptr;
+    double* lengthscale= nullptr;
+    UMesh* inimesh     = nullptr;
 
+    size_t bufferbytes; 
+    emInt* header= new emInt[7]; 
+    size_t nBdryVerts; 
+    size_t nVerts; 
+    std::vector<std::pair<int, int>> cell2cll;
+    std::vector<size_t> sizes; 
+    emInt sizesToalcotePtrs[3];
 
     if(world.rank()==MASTER)
     {
+        times.read=exaTime(); 
+	    inimesh = 
+        new UMesh(baseFileName, type, ugridInfix);
+        times.read=exaTime()-times.read;
+
+        auto buffer         = inimesh->getBuffer();
+        auto cell2cell      = inimesh->getCellID2CellType2LocalID();
+        auto ptrheader      = inimesh->getHeader();
+        auto lengthscale    = inimesh->getAllLenghtScale();
+        bufferbytes         = inimesh->getBufferBytes();
+        nBdryVerts          = inimesh->numBdryVerts();
+        sizesToalcotePtrs[0]= bufferbytes;
+        sizesToalcotePtrs[1]= nBdryVerts;
+        sizesToalcotePtrs[2]= inimesh->numVerts();
+
+        for(auto irank=1; irank< world.size(); irank++)
+        {
+            auto  rq4 = 
+            world.isend(irank,4,sizesToalcotePtrs,3);
+            rqforSizes.emplace_back(rq4);
+
+
+            auto  rq5 = 
+            world.isend(irank,5,ptrheader,7);
+            rqForInitmesh.emplace_back(rq5);
+           
+            auto rq6= 
+            world.isend(irank,6,buffer,bufferbytes);
+            rqForInitmesh.emplace_back(rq6);
+        
+            auto rq7= 
+            world.isend(irank,7,cell2cell);
+            rqForInitmesh.emplace_back(rq7);
+       
+            auto rq8=
+            world.isend(irank,8,lengthscale,inimesh->numVerts()); 
+            rqForInitmesh.emplace_back(rq8);
+
+        }
+
         times.partition=exaTime();
         std::vector<emInt> vaicelltopart;
-        auto part2cell= partitionMetis(inimesh.get(),nParts,vaicelltopart); 
+        auto part2cell= partitionMetis(inimesh,nParts,vaicelltopart); 
         partCells = part2cell;
         times.partition=exaTime()-times.partition;
-
-        vecHashTri  hashtris; 
-	    vecHashQuad hashquads;
-
-        vecVecTri  tris;
-        vecVecQuad quads;
+        for(auto i=0 ; i<part2cell.size(); i++)
+        {
+            sizes.push_back(part2cell[i].size());
+        }
 
         times.partfacematching=exaTime();
         inimesh->FastpartFaceMatching(nParts, part2cell,vaicelltopart,tris,quads);
         times.partfacematching=exaTime()-times.partfacematching; 
-       
-
+        
         for(auto irank=1 ; irank<world.size();irank++)
 	    {
-            boost::mpi::request rq0 =world.isend(irank,1,part2cell); 
+            auto rq0 =world.isend(irank,1,part2cell); 
             reqForPartCells.emplace_back(rq0);
 
-            boost::mpi::request rq1= world.isend(irank,2,tris[irank]); 
+            auto rq1= world.isend(irank,2,tris[irank]); 
             reqForCoarseFaces.emplace_back(rq1);
 
-            boost::mpi::request rq2= world.isend(irank,3,quads[irank]);
+            auto rq2= world.isend(irank,3,quads[irank]);
             reqForCoarseFaces.emplace_back(rq2);
 
         }
-        vectorToSet(tris[MASTER],hashTris);
-        vectorToSet(quads[MASTER],hashQuads);
 
     }
     if(world.rank()!=MASTER)
     {
-        boost::mpi::request rq0=world.irecv(MASTER,1,partCells);
+        auto rq4= 
+        world.irecv(MASTER,4,sizesToalcotePtrs,3);
+        rqforSizes.emplace_back(rq4);
+    }
+
+
+    boost::mpi::wait_all(rqforSizes.begin(),rqforSizes.end());
+
+
+    if(world.rank()!=MASTER)
+    {
+        bufferbytes= sizesToalcotePtrs[0];
+        nBdryVerts = sizesToalcotePtrs[1];
+        nVerts     = sizesToalcotePtrs[2];
+       
+        auto bufferWords= bufferbytes/8; 
+        recvBuffer = reinterpret_cast<char *>(calloc(bufferWords, 8));
+        lengthscale = new double[nVerts];
+
+        auto
+        rq0=world.irecv(MASTER,1,partCells);
         reqForPartCells.emplace_back(rq0);
 
-        boost::mpi::request rq1= world.irecv(MASTER,2,triV[world.rank()]);
+        auto
+        rq1= world.irecv(MASTER,2,tris[world.rank()]);
         reqForCoarseFaces.emplace_back(rq1);
 
-        boost::mpi::request rq2= world.irecv(MASTER,3,quadV[world.rank()]);
+        auto
+        rq2= world.irecv(MASTER,3,quads[world.rank()]);
         reqForCoarseFaces.emplace_back(rq2);
-    }
-    times.initialSync=exaTime();
-    boost::mpi::wait_all(reqForPartCells.begin(),reqForPartCells.end());
-    boost::mpi::wait_all(reqForCoarseFaces.begin(),reqForCoarseFaces.end());
-    times.initialSync=exaTime()-times.initialSync;
 
+
+        auto rq6= 
+        world.irecv(MASTER,6,recvBuffer,bufferbytes);
+        rqForInitmesh.emplace_back(rq6);
+     
+        auto rq8=
+        world.irecv(MASTER,8,lengthscale,nVerts);
+        rqForInitmesh.emplace_back(rq8);
+     
+
+        auto rq5= 
+        world.irecv(MASTER,5,header,7);
+        rqForInitmesh.emplace_back(rq5);
+    
+        auto rq7=
+        world.irecv(MASTER,7,cell2cll);
+        rqForInitmesh.emplace_back(rq7);
+    }
+
+    boost::mpi::wait_all(rqForInitmesh.begin(),rqForInitmesh.end());
+   
     if(world.rank()!=MASTER)
     {
-         vectorToSet(triV[world.rank()],hashTris);
-         vectorToSet(quadV[world.rank()],hashQuads); 
+        inimesh = 
+        new UMesh(); 
+        inimesh->retriveUmesh(recvBuffer,header,nBdryVerts);
+        inimesh->setCellId2CellTypeLocal(cell2cll);
+        inimesh->setLengthScale(lengthscale);
+
     }
+
+    boost::mpi::wait_all(reqForPartCells.begin(),reqForPartCells.end());
+    boost::mpi::wait_all(reqForCoarseFaces.begin(),reqForCoarseFaces.end());
+
+    
+    vectorToSet(tris[world.rank()],hashTris);
+    vectorToSet(quads[world.rank()],hashQuads);
+
     times.serial=exaTime()-times.serial;
+
     times.extract=exaTime();
-    std::unique_ptr<UMesh>  extractedMsh =
+    auto  extractedMsh =
     inimesh->Extract(world.rank(),partCells[world.rank()],
-    numDivs,hashTris,hashQuads);
+       numDivs,hashTris,hashQuads);
     times.extract=exaTime()-times.extract;
+
+
 
     times.refine= exaTime();
     auto refinedMsh = std::make_unique<UMesh>(*((extractedMsh.get())),numDivs,world.rank());
@@ -464,13 +554,8 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
     refinedMsh->numPrisms()+refinedMsh->numHexes()+refinedMsh->numTets()+ 
     refinedMsh->numBdryTris()+refinedMsh->numBdryQuads();
 
-    times.calculatedTotal= times.serial+times.extract+times.refine+times.faceExchange+times.syncTri+times.syncQuad+times.matchtris+times.matchquads;
-
-   // std::cout<<"My rank is: "<<world.rank()<<" my cells are: "<<nCells<<std::endl;
-
 	size_t         totalCells;
-
-    boost::mpi::reduce(world, times.read            , maxTimes.read              ,boost:: mpi::maximum<double>(), MASTER);
+  
 
 	boost::mpi::reduce(world, times.serial          , maxTimes.serial            ,boost:: mpi::maximum<double>(), MASTER);
 
@@ -490,7 +575,9 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
 
     boost::mpi::reduce(world, times.total           , maxTimes.total             ,boost:: mpi::maximum<double>(), MASTER);
 
-    boost::mpi::reduce(world, times.initialSync     , maxTimes.initialSync       ,boost:: mpi::maximum<double>(), MASTER);
+   // boost::mpi::reduce(world, times.initialSync     , maxTimes.initialSync       ,boost:: mpi::maximum<double>(), MASTER);
+
+   // boost::mpi::reduce(world, times.initalBroadcast , maxTimes.initalBroadcast   ,boost:: mpi::maximum<double>(), MASTER);
 
     boost::mpi::reduce(world, size_t(nCells)        , totalCells                 ,std::plus<size_t>()          , MASTER);
 
@@ -504,6 +591,8 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
    		}
         maxTimes.partfacematching = times.partfacematching;
         maxTimes.partition = times.partition;
+        maxTimes.read = times.read;
+
         NewWriteTimes(fileWeakScaliblity,nParts,maxTimes,totalCells);
 
         FILE *fileTotalTime = fopen(totalTimeFile.c_str(), "a");
@@ -523,34 +612,41 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
         fprintf(fileTotalTime, "%-5u %'-20zd %-12.2f \n",
             nParts,totalCells, maxTimes.total) ;
 
-        //std::cout<<"Total Cells: "<<totalCells<<std::endl;    
-
-      
+        std::cout<<"Total time: "<<maxTimes.total<<std::endl;   
 
     }
 
     world.barrier();
+
   
-    // if (world.rank() == MASTER) 
-    // {
-    //     fprintf(eachRank, "%-5s %-10s %-14s %-20s %-14s %-12s %-14s %-14s %-14s %-16s %-12s %-12s %-14s\n",
-    //         "Rank", "Read", "Partition", "PartFaceMatching","Serial",
-    //         "Extract","Refine","FaceExchange",
-    //         "TriSync","QuadSync","TotalMatch","CalculatedTotal", "Total", "nCells");
-    // }
-    // world.barrier();
-    // if(world.rank()!=MASTER)
-    // {
-    //     times.partition=0; 
-    //     times.partfacematching=0;
+    if (world.rank() == MASTER) 
+    {
+        fprintf(eachRank, "%-5s %-10s %-14s %-20s %-14s %-12s %-14s %-14s %-14s %-16s %-12s %-14s\n",
+            "Rank", "Read", "Partition", "PartFaceMatching","Serial",
+            "Extract","Refine","FaceExchange",
+            "TriSync","QuadSync","TotalMatch","Total","nCells");
+    }
+    world.barrier();
+    if(world.rank()!=MASTER)
+    {
+        times.partition=0; 
+        times.partfacematching=0;
+        times.read=0; 
 
-    // }
-    // world.barrier();
+    }
+    world.barrier();
 
-    // fprintf(eachRank, "%-5u %-10.2f %-14.2f %-20.2f %-14.2f %-12.2f %-14.2f %-14.2f %-14.2f %-14.2f %-16.2f %-12.2f %-12.2f %'-zd\n",
-    //     world.rank(), times.read, times.partition, times.partfacematching, times.serial,
-    //     times.extract, times.refine, times.faceExchange,
-    //     times.syncTri,times.syncQuad, times.matchtris+times.matchquads, times.calculatedTotal ,times.total, nCells);
+    //fileMutex.lock();
 
-   
+    fprintf(eachRank, "%-5u %-10.2f %-14.2f %-20.2f %-14.2f %-12.2f %-14.2f %-14.2f %-14.2f %-14.2f %-16.2f %-12.2f %'-zd\n",
+        world.rank(), times.read, times.partition, times.partfacematching,times.serial,
+        times.extract, times.refine, times.faceExchange,
+        times.syncTri,times.syncQuad, times.matchtris+times.matchquads,times.total, nCells);
+
+    //fileMutex.unlock();    
+
+    free(inimesh); 
+    free(recvBuffer);
+    free(header);
+    free(lengthscale);
 }

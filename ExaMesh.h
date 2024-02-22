@@ -129,6 +129,13 @@ public:
 			m_lenScale[vert] = len;
 		}
 	}
+	void setLengthScale(const double lengths[]) 
+	{
+		for (emInt i = 0; i < numVerts(); i++) 
+		{
+			m_lenScale[i] = lengths[i];
+		}
+	}
 	MeshSize computeFineMeshSize(const int nDivs) const;
 
 	void buildFaceCellConnectivity();

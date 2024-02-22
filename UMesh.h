@@ -35,7 +35,7 @@ class UMesh: public ExaMesh {
 	emInt m_nVerts, m_nBdryVerts, m_nTris, m_nQuads, m_nTets, m_nPyrs, m_nPrisms,
 			m_nHexes, m_nTrisFromReader, m_nQuadsFromReader;
 	enum {
-		eVert = 0, eTri, eQuad, eTet, ePyr, ePrism, eHex
+		eVert = 0, eTri, eQuad, eTet, ePyr, ePrism, eHex, ebdryverts
 	};
 	friend class boost::serialization::access;
 	template <class Archive>
@@ -65,6 +65,9 @@ class UMesh: public ExaMesh {
 	emInt (*m_PrismConn)[6];
 	emInt (*m_HexConn)[8];
 	char *m_buffer, *m_fileImage;
+	size_t m_bufferbytes;
+	size_t m_bufferWords; 
+
 	TableCell2Cell                                                  cell2cell; 
 	std::map < std::pair<emInt,emInt>, std::set<std::set<emInt>>>   cell2faces; 
 	std::unordered_map<emInt, std::set<std::set<emInt>>>            cell2bdryfaces; 
@@ -109,6 +112,7 @@ public:
 	UMesh(const char baseFileName[], const char type[], const char ugridInfix[]);
 	UMesh(const UMesh& UM_in, const int nDivs, const emInt partID=-1);
 	UMesh(const CubicMesh& CM, const int nDivs, const emInt partID=-1);
+	UMesh(){};
 	friend void sendUMesh(boost::mpi::communicator  world, UMesh* pEM);
 
 	~UMesh();
@@ -279,6 +283,26 @@ public:
 	{
 		return m_header; 
 	}
+	char* getBuffer () const 
+	{
+		return m_buffer;
+	}
+	char* getFileImage() const 
+	{
+		return m_fileImage; 
+	}
+	size_t getFileImageSize() const 
+	{
+		return m_fileImageSize; 
+	}
+	size_t getBufferBytes() const 
+	{
+		return m_bufferbytes; 
+	}
+	size_t getBufferWords() const 
+	{
+		return m_bufferWords; 
+	}
 	Mapping::MappingType getDefaultMappingType() const {
 		return Mapping::Uniform;
 	}
@@ -304,9 +328,9 @@ public:
 	bool writeVTKFile(const char fileName[]);
 	bool writeUGridFile(const char fileName[]);
 
-	size_t getFileImageSize() const {
-		return m_fileImageSize;
-	}
+	// size_t getFileImageSize() const {
+	// 	return m_fileImageSize;
+	// }
 
 	void incrementVertIndices(emInt* conn, emInt size, int inc);
 	void calcMemoryRequirements (const UMesh &UMIn, const int nDivs); 
@@ -343,7 +367,8 @@ public:
 	void getFaceLists (const emInt ind, const emInt type, 
 	const emInt partID, const emInt numDivs,
 	std::vector<TriFaceVerts> &tris, 
-	std::vector<QuadFaceVerts> &quads) const;; 					
+	std::vector<QuadFaceVerts> &quads) const;
+	void retriveUmesh (char *buffer, const emInt* header, const emInt nBdryVerts);					
 	// Writing with compression reduces file size by a little over a factor of two,
 	// at the expense of making file write slower by two orders of magnitude.
 	// So don't do it.

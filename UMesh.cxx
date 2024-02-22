@@ -109,10 +109,13 @@ void UMesh::init(const emInt nVerts, const emInt nBdryVerts,
 	size_t slack2Size =
 		((((connSize + BCSize) / 8 + 1) * 8) - (connSize + BCSize)) % 8;
 	size_t bufferBytes = headerSize + coordSize + connSize + BCSize + slack1Size + slack2Size;
+	m_bufferbytes = bufferBytes; 
 	assert((headerSize + slack1Size) % 8 == 0);
 	assert((connSize + BCSize + slack2Size) % 8 == 0);
 	assert(bufferBytes % 8 == 0);
 	size_t bufferWords = bufferBytes / 8;
+	m_bufferWords= bufferWords;
+	
 	// Use words instead of bytes to ensure 8-byte alignment.
 	m_buffer = reinterpret_cast<char *>(calloc(bufferWords, 8));
 	assert(m_buffer!=NULL); 
@@ -812,19 +815,9 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	assert(m_nPrisms == m_header[ePrism]);
 	assert(m_nHexes == m_header[eHex]);
 
-	
-    //vheader.assign(m_header, m_header+7); 
-
 	delete reader;
-
 	setupLengthScales();
-
 	
-
-
-
-
-	//vLengthScale.assign(m_lenScale,m_lenScale+m_header[0]); 
 }
 
 UMesh::UMesh(const UMesh &UMIn, const int nDivs, const emInt partID) : m_nVerts(0), m_nBdryVerts(0), m_nTris(0), m_nQuads(0), m_nTets(0),
@@ -1918,8 +1911,7 @@ const std::unordered_set<TriFaceVerts> tris,
 const std::unordered_set<QuadFaceVerts> quads) const
 {
 	// Count the number of tris, quads, tets, pyrs, prisms and hexes.
-	// const emInt first = P.getFirst();
-	// const emInt last = P.getLast();
+
 
 	exa_set<TriFaceVerts> partBdryTris;
 	exa_set<QuadFaceVerts> partBdryQuads;
@@ -1932,13 +1924,10 @@ const std::unordered_set<QuadFaceVerts> quads) const
 
 	for (emInt ii = 0; ii <partcells.size(); ii++)
 	{
-		// emInt type = vecCPD[ii].getCellType();
-		// emInt ind = vecCPD[ii].getIndex();
+
 		emInt globalInd = partcells[ii]; 
 		emInt ind       = (cellID2cellTypeLocalID[globalInd].second)-1; 
 		emInt type      = cellID2cellTypeLocalID[globalInd].first; 
-		
-
 		switch (type)
 		{
 		default:
@@ -1950,7 +1939,6 @@ const std::unordered_set<QuadFaceVerts> quads) const
 		case BDRY_QUAD:
 			break; 
 		case CGNS_ENUMV(TETRA_4):
-		//case TET:
 		{
 			nTets++;
 			conn = getTetConn(ind);
@@ -1969,7 +1957,6 @@ const std::unordered_set<QuadFaceVerts> quads) const
 			break;
 		}
 		case CGNS_ENUMV(PYRA_5):
-		//case PYRAMID:
 		{
 			nPyrs++;
 			conn = getPyrConn(ind);
@@ -1991,7 +1978,6 @@ const std::unordered_set<QuadFaceVerts> quads) const
 			break;
 		}
 		case CGNS_ENUMV(PENTA_6):
-		//case PRISM: 
 		{
 			nPrisms++;
 			conn = getPrismConn(ind);
@@ -2014,7 +2000,6 @@ const std::unordered_set<QuadFaceVerts> quads) const
 			break;
 		}
 		case CGNS_ENUMV(HEXA_8):
-		//case HEX:
 		{
 			nHexes++;
 			conn = getHexConn(ind);
@@ -2048,6 +2033,7 @@ const std::unordered_set<QuadFaceVerts> quads) const
 	// searching through -all- the bdry entities for each part.
 	std::vector<emInt> realBdryTris;
 	std::vector<emInt> realBdryQuads;
+
 	for (emInt ii = 0; ii < numBdryTris(); ii++)
 	{
 		conn = getBdryTriConn(ii);
@@ -2773,4 +2759,72 @@ std::vector<QuadFaceVerts> &quads) const
 	} 
 }
 
+void 
+UMesh::retriveUmesh(char *buffer, const emInt* header, const emInt nBdryVerts)
+{
+	m_nVerts     = header[eVert];
+	m_nBdryVerts = nBdryVerts;
+	m_nTris      = header[eTri];
+	m_nQuads     = header[eQuad];
+	m_nTets      = header[eTet];
+	m_nPyrs      = header[ePyr];
+	m_nPrisms    = header[ePrism];
+	m_nHexes     = header[eHex];
 
+	// All sizes are computed in bytes.
+	// Work out buffer size, including padding to ensure 8-byte alignment for the coordinates.
+	size_t intSize = sizeof(emInt);
+	size_t headerSize = 7 * intSize;
+	// How many bytes to add to get eight-byte alignment for coordinates,
+	// assuming eight-byte alignment for the buffer overall.
+	size_t slack1Size = (intSize == 4) ? 4 : 0;
+	size_t coordSize = 3 * sizeof(double) * m_nVerts;
+	size_t connSize = (3 *m_nTris + 4 * m_nQuads  + 4 * size_t(m_nTets) + 5 * size_t(m_nPyrs) + 6 * size_t(m_nPrisms) + 8 * size_t(m_nHexes)) * intSize;
+	size_t BCSize = (m_nTris + m_nQuads) * intSize;
+
+	// How many bytes to add to fill up the last eight-byte chunk?
+	size_t slack2Size =
+	 	((((connSize + BCSize) / 8 + 1) * 8) - (connSize + BCSize)) % 8;
+	//size_t bufferBytes = headerSize + coordSize + connSize + BCSize + slack1Size + slack2Size;
+	// m_bufferbytes=bufferBytes; 
+	// assert((headerSize + slack1Size) % 8 == 0);
+	// assert((connSize + BCSize + slack2Size) % 8 == 0);
+	// assert(bufferBytes % 8 == 0);
+	// size_t bufferWords = bufferBytes / 8;
+	// Use words instead of bytes to ensure 8-byte alignment.
+	//m_buffer = reinterpret_cast<char *>(calloc(bufferWords, 8));
+	//assert(m_buffer!=NULL); 
+
+	// The pointer arithmetic here is made more complicated because the pointers aren't
+	// compatible with each other.
+	m_header = reinterpret_cast<emInt *>(buffer + slack1Size);
+	assert(m_header!=NULL); 
+	m_header[eTet]       = header[eVert];
+	m_header[eTri]       = header[eTri]; 
+	m_header[eQuad]      = header[eQuad];
+	m_header[eTet]       = header[eTet];
+	m_header[ePyr]       = header[ePyr];
+	m_header[ePrism]     = header[ePrism];
+	m_header[eHex]       = header[eHex];
+	
+
+	m_coords =
+		reinterpret_cast<double(*)[3]>(buffer + headerSize + slack1Size);
+	m_TriConn = reinterpret_cast<emInt(*)[3]>(buffer + headerSize + slack1Size + coordSize);
+	m_QuadConn = reinterpret_cast<emInt(*)[4]>(m_TriConn + m_nTris);
+	m_TriBC = reinterpret_cast<emInt *>(m_QuadConn + m_nQuads);
+	m_QuadBC = m_TriBC + m_nTris;
+	m_TetConn = reinterpret_cast<emInt(*)[4]>(m_QuadBC + m_nQuads);
+	m_PyrConn = reinterpret_cast<emInt(*)[5]>(m_TetConn + m_nTets);
+	m_PrismConn = reinterpret_cast<emInt(*)[6]>(m_PyrConn + m_nPyrs);
+	m_HexConn = reinterpret_cast<emInt(*)[8]>(m_PrismConn + m_nPrisms);
+	
+	//m_fileImage = m_buffer + slack1Size;
+	//m_fileImageSize = bufferBytes - slack1Size - slack2Size;
+
+	m_lenScale = new double[m_nVerts];
+	for (emInt ii = 0; ii < m_nVerts; ii++)
+	{
+		m_lenScale[ii] = 0;
+	}
+}
