@@ -1024,7 +1024,7 @@ struct pairHash {
     }
 };
 
-
+using vecSizes                   = std::vector<std::size_t>;
 using setTri         			 = std::set<TriFaceVerts>; 
 using setQuad                    = std::set<QuadFaceVerts>; 
 using hashTri                    = std::unordered_set<TriFaceVerts>; 
@@ -1041,6 +1041,12 @@ using TableTri2TableIndex2Index	 = std::unordered_map< TriFaceVerts , std::unord
 using TableQuad2TableIndex2Index = std::unordered_map< QuadFaceVerts, std::unordered_map<emInt,emInt>>;
 using multimpFace2Cell			 = std::unordered_multimap < std::vector<emInt>, std::pair<emInt,emInt>, hashFunctionFace2Cell>;
 using TableCell2Cell			 = std::unordered_map < std::pair<emInt,emInt>, std::set<emInt>, hashFunctionCell2Cell>;
+using VecVecReqs                 = std::vector<std::vector<boost::mpi::request>>; 
+using vecPairInt2Int			 = std::vector<std::pair<int, int>>;
+using Request                    = boost::mpi::request;
+using vecReqs                    = std::vector<Request>;
+using vecVecReqs                 = std::vector<vecReqs>;
+		
 void
 inline buildTrisMap(hashTri const& tris, std::map<int, vecTri> &remoteTotris,
 std::set<int> &neighbors)
@@ -1244,6 +1250,10 @@ struct timeResults
 	double partition;
 	double faceExchange; 
 	double initialSync; 
+	double sync1; 
+	double sync2; 
+	double sync3; 
+	double sync4; 
 	// double calculatedTotal()
 	// {
 	// 	total=serial+extract+refine+sendtris+sendquads+recvtris

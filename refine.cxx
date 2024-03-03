@@ -114,7 +114,12 @@ int main(int argc, char* const argv[]) {
 	size_t lastSlashPos        = std::string(inFileBaseName).find_last_of('/');
 	std::string mshName        = std::string(inFileBaseName).substr(lastSlashPos + 1);
 	
-	auto outFileAllTimes       = openFile(mshName+"-nDivs-"+std::to_string(nDivs)+ "AllTimes.txt");
+	// auto outFileAllTimes       = openFile(mshName+"-nDivs-"+std::to_string(nDivs)+ "AllTimes.txt");
+	// if (outFileAllTimes  == NULL) 
+	// {
+    //     fprintf(stderr, "Error opening the file!\n");
+    //     exit(1);
+    // }
 	auto outFileMeshStatics    = openFile(mshName+"-mshStatics.txt");
 
 	if(isInputCGNS)
@@ -127,7 +132,7 @@ int main(int argc, char* const argv[]) {
 	}
 
 
-	refineForMPI(inFileBaseName,type, infix, cgnsFileName,nDivs,InputMeshType,mshName,outFileAllTimes); 
+	refineForMPI(inFileBaseName,type, infix, cgnsFileName,nDivs,InputMeshType,mshName,nullptr); 
 
 
 /* 	if (isInputCGNS) 
