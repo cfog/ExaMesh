@@ -7,6 +7,7 @@
 #include "PARMETIS.h"
 #include "UMesh.h"
 #include <boost/serialization/unique_ptr.hpp>
+#include <boost/mpi/collectives.hpp>
 #include <cstdio>
 
 void Reduce (boost::mpi::communicator world, 
@@ -115,6 +116,9 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
     hashTri  hashTris; 
 	hashQuad hashQuads;
 
+    vecVecTri  tris;
+    vecVecQuad quads;
+
     vecVecTri   triV(nParts);
 	vecVecQuad  quadV(nParts);
 
@@ -152,55 +156,61 @@ void refineForMPI ( const char  baseFileName[] , const char type[],
         vecHashTri  hashtris; 
 	    vecHashQuad hashquads;
 
-        vecVecTri  tris;
-        vecVecQuad quads;
-
         times.partfacematching=exaTime();
-        inimesh->FastpartFaceMatching(nParts, part2cell,vaicelltopart,tris,quads);
+        inimesh->FastpartFaceMatching(nParts,partCells,vaicelltopart,tris,quads);
         times.partfacematching=exaTime()-times.partfacematching;
        
-        for(auto irank=1 ; irank<world.size();irank++)
-	    {
-            Request rq0 =world.isend(irank,1,part2cell); 
-            reqForPartCells[world.rank()].emplace_back(rq0);
+        //for(auto irank=1 ; irank<world.size();irank++)
+	    //{
+            // Request rq0 =world.isend(irank,1,partCells); 
+            // reqForPartCells[world.rank()].emplace_back(rq0);
 
-            Request rq1= world.isend(irank,2,tris[irank]); 
-            reqForCoarseFaces[world.rank()].emplace_back(rq1);
+           // Request rq1= world.isend(irank,2,tris[irank]); 
+           // reqForCoarseFaces[world.rank()].emplace_back(rq1);
 
-            Request rq2= world.isend(irank,3,quads[irank]);
-            reqForCoarseFaces[world.rank()].emplace_back(rq2);
+           // Request rq2= world.isend(irank,3,quads[irank]);
+           // reqForCoarseFaces[world.rank()].emplace_back(rq2);
 
-        }
-        vectorToSet(tris[MASTER],hashTris);
-        vectorToSet(quads[MASTER],hashQuads);
+        //}
+        //vectorToSet(tris[MASTER],hashTris);
+        //vectorToSet(quads[MASTER],hashQuads);
 
     }
     if(world.rank()!=MASTER)
     {
-        Request rq0=world.irecv(MASTER,1,partCells);
-        reqForPartCells[world.rank()].emplace_back(rq0);
+        // Request rq0=world.irecv(MASTER,1,partCells);
+        // reqForPartCells[world.rank()].emplace_back(rq0);
 
-        Request rq1= world.irecv(MASTER,2,triV[world.rank()]);
-        reqForCoarseFaces[world.rank()].emplace_back(rq1);
+        // Request rq1= world.irecv(MASTER,2,triV[world.rank()]);
+        // reqForCoarseFaces[world.rank()].emplace_back(rq1);
 
-        Request rq2= world.irecv(MASTER,3,quadV[world.rank()]);
-        reqForCoarseFaces[world.rank()].emplace_back(rq2);
+        // Request rq2= world.irecv(MASTER,3,quadV[world.rank()]);
+        // reqForCoarseFaces[world.rank()].emplace_back(rq2);
     }
 
 
+    // times.sync1=exaTime();
+    // Wait(reqForPartCells[world.rank()]);
+    // times.sync1=exaTime()-times.sync1;
+
+
+    // times.sync2=exaTime();
+   // Wait(reqForCoarseFaces[world.rank()]);
+   // times.sync2=exaTime()-times.sync2;
     times.sync1=exaTime();
-    Wait(reqForPartCells[world.rank()]);
+    boost::mpi::broadcast(world,partCells,MASTER);
     times.sync1=exaTime()-times.sync1;
 
     times.sync2=exaTime();
-    Wait(reqForCoarseFaces[world.rank()]);
+    boost::mpi::broadcast(world,tris,MASTER);
+    boost::mpi::broadcast(world,quads,MASTER);
     times.sync2=exaTime()-times.sync2;
-
-    if(world.rank()!=MASTER)
-    {
-        vectorToSet(triV[world.rank()],hashTris);
-        vectorToSet(quadV[world.rank()],hashQuads); 
-    }
+  
+    //if(world.rank()!=MASTER)
+    //{
+        vectorToSet(tris[world.rank()],hashTris);
+        vectorToSet(quads[world.rank()],hashQuads); 
+    //}
 
     times.serial=exaTime()-times.serial;
     

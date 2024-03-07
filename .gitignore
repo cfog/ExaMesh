@@ -74,6 +74,9 @@ autoscan.log
 *.png
 *.plt 
 *.lpk
+*.ods 
+*.zip
+*.~
 globe_mats_cubic.cxx
 globe_mats_cubic
 jobGenerator.cxx
