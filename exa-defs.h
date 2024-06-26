@@ -1232,55 +1232,44 @@ const vecVecQuad  &vecquads)
 };
 struct timeResults
 {
-	double calculatedTotal; 
-	double total; 
-	double read; 
+	
+	double preProcessing;
+	double partition;
+	double InitialFaceMatching; 
+	double broadcasting; 
+	double serial; 
 	double extract; 
 	double refine;
-	double sendtris;
-	double sendquads;
-	double recvtris;	
-	double recvquads;
+	double faceExchange; 
 	double matchtris;
 	double matchquads; 
-	double syncTri; 
-	double syncQuad;
-	double serial; 
-	double partfacematching; 
-	double partition;
-	double faceExchange; 
-	double initialSync; 
-	double sync1; 
-	double sync2; 
-	double sync3; 
-	double sync4; 
-	// double calculatedTotal()
-	// {
-	// 	total=serial+extract+refine+sendtris+sendquads+recvtris
-	// 	+recvquads+matchtris+matchquads+syncTri+syncQuad; 
-	// 	return total; 
-	// }
-
-	void printTimeResults() 
-	{
-		std::cout << "Read: " << read << std::endl;
-		std::cout << "Partition: " << partition << std::endl;
-		std::cout << "Part face matching: " << partfacematching << std::endl;
-		std::cout << "Serial: " << serial << std::endl;
-		std::cout << "Extract: " << extract << std::endl;
-		std::cout << "Refine: " << refine << std::endl;
-		std::cout << "Send tris: " << sendtris << std::endl;		
-		std::cout << "Send quads: " << sendquads << std::endl;
-		std::cout << "Receive tris: " << recvtris << std::endl;
-		std::cout << "Receive quads: " << recvquads << std::endl;
-		std::cout << "Sync tris: " << syncTri << std::endl;
-		std::cout << "Sync quads: " << syncQuad << std::endl;
-		std::cout << "Match tris: " << matchtris << std::endl;
-		std::cout << "Match quads: " << matchquads << std::endl;
-		std::cout << "Total time: " << total << std::endl;
-		
-	}
+	double totalMatch; 
+	double waitTri; 
+	double waitQuad;
+	double totalFacesWait; 
+	double total; 
 
 };
+
+inline 
+FILE*
+openFile (std::string fileName)
+{
+	FILE *file = fopen(fileName.c_str(), "a");
+    if (file == NULL) 
+	{
+        fprintf(stderr, "Error opening the file!\n");
+    }
+    return file; 
+}
+inline 
+long 
+getSeekFile (FILE *file)
+{
+	fseek(file, 0, SEEK_END);
+	long size = ftell(file);
+	return size; 
+}
+
 
 #endif /* SRC_EXA_DEFS_H_ */

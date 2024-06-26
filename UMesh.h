@@ -335,7 +335,7 @@ public:
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
 		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize) const;
 
-	void 
+	emInt 
 	FastpartFaceMatching(const emInt nParts, const std::vector<std::vector<emInt>> &part2cells,
 	const std::vector<emInt> &cell2part, 
 	vecVecTri &tris, vecVecQuad &quads) const;	 

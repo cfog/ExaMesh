@@ -2564,7 +2564,7 @@ void UMesh::convertToUmeshFormat()
 	// }
 };
 
-void
+emInt
 UMesh:: FastpartFaceMatching(
 	const emInt nParts, 
 	const std::vector<std::vector<emInt>> &part2cells,
@@ -2655,6 +2655,8 @@ const
 		preMatchingPartBdryTris(numDivs,partBdryTris,tris); 
 		preMatchingPartBdryQuads(numDivs,partBdryQuads,quads);
 	}
+
+	return cellParts.size(); 
 
 };
 
