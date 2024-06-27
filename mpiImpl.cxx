@@ -253,33 +253,6 @@ void ReducePartDataToAvg (boost::mpi::communicator  world, const size_t nRefined
 
 
 
-// void ReduceToSUMMeshStatics (boost::mpi::communicator  world, MeshStatics mshData, MeshStatics allmshData)
-// {
- 
-//     boost::mpi::reduce(world, mshData.tets ,    allmshData.tets,     std::plus<size_t>(), MASTER);
-//     boost::mpi::reduce(world, mshData.tris ,    allmshData.tris,     std::plus<size_t>(), MASTER);
-//     boost::mpi::reduce(world, mshData.quads,    allmshData.quads,    std::plus<size_t>(), MASTER);
-//     boost::mpi::reduce(world, mshData.pyramids, allmshData.pyramids, std::plus<size_t>(), MASTER);
-//     boost::mpi::reduce(world, mshData.prisms,   allmshData.prisms,   std::plus<size_t>(), MASTER);
-//     boost::mpi::reduce(world, mshData.hexs,     allmshData.hexs,     std::plus<size_t>(), MASTER);
-
-// }
-// void writeMshStatics (MeshStatics allmshData, size_t nParts, size_t numDivs, size_t totalCells,  FILE* file)
-// {
-   
-
-//     // write in file mesh data 
-//     if (file == NULL) 
-//         fprintf(stderr, "Error opening the file!\n");
-//     fseek(file, 0, SEEK_END);
-//     long size = ftell(file);
-//     if (size == 0)  
-//         fprintf(file, "%-5s %-12s %-12s %-12s %-12s %-12s %-12s %-12s %-12s\n",
-//                 "nP", "nDivs", "nTets", "nTris", "nQuads", "nPyramids", "nPrisms", "nHexs", "nCells");
-//     fprintf(file, "%-5u %-12u %'-12zd %'-12zd %'-12zd %'-12zd %'-12zd %'-12zd %'-20zd\n",
-//             nParts, numDivs, allmshData.tets, allmshData.tris, allmshData.quads, allmshData.pyramids, allmshData.prisms, allmshData.hexs, totalCells);
-// }
-
 void refineForMPI ( const char  baseFileName[] , const  char type[], 
                     const char  ugridInfix[]   , const char CGNSFileName[],
                     const int   numDivs        , const char MeshType, std::string mshName, FILE* eachRank
@@ -347,6 +320,8 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
     std::vector<std::size_t>  trisizes(nParts); 
     std::vector<std::size_t>  quadsize(nParts);
 
+    // All processors read the mesh 
+
     times.preProcessing=exaTime();
 	std::unique_ptr<UMesh> inimesh = 
     std::make_unique<UMesh>(baseFileName, type, ugridInfix);
@@ -357,6 +332,7 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
     {
         times.partition=exaTime();
         std::vector<emInt> vaicelltopart;
+        // Paritions the mesh 
         auto part2cell= partitionMetis(inimesh.get(),nParts,vaicelltopart); 
         partCells = part2cell;
         times.partition=exaTime()-times.partition;
@@ -364,6 +340,7 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
         vecHashTri  hashtris; 
 	    vecHashQuad hashquads;
 
+        // Find coarse part boundary faces and update info of part ID and remote part ID 
         times.InitialFaceMatching=exaTime();
         sizeCellparts=inimesh->FastpartFaceMatching(nParts,partCells,vaicelltopart,tris,quads);
         times.InitialFaceMatching=exaTime()-times.InitialFaceMatching;
@@ -371,6 +348,7 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
     }
 
     times.broadcasting=exaTime();
+    // Broadcasting all data 
     boost::mpi::broadcast(world,partCells,MASTER);
     boost::mpi::broadcast(world,tris,MASTER);
     boost::mpi::broadcast(world,quads,MASTER);
@@ -396,6 +374,7 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
 
     auto refinedTris = refinedMsh->getRefinedPartTris();
 
+    // Establishing the list of neighbors whom processor share tris 
     buildTrisMap (refinedTris ,remoteTovecTris ,triNeighbrs);
 
     for(auto tri:remoteTovecTris)
@@ -406,6 +385,8 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
     
     auto refinedQuads= refinedMsh->getRefinedPartQuads();
 
+
+    // Establishing the list of neighbors whom processor share quads
     buildQuadsMap(refinedQuads,remoteTovecQuads,quadNeighbrs); 
     for(auto quad:remoteTovecQuads)
 	{
@@ -493,7 +474,7 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
 
    
 
- 
+    // Post Processing 
 
     times.totalFacesWait = times.waitTri+times.waitQuad;
     times.totalMatch     = times.matchtris+times.matchquads;

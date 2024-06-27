@@ -32,16 +32,7 @@
 #include "mpiImpl.h"
 #include "resultGenerator.cxx"
 #include <chrono>
-FILE*
-openFile (std::string fileName)
-{
-	FILE *file = fopen(fileName.c_str(), "a");
-    if (file == NULL) 
-	{
-        fprintf(stderr, "Error opening the file!\n");
-    }
-    return file; 
-}
+
 
 int main(int argc, char* const argv[]) {
 	double startAppTime = exaTime(); 
@@ -114,14 +105,6 @@ int main(int argc, char* const argv[]) {
 	size_t lastSlashPos        = std::string(inFileBaseName).find_last_of('/');
 	std::string mshName        = std::string(inFileBaseName).substr(lastSlashPos + 1);
 	
-	// auto outFileAllTimes       = openFile(mshName+"-nDivs-"+std::to_string(nDivs)+ "AllTimes.txt");
-	// if (outFileAllTimes  == NULL) 
-	// {
-    //     fprintf(stderr, "Error opening the file!\n");
-    //     exit(1);
-    // }
-	auto outFileMeshStatics    = openFile(mshName+"-mshStatics.txt");
-
 	if(isInputCGNS)
 	{
 		InputMeshType='C'; 
@@ -130,118 +113,68 @@ int main(int argc, char* const argv[]) {
 	{
 		InputMeshType='U'; 
 	}
-
-
-	refineForMPI(inFileBaseName,type, infix, cgnsFileName,nDivs,InputMeshType,mshName,nullptr); 
-
-
-/* 	if (isInputCGNS) 
+	if(isMPI)
 	{
-#if (HAVE_CGNS == 1)
-		CubicMesh CMorig(cgnsFileName);
-		if (isParallel)
+		refineForMPI(inFileBaseName,type, infix, cgnsFileName,nDivs,InputMeshType,mshName,nullptr); 
+	}
+	else
+	{
+		if (isInputCGNS) 
 		{
-			if(isMPI)
-			{
-				ParallelTester* tester= new ParallelTester(); 
-#ifndef NDEBUG
-				//CMorig.TestMPI(nDivs,nTestParts,tester,'C');
-#endif				
-				CMorig.refineForMPI(nDivs,tester,'C',mshName,outFileAllTimes);
-				delete tester; 
-
-			}
-			else
+#if (HAVE_CGNS == 1)
+			CubicMesh CMorig(cgnsFileName);
+			if (isParallel)
 			{
 				CMorig.refineForParallel(nDivs, maxCellsPerPart);
 			}
-		}else 
-		{
-			double start = exaTime();
-			UMesh UMrefined(CMorig, nDivs);
-			double time = exaTime() - start;
-			size_t cells = UMrefined.numCells();
-			writeAllTimeResults(outFileAllTimes,1,0,0,0,time,0,0,0,0,0,time,0,0,cells);
-			writeMeshStatics(outFileMeshStatics,nDivs,cells); 
+			else 
+			{
+				double start = exaTime();
+				UMesh UMrefined(CMorig, nDivs);
+				double time = exaTime() - start;
+				size_t cells = UMrefined.numCells();
+				
+				fprintf(stderr, "\nDone serial refinement.\n");
+				fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
+				fprintf(stderr,
+								"                          %5.2F million cells / minute\n",
+								(cells / 1000000.) / (time / 60));
 
-			fprintf(stderr, "\nDone serial refinement.\n");
-			fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
-			fprintf(stderr,
-							"                          %5.2F million cells / minute\n",
-							(cells / 1000000.) / (time / 60));
-
-//			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
-//			UMrefined.writeVTKFile("/tmp/junk.vtk");
-		}
+	//			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
+	//			UMrefined.writeVTKFile("/tmp/junk.vtk");
+			}
 #else
 		fprintf(stderr, "Not compiled with CGNS; curved meshes not supported.\n");
 		exit(1);
 #endif
-	}
-	else 
-	{
-		
-		if (isParallel  && !meshScanning)
+		}
+		else 
 		{
-			satrtScanningTime= exaTime(); 
-			UMesh UMorig(inFileBaseName, type, infix);
-			scanningTime= exaTime()-satrtScanningTime; 
-			if(isMPI)
+			if (isParallel)
 			{
-				ParallelTester* tester= new ParallelTester(); 
-#ifndef NDEBUG				
-				//UMorig.TestMPI(nDivs,nTestParts,tester,'U'); 
-#endif
-				UMorig.refineForMPI(nDivs,tester,'U',mshName,outFileAllTimes);
-				
-				delete tester; 
-			}
-			else
-			{
+				UMesh UMorig(inFileBaseName, type, infix);
 				UMorig.refineForParallel(nDivs, maxCellsPerPart);
 			}
-
+			else 
+			{
+					UMesh UMorig(inFileBaseName, type, infix);
+					double start = exaTime();
+					UMesh UMrefined(UMorig, nDivs);
+					double time = exaTime() - start;
+					size_t cells = UMrefined.numCells();
+					
+					fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
+					fprintf(stderr,
+									"                          %5.2F million cells / minute\n",
+									(cells / 1000000.) / (time / 60));
+					//UMrefined.writeUGridFile(outFileName);
+					//UMrefined.writeVTKFile(outFileName);
+			}
+				
 		}
-		if (!isParallel && !meshScanning) 
-		{
-			UMesh UMorig(inFileBaseName, type, infix);
-			double start = exaTime();
-			UMesh UMrefined(UMorig, nDivs);
-			double time = exaTime() - start;
-			size_t cells = UMrefined.numCells();
-			writeAllTimeResults(outFileAllTimes,1,0,0,0,0,time,0,0,0,0,time,0,0,cells);
-			writeMeshStatics(outFileMeshStatics,nDivs,cells); 
-
-			//WrireSerialTime(mshName,time,cells,nDivs);
-			//fprintf(stderr, "\nDone serial refinement.\n");
-			fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
-			fprintf(stderr,
-							"                          %5.2F million cells / minute\n",
-							(cells / 1000000.) / (time / 60));
-			
-
-			//UMrefined.writeUGridFile(outFileName);
-			//UMrefined.writeVTKFile(outFileName);
-		}
-		if(meshScanning)
-		{
-			
-			UMesh UMorig(inFileBaseName, type, infix);
-			size_t fileSize = UMorig.getFileImageSize();
-			
-			std::cout<<"The mesh input size is: "
-			<<(static_cast<double>(fileSize)/1000000)<<" MB"<<std::endl;  
-			UMorig.calcMemoryRequirements(UMorig,nDivs); 
-			 
-			
-			// std::cout<< "Scan the mesh and give me an estimate of "
-          	// 		<< "least required cores took:" << std::endl;
-		}
+		printf("Exiting\n");
+		exit(0);
 	}
-	//printf("Exiting\n");
-	double Apptime= exaTime()-startAppTime; 
-	std::cout<<"Time taken by the whole application is: "<<Apptime<<std::endl; 
-	std::cout<<"Scanning Time: "<<scanningTime<<std::endl;  */
-	exit(0);
+
 }
 
