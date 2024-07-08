@@ -41,6 +41,9 @@
 // there aren't warnings about standard autoconf things being
 // redefined.
 #include "GMGW_FileWrapper.hxx"
+#undef PACKAGE_NAME
+#undef PACKAGE_VERSION
+#undef PACKAGE_STRING
 
 #include "mpi.h"
 #include "ExaMesh.h"

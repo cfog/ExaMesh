@@ -314,6 +314,7 @@ public:
 	const emInt partID, const emInt numDivs,
 	std::vector<TriFaceVerts> &tris, 
 	std::vector<QuadFaceVerts> &quads) const;; 					
+
 	// Writing with compression reduces file size by a little over a factor of two,
 	// at the expense of making file write slower by two orders of magnitude.
 	// So don't do it.

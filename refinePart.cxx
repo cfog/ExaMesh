@@ -27,6 +27,7 @@
 #include <locale.h>
 #include <unistd.h>
 #include <time.h>
+#include <cstdio>
 
 #include "ExaMesh.h"
 #include "HexDivider.h"

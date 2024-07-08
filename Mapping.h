@@ -125,10 +125,10 @@ public:
 	Q1QuadMapping(const ExaMesh* const EM) :
 			Q1Mapping(EM) {
 	}
-	void setupCoordMapping(const emInt verts[]) {
+  void setupCoordMapping(const emInt /*verts*/[]) {
 		assert(0);
 	}
-	void computeTransformedCoords(const double uvw[3], double xyz[3]) const {
+  void computeTransformedCoords(const double /*uvw*/[3], double /*xyz*/[3]) const {
 		assert(0);
 	}
 };
@@ -272,8 +272,8 @@ public:
 	void setModalValues()  {
 		assert(0);
 	}
-	virtual void computeTransformedCoords(const double uvw[3],
-			double xyz[3]) const {
+  virtual void computeTransformedCoords(const double /*uvw*/[3],
+					double /*xyz*/[3]) const {
 		assert(0);
 	}
 

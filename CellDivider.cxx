@@ -24,6 +24,7 @@
  */
 
 #include <math.h>
+#include <cstdio>
 
 #include "ExaMesh.h"
 #include "GeomUtils.h"
@@ -1383,29 +1384,70 @@ void getCellInteriorParametricIntersectionPoint(const double uvwA[3],
 // First, set up the least-squares system, with all nine of the
 // equalities that we'd like to satisfy.
 
-	double L2LHS[9][3] = { {deltaBA[0], -deltaDC[0], 0}, {deltaBA[1],
-			-deltaDC[1], 0}, {deltaBA[2], -deltaDC[2], 0}, {0, deltaDC[0],
-			-deltaFE[0]}, {0, deltaDC[1], -deltaFE[1]}, {0, deltaDC[2],
-			-deltaFE[2]}, {-deltaBA[0], 0, deltaFE[0]}, {-deltaBA[1], 0,
-			deltaFE[1]}, {-deltaBA[2], 0, deltaFE[2]}};
-	double L2RHS[9] = {uvwC[0] - uvwA[0], uvwC[1] - uvwA[1], uvwC[2] - uvwA[2],
+	double L2LHS[9][3] = {
+			{deltaBA[0], -deltaDC[0], 0},
+			{deltaBA[1], -deltaDC[1], 0},
+			{deltaBA[2], -deltaDC[2], 0},
+			{0, deltaDC[0], -deltaFE[0]},
+			{0, deltaDC[1], -deltaFE[1]},
+			{0, deltaDC[2], -deltaFE[2]},
+			{-deltaBA[0], 0, deltaFE[0]},
+			{-deltaBA[1], 0, deltaFE[1]},
+			{-deltaBA[2], 0, deltaFE[2]}};
+	double L2RHS[9] = {uvwC[0] - uvwA[0],
+			uvwC[1] - uvwA[1], uvwC[2] - uvwA[2],
 		uvwE[0] - uvwC[0], uvwE[1] - uvwC[1], uvwE[2] - uvwC[2], uvwA[0]
 		- uvwE[0], uvwA[1] - uvwE[1], uvwA[2] - uvwE[2]};
 
 // Now multiply L2LHS . s = L2RHS from the left by L2LHS^T
-	double LHS[3][3], RHS[3];
-	for (int ii = 0; ii < 3; ii++) {
-		RHS[ii] = 0;
-		for (int kk = 0; kk < 9; kk++) {
-			RHS[ii] += L2RHS[kk] * L2LHS[kk][ii];
-		}
-		for (int jj = 0; jj < 3; jj++) {
-			LHS[ii][jj] = 0;
-			for (int kk = 0; kk < 9; kk++) {
-				LHS[ii][jj] += L2LHS[kk][ii] * L2LHS[kk][jj];
-			}
-		}
-	}
+	double RHS[3], LHS[3][3];
+	// This is the original code, which is actually quite slow compared with
+	// the version below.
+//	double oldLHS[3][3];
+//	for (int ii = 0; ii < 3; ii++) {
+//		RHS[ii] = 0;
+//		for (int kk = 0; kk < 9; kk++) {
+//			RHS[ii] += L2RHS[kk] * L2LHS[kk][ii];
+//		}
+//		for (int jj = 0; jj < 3; jj++) {
+//			oldLHS[ii][jj] = 0;
+//			for (int kk = 0; kk < 9; kk++) {
+//				oldLHS[ii][jj] += L2LHS[kk][ii] * L2LHS[kk][jj];
+//			}
+//		}
+//	}
+
+	// This version has noticeably fewer floating point ops (39 multiplies,
+	// 33 adds), compared with the above version (something like 108 multiply-adds).
+	// And this version hasn't got the triple-nested loops, either.
+	RHS[0] = (L2RHS[0] - L2RHS[6])*deltaBA[0] + (L2RHS[1] - L2RHS[7])*deltaBA[1] + (L2RHS[2] - L2RHS[8])*deltaBA[2];
+	RHS[1] = (L2RHS[3] - L2RHS[0])*deltaDC[0] + (L2RHS[4] - L2RHS[1])*deltaDC[1] + (L2RHS[5] - L2RHS[2])*deltaDC[2];
+	RHS[2] = (L2RHS[6] - L2RHS[3])*deltaFE[0] + (L2RHS[7] - L2RHS[4])*deltaFE[1] + (L2RHS[8] - L2RHS[5])*deltaFE[2];
+
+
+	LHS[0][0] = 2*(deltaBA[0]*deltaBA[0] + deltaBA[1]*deltaBA[1] + deltaBA[2]*deltaBA[2]);
+	LHS[1][0] = -(deltaBA[0]*deltaDC[0] + deltaBA[1]*deltaDC[1] + deltaBA[2]*deltaDC[2]);
+	LHS[2][0] = -(deltaBA[0]*deltaFE[0] + deltaBA[1]*deltaFE[1] + deltaBA[2]*deltaFE[2]);
+
+	LHS[0][1] = LHS[1][0];
+	LHS[1][1] = 2*(deltaDC[0]*deltaDC[0] + deltaDC[1]*deltaDC[1] + deltaDC[2]*deltaDC[2]);
+	LHS[2][1] = -(deltaDC[0]*deltaFE[0] + deltaDC[1]*deltaFE[1] + deltaDC[2]*deltaFE[2]);
+
+	LHS[0][2] = LHS[2][0];
+	LHS[1][2] = LHS[2][1];
+	LHS[2][2] = 2*(deltaFE[0]*deltaFE[0] + deltaFE[1]*deltaFE[1] + deltaFE[2]*deltaFE[2]);
+
+	// Equality comparison of doubles is prone to failure, but as a quick-and-dirty check,
+	// it did what I needed it to.
+//	assert(oldLHS[0][0] == LHS[0][0]);
+//	assert(oldLHS[0][1] == LHS[0][1]);
+//	assert(oldLHS[0][2] == LHS[0][2]);
+//	assert(oldLHS[1][0] == LHS[1][0]);
+//	assert(oldLHS[1][1] == LHS[1][1]);
+//	assert(oldLHS[1][2] == LHS[1][2]);
+//	assert(oldLHS[2][0] == LHS[2][0]);
+//	assert(oldLHS[2][1] == LHS[2][1]);
+//	assert(oldLHS[2][2] == LHS[2][2]);
 
 // Now we've got a 3x3 system to solve for the s's.
 // LHS is symmetric: [aa bb cc]
