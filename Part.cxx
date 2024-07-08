@@ -104,4 +104,44 @@ void Part::split(std::vector<CellPartData>& vCPD, Part& P1, Part& P2) const {
 	P2.setData(divider, m_last, m_nParts - bestNParts, newMin2, newMax2);
 }
 
+bool operator==(const Part& a, const Part& b){
+	if
+	(
+		a.getFirst() == b.getFirst()  &&
+		a.getLast () == b.getLast()   && 
+		a.numParts() == b.numParts()  &&
 
+		(a.getXmin()-b.getXmin()) < TOLTEST && 
+		(a.getXmax()-b.getXmax()) < TOLTEST && 
+
+		(a.getYmin()-b.getYmin()) < TOLTEST && 
+		(a.getYmax()-b.getYmax()) < TOLTEST && 
+
+		(a.getZmin()-b.getZmin()) < TOLTEST &&
+		(a.getZmax()-b.getZmax()) < TOLTEST
+
+	)
+	{
+		return true; 
+	}else
+	{
+		return false; 
+	}
+}
+bool operator==(const CellPartData& a, const CellPartData& b)
+{
+	if
+	(
+		a.getCellType()== b.getCellType()        && 
+		a.getIndex()   == b.getIndex()           &&
+		(a.getCoord(0)- b.getCoord(0)) < TOLTEST && 
+		(a.getCoord(1)- b.getCoord(1)) < TOLTEST && 
+		(a.getCoord(2)- b.getCoord(2)) < TOLTEST
+	)
+	{
+		return true; 
+	}else 
+	{
+		return false; 
+	}
+}

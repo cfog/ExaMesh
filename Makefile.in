@@ -29,16 +29,16 @@ LIBOBJECTS=TetDivider.o PyrDivider.o PrismDivider.o HexDivider.o CellDivider.o \
 BdryTriDivider.o BdryQuadDivider.o refinePart.o ExaMesh.o UMesh.o CubicMesh.o GeomUtils.o \
 LagrangeMapping.o UniformMapping.o \
 LagrangeCubicTet.o LagrangeCubicPyr.o LagrangeCubicPrism.o LagrangeCubicHex.o \
-Part.o partition.o
+Part.o partition.o ParallelTester.o mpiImpl.o resultGenerator.o PARMETIS.o 
 
 OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
 DEBUG=-g
 OPT=-O3 -DNDEBUG -g
-OPT_DEBUG=$(DEBUG) 
-CXX_COMPILE=@CXX@ @OPENMP_CXXFLAGS@ -Wall -Wextra -fPIC $(OPT_DEBUG) @CPPFLAGS@ $(EXTRAFLAGS)
+OPT_DEBUG=$(OPT) 
+CXX_COMPILE=mpic++ @OPENMP_CXXFLAGS@ -Wall -Wno-unused -Wextra -fPIC $(OPT_DEBUG) @CPPFLAGS@ $(EXTRAFLAGS)
 CXX_LINK=mpic++ -fPIC $(EXTRAFLAGS) $(OPT_DEBUG)
 THISDIR=`pwd`
-EXAMESHLIB=-L$(THISDIR) -Wl,-rpath=$(THISDIR) -lexamesh
+EXAMESHLIB=-L$(THISDIR) -Wl,-rpath=$(THISDIR) -lexamesh -lboost_mpi -lboost_serialization -lmetis 
 LDFLAGS=@LDFLAGS@ @OPENMP_CXXFLAGS@
 LIBRARY=libexamesh.so
 
