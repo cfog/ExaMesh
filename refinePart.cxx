@@ -36,9 +36,24 @@
 #include "TetDivider.h"
 #include "BdryTriDivider.h"
 #include "BdryQuadDivider.h"
-
-emInt subdividePartMesh(const ExaMesh *const pVM_input, UMesh *const pVM_output,
-		const int nDivs) {
+#include <stdio.h>
+#include <inttypes.h>
+#include <locale.h> 
+void printLocalVerts(const exa_set<TriFaceVerts> tris, const emInt nDivs){
+	for(auto itr=tris.begin(); itr!=tris.end(); itr++){
+		std::cout<<"For this tri: "<< itr->getCorner(0)<<
+		" "<<itr->getCorner(1)<<" "<<itr->getCorner(2)<<std::endl; 
+		for (int jj = 1; jj <= nDivs - 2; jj++){
+			for (int ii = 1; ii <= nDivs - 1 - jj; ii++){
+				std::cout<<itr->getIntVertInd(ii,jj)<<" "; 
+			} 
+		}
+		std::cout<<std::endl; 
+	}
+}
+emInt subdividePartMesh(const ExaMesh *const pVM_input, 
+	UMesh *const pVM_output,
+	const int nDivs, const emInt partID) {
 	assert(nDivs >= 1);
 	// Assumption:  the mesh is already ordered in a way that seems sensible
 	// to the caller, both cells and vertices.  As a result, we can create new
@@ -160,10 +175,15 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input, UMesh *const pVM_output,
 #ifndef NDEBUG
 	fprintf(stderr, "\nDone with hexes\n");
 #endif
+	exa_set<TriFaceVerts> tris=pVM_input->getTempTriPart(); 
+
 
 	BdryTriDivider BTD(pVM_output, nDivs);
 	for (emInt iBT = 0; iBT < pVM_input->numBdryTris(); iBT++) {
 		const emInt *const thisBdryTri = pVM_input->getBdryTriConn(iBT);
+		TriFaceVerts TFV (nDivs,thisBdryTri[0],thisBdryTri[1],thisBdryTri[2]); 
+		TFV.setCompare(false); 
+		
 		BTD.setupCoordMapping(thisBdryTri);
 		// Shouldn't need to divide anything at all here, but these function
 		// copy the vertices into the CellDivider internal data structure.
@@ -176,14 +196,52 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input, UMesh *const pVM_output,
 					"Refined %'12d bdry tris.  Tree sizes: %'12lu %'12lu %'12lu\r",
 					iBT + 1, vertsOnEdges.size(), vertsOnTris.size(),
 					vertsOnQuads.size());
+		//BTD.getRefinedVerts(pVM_input);	
+		auto it=tris.find(TFV); 
+		if(it!=tris.end()){
+			TFV.setPartID(it->getPartid()); 
+			TFV.setRemotePartID(it->getRemoteId()); 
+			emInt remoteIndices [3]=
+			{
+				it->getRemoteIndices(0),
+				it->getRemoteIndices(1),
+				it->getRemoteIndices(2)
+			}; 
+			emInt global[3]=
+			{
+				it->getGlobalCorner(0),
+				it->getGlobalCorner(1),
+				it->getGlobalCorner(2)
+
+			}; 
+			emInt local[3]=
+			{
+				thisBdryTri[0],
+				thisBdryTri[1], 
+				thisBdryTri[2]
+			}; 
+			TriFaceVerts TF(nDivs,local,global,remoteIndices,
+			it->getPartid(),it->getRemoteId());
+			TF.setCompare(true);  
+			BTD.setRefinedVerts(TF);
+			pVM_output->addRefinedPartTritoSet(TF);
+
+		}
+			
+	
+
 	}
 #ifndef NDEBUG
 	fprintf(stderr, "\nDone with bdry tris\n");
 #endif
 
+	exa_set<QuadFaceVerts> quads= pVM_input->getTempQuadPart(); 
 	BdryQuadDivider BQD(pVM_output, nDivs);
 	for (emInt iBQ = 0; iBQ < pVM_input->numBdryQuads(); iBQ++) {
 		const emInt *const thisBdryQuad = pVM_input->getBdryQuadConn(iBQ);
+		QuadFaceVerts QFV(nDivs,thisBdryQuad[0],thisBdryQuad[1],
+		thisBdryQuad[2],thisBdryQuad[3]); 
+		QFV.setCompare(false); 
 		BQD.setupCoordMapping(thisBdryQuad);
 
 		// Shouldn't need to divide anything at all here, but this function
@@ -197,6 +255,38 @@ emInt subdividePartMesh(const ExaMesh *const pVM_input, UMesh *const pVM_output,
 					"Refined %'12d bdry quads.  Tree sizes: %'12lu %'12lu %'12lu\r",
 					iBQ + 1, vertsOnEdges.size(), vertsOnTris.size(),
 					vertsOnQuads.size());
+
+		auto it=quads.find(QFV); 
+		if(it!=quads.end()){
+			QFV.setPartID(it->getPartid()); 
+			QFV.setRemotePartID(it->getRemoteId()); 
+			emInt remoteIndices [4]={
+				it->getRemoteIndices(0),
+				it->getRemoteIndices(1),
+				it->getRemoteIndices(2),
+				it->getRemoteIndices(3)
+			}; 
+			emInt global[4]={
+				it->getGlobalCorner(0),
+				it->getGlobalCorner(1),
+				it->getGlobalCorner(2),
+				it->getGlobalCorner(3)
+
+			}; 
+			emInt local[4]=
+			{
+				thisBdryQuad[0], 
+				thisBdryQuad[1], 
+				thisBdryQuad[2], 
+				thisBdryQuad[3]
+			}; 
+			QuadFaceVerts QF(nDivs,local,global,remoteIndices,it->getPartid(),
+			it->getRemoteId()); 
+			QF.setCompare(true); 
+			BQD.setRefinedVerts(QF);
+			pVM_output->addRefinedPartQuadtoSet(QF);
+
+		}
 	}
 #ifndef NDEBUG
 	fprintf(stderr, "\nDone with bdry quads\n");
@@ -238,6 +328,13 @@ bool computeMeshSize(const struct MeshSize &MSIn, const emInt nDivs,
 	MSOut.nPyrs = MSIn.nPyrs * (2 * volFactor + nDivs) / 3;
 	MSOut.nPrisms = MSIn.nPrisms * volFactor;
 	MSOut.nHexes = MSIn.nHexes * volFactor;
+
+
+	//setlocale(LC_ALL, "");
+	//ssize_t totalCells = MSOut.nPyrs+MSOut.nPrisms+MSOut.nHexes+MSOut.nTets; 
+	//fprintf(stderr, "Total expected cells: %'zd \n", totalCells);
+	
+	
 
 	// Use signed 64-bit ints for these calculations.  It's possible someone will ask for
 	// something that blows out 32-bit unsigned ints, and will need to be stopped.

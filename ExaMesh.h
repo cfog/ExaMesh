@@ -33,17 +33,28 @@
 #include "Mapping.h"
 #include "Part.h"
 #include "exa-defs.h"
+#include "mpiDefs.h"
+#include "ParallelTester.h"
+#include <set>
 
 class UMesh;
+class CubicMesh; 
 
+using vecSharePtrUmesh     = std::vector<std::shared_ptr<UMesh>>; 
+using vecSharePtrCubicMesh = std::vector<std::shared_ptr<CubicMesh>>;
 struct MeshSize {
-	emInt nBdryVerts, nVerts, nBdryTris, nBdryQuads, nTets, nPyrs, nPrisms,
+	ssize_t nBdryVerts, nVerts, nBdryTris, nBdryQuads, nTets, nPyrs, nPrisms,
 			nHexes;
 };
 
 class ExaMesh {
 protected:
 	double *m_lenScale;
+	exa_set<QuadFaceVerts> m_partQuads; 
+	exa_set<TriFaceVerts>  m_partTris; 
+	exa_set<TriFaceVerts>  m_refinedPartTris; 
+	exa_set<QuadFaceVerts> m_refinedPartQuads; 
+
 
 	void setupLengthScales();
 
@@ -63,10 +74,14 @@ public:
 	virtual emInt numBdryVerts() const = 0;
 	virtual emInt numBdryTris() const = 0;
 	virtual emInt numBdryQuads() const = 0;
+	virtual emInt numBdryTrisFromReader()  const= 0 ; 
+	virtual emInt numBdryQuadsFromReader() const= 0 ;
 	virtual emInt numTets() const = 0;
 	virtual emInt numPyramids() const = 0;
 	virtual emInt numPrisms() const = 0;
 	virtual emInt numHexes() const = 0;
+	virtual emInt numCells() const = 0 ; 
+		
 	virtual emInt numVertsToCopy() const {
 		return numVerts();
 	}
@@ -89,6 +104,8 @@ public:
 
 	virtual Mapping::MappingType getDefaultMappingType() const = 0;
 
+
+
 	void printMeshSizeStats();
 	double getLengthScale(const emInt vert) const {
 		assert(vert < numVerts());
@@ -99,6 +116,10 @@ public:
 		else {
 			return 1;
 		}
+	}
+	const double* getAllLenghtScale() const
+	{
+		return m_lenScale; 
 	}
 	void setLengthScale(const emInt vert, const double len) const {
 		assert(vert < numVerts());
@@ -114,14 +135,102 @@ public:
 
 	virtual void refineForParallel(const emInt numDivs,
 			const emInt maxCellsPerPart) const;
-
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const = 0;
 
+	void refineForMPI( const int numDivs ,ParallelTester* tester,
+	const char MeshType, std::string mshName,FILE* fileAllTimes) const;		
+
+	virtual std::unique_ptr<ExaMesh> extractCoarseMesh(Part& P,	std::vector<CellPartData>& vecCPD, 
+	const int numDivs,
+			const std::unordered_set<TriFaceVerts> &tris= std::unordered_set<TriFaceVerts>(), 
+			const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>(), 
+			const emInt partID=-1) const=0;		
+			
+	void TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester, 
+	const char MeshType); 
 	virtual void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
 			double& zmax) const = 0;
 	void prettyPrintCellCount(size_t cells, const char* prefix) const;
+
+	void addPartTritoSet(const TriFaceVerts &obj){
+		auto iter = m_partTris.find(obj);
+	
+		if (iter != m_partTris.end()) {
+			m_partTris.erase(iter);
+		}
+		else {
+			m_partTris.insert(obj);
+		}
+
+	}
+	void addPartQuadtoSet(const QuadFaceVerts &obj){
+		auto iter = m_partQuads.find(obj);
+	
+		if (iter != m_partQuads.end()) {
+			m_partQuads.erase(iter);
+		}
+		else {
+			m_partQuads.insert(obj);
+		}
+
+	}
+	void addRefinedPartTritoSet(const TriFaceVerts &obj){
+		auto iter = m_refinedPartTris.find(obj);
+	
+		if (iter != m_refinedPartTris.end()) {
+			m_refinedPartTris.erase(iter);
+		}
+		else {
+			m_refinedPartTris.insert(obj);
+		}
+
+	}
+	void addRefinedPartQuadtoSet(const QuadFaceVerts &obj){
+		auto iter = m_refinedPartQuads.find(obj);
+	
+		if (iter != m_refinedPartQuads.end()) {
+			m_refinedPartQuads.erase(iter);
+		}
+		else {
+			m_refinedPartQuads.insert(obj);
+		}
+
+	}
+
+	size_t getSizePartTris()const
+	{
+		return m_partTris.size();
+	}
+	size_t getSizePartQuads()const
+	{
+		return m_partQuads.size();
+	}
+	const exa_set<QuadFaceVerts>& getTempQuadPart    () const
+	{
+		return m_partQuads; 
+	}
+	const exa_set<TriFaceVerts>&  getTempTriPart     () const 
+	{
+		return m_partTris; 
+	}
+	const exa_set<TriFaceVerts>&  getRefinedPartTris () const
+	{
+		return m_refinedPartTris; 
+	}
+	const exa_set<QuadFaceVerts>& getRefinedPartQuads() const 
+	{
+		return m_refinedPartQuads; 
+	}
+	virtual void partFaceMatching(
+		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
+		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize )const=0;	
+	//void refineMPI();
+	//virtual void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>> & face2cell, const emInt nCells)=0; 	 
+	virtual std::size_t getCellConnSize (const emInt cellID) const = 0; 
+	virtual emInt getCellConn (const emInt cellID, const emInt neighID) const = 0; 
 
 protected:
 	void addCellToPartitionData(const emInt* verts, emInt nPts, emInt ii,
@@ -134,7 +243,28 @@ private:
 
 template<typename T>
 void addUniquely(exa_set<T>& mySet, T& val) {
+
+	typename exa_set<T>::iterator vertIter, VIend = mySet.end();
+
+	auto inserResult = mySet.insert(val);
+
+	if(!inserResult.second)
+	{
+		mySet.erase(inserResult.first);
+	}
+
+	// auto iter = mySet.find(val);
+	// if (iter != mySet.end()) {
+	// 	mySet.erase(iter);
+	// }
+	// else {
+	// 	mySet.insert(val);
+	// }
+}
+template<typename T>
+void addUniquely(std::set<T> &mySet, T& val) {
 	auto iter = mySet.find(val);
+	
 	if (iter != mySet.end()) {
 		mySet.erase(iter);
 	}
@@ -149,7 +279,7 @@ bool computeMeshSize(const struct MeshSize& MSIn, const emInt nDivs,
 // Defined elsewhere.
 emInt subdividePartMesh(const ExaMesh * const pVM_input,
 		UMesh * const pVM_output,
-		const int nDivs);
+		const int nDivs, const emInt partID=-1);
 
 bool partitionCells(const ExaMesh* const pEM, const emInt nPartsToMake,
 		std::vector<Part>& parts, std::vector<CellPartData>& vecCPD);

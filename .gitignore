@@ -32,10 +32,14 @@
 *.app
 examesh
 test-exa
+refine
 
 # Files produced during configure / build
+Makefile.bak 
+Makefile.in
 Makefile
 configure
+configure~
 exa_config.h
 config.status
 config.log
@@ -43,3 +47,40 @@ autom4te.cache
 autoscan.log
 *.gcda
 *.gcno
+#cgns file 
+*.cgns 
+# vtk file
+*.vtk
+*.vtu 
+# ugrid files 
+*.ugrid 
+# vs code files
+*.json 
+# bash files 
+*.sh 
+# txt files 
+*.txt
+# pdf files 
+*.pdf 
+# python files 
+*.py 
+# dat files 
+*.dat 
+# jpg files 
+*.jpg
+# eps files
+*.eps
+# Cubic Mesh generator for testing 
+*.png
+*.plt 
+*.lpk
+*.ods 
+*.zip
+*.~
+globe_mats_cubic.cxx
+globe_mats_cubic
+jobGenerator.cxx
+postProcessing.cxx
+jobGenerator.cxx
+TestCases/
+AIAAPaper/

@@ -30,7 +30,8 @@
 
 #include "exa_config.h"
 #include "GeomUtils.h"
-
+#include <cstdint>
+#include <cstddef>
 #if (HAVE_CGNS == 1)
 #include <cgnslib.h>
 
@@ -91,7 +92,7 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 		fprintf(stderr, "Can only handle one zone\n");
 		exit(1);
 	}
-	ZoneType_t zoneType;
+	CGNS_ENUMT(ZoneType_t) zoneType;
 	status = cg_zone_type(index_file, 1, 1, &zoneType);
 	CHECK_STATUS;
 	if (zoneType != CGNS_ENUMV(Unstructured)) {
@@ -115,7 +116,7 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 	for (int iSec = 1; iSec <= nSections; iSec++) {
 		int start, end, count;
 		int nBdry, parentFlag;
-		ElementType_t eType;
+		CGNS_ENUMT(ElementType_t) eType;
 		char sectionName[33];
 		status = cg_section_read(index_file, 1, 1, iSec, sectionName, &eType,
 															&start, &end, &nBdry, &parentFlag);
@@ -151,7 +152,7 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 	for (int iSec = 1; iSec <= nSections; iSec++) {
 		int start, end, count, totalCount;
 		int nBdry, parentFlag;
-		ElementType_t eType;
+		CGNS_ENUMT(ElementType_t) eType;
 		char sectionName[33];
 		status = cg_section_read(index_file, 1, 1, iSec, sectionName, &eType,
 															&start, &end, &nBdry, &parentFlag);
@@ -207,7 +208,7 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 	m_xcoords = new double[zoneSize[0]];
 	m_ycoords = new double[zoneSize[0]];
 	m_zcoords = new double[zoneSize[0]];
-	DataType_t dataType = CGNS_ENUMT(RealDouble);
+	CGNS_ENUMT(DataType_t) dataType = CGNS_ENUMT(RealDouble);
 	int min = 1, max = zoneSize[0];
 	status = cg_coord_read(index_file, 1, 1, "CoordinateX", dataType, &min, &max,
 													m_xcoords);
@@ -338,7 +339,7 @@ void CubicMesh::reorderCubicMesh() {
 	emInt node = 0;
 	for (emInt ii = 0; ii < m_nVerts; ii++) {
 		if (isVertexNode[ii]) {
-			assert(newNodeInd[ii] == EMINT_MAX);
+			assert(newNodeInd[ii] ==  static_cast<emInt>(EMINT_MAX));
 			newNodeInd[ii] = node;
 			node++;
 		}
@@ -347,7 +348,7 @@ void CubicMesh::reorderCubicMesh() {
 	fprintf(stderr, "%'u vertex nodes.\nRenumbering other nodes.\n", node);
 	for (emInt ii = 0; ii < m_nVerts; ii++) {
 		if (!isVertexNode[ii]) {
-			assert(newNodeInd[ii] == EMINT_MAX);
+			assert(newNodeInd[ii] ==  static_cast<emInt>(EMINT_MAX));
 			newNodeInd[ii] = node;
 			node++;
 		}
@@ -416,8 +417,11 @@ static void remapIndices(const emInt nPts, const emInt newIndices[],
 	}
 }
 
-std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
-		std::vector<CellPartData>& vecCPD, const int numDivs) const {
+std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
+		std::vector<CellPartData>& vecCPD, const int numDivs,
+			const std::unordered_set<TriFaceVerts> &tris, 
+			const std::unordered_set<QuadFaceVerts> &quads, 
+			const emInt partID) const {
 	CALLGRIND_TOGGLE_COLLECT
 	;
 
@@ -444,13 +448,13 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				// Panic! Should never get here.
 				assert(0);
 				break;
-			case TETRA_20: {
+			case CGNS_ENUMV(TETRA_20): {
 				nTets++;
 				conn = getTetConn(ind);
-				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], TETRA_20, ind);
-				TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3], TETRA_20, ind);
-				TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3], TETRA_20, ind);
-				TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3], TETRA_20, ind);
+				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], CGNS_ENUMV(TETRA_20), ind);
+				TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3], CGNS_ENUMV(TETRA_20), ind);
+				TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3], CGNS_ENUMV(TETRA_20), ind);
+				TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3], CGNS_ENUMV(TETRA_20), ind);
 				addUniquely(partBdryTris, TFV012);
 				addUniquely(partBdryTris, TFV013);
 				addUniquely(partBdryTris, TFV123);
@@ -462,14 +466,14 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				cornerNodes.insert(conn, conn + 4);
 				break;
 			}
-			case PYRA_30: {
+			case CGNS_ENUMV(PYRA_30): {
 				nPyrs++;
 				conn = getPyrConn(ind);
-				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], PYRA_30, ind);
-				TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4], PYRA_30, ind);
-				TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4], PYRA_30, ind);
-				TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4], PYRA_30, ind);
-				TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4], PYRA_30, ind);
+				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3],CGNS_ENUMV(PYRA_30), ind);
+				TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4],CGNS_ENUMV (PYRA_30), ind);
+				TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4],CGNS_ENUMV (PYRA_30), ind);
+				TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4],CGNS_ENUMV (PYRA_30), ind);
+				TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4],CGNS_ENUMV (PYRA_30), ind);
 				addUniquely(partBdryQuads, QFV0123);
 				addUniquely(partBdryTris, TFV014);
 				addUniquely(partBdryTris, TFV124);
@@ -482,17 +486,17 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				cornerNodes.insert(conn, conn + 5);
 				break;
 			}
-			case PENTA_40: {
+			case CGNS_ENUMV(PENTA_40): {
 				nPrisms++;
 				conn = getPrismConn(ind);
-				QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3], PENTA_40,
+				QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3], CGNS_ENUMV(PENTA_40),
 															ind);
-				QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4], PENTA_40,
+				QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4], CGNS_ENUMV(PENTA_40),
 															ind);
-				QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5], PENTA_40,
+				QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5], CGNS_ENUMV(PENTA_40),
 															ind);
-				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], PENTA_40, ind);
-				TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5], PENTA_40, ind);
+				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], CGNS_ENUMV (PENTA_40), ind);
+				TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5], CGNS_ENUMV (PENTA_40), ind);
 				addUniquely(partBdryQuads, QFV0143);
 				addUniquely(partBdryQuads, QFV1254);
 				addUniquely(partBdryQuads, QFV2035);
@@ -506,15 +510,15 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				cornerNodes.insert(conn, conn + 6);
 				break;
 			}
-			case HEXA_64: {
+			case CGNS_ENUMV(HEXA_64): {
 				nHexes++;
 				conn = getHexConn(ind);
-				QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4], HEXA_64, ind);
-				QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5], HEXA_64, ind);
-				QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6], HEXA_64, ind);
-				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[6], conn[7], HEXA_64, ind);
-				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], HEXA_64, ind);
-				QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7], HEXA_64, ind);
+				QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4], CGNS_ENUMV(HEXA_64), ind);
+				QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5], CGNS_ENUMV(HEXA_64), ind);
+				QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6], CGNS_ENUMV(HEXA_64), ind);
+				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7], CGNS_ENUMV(HEXA_64), ind);
+				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], CGNS_ENUMV(HEXA_64), ind);
+				QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7], CGNS_ENUMV(HEXA_64), ind);
 				addUniquely(partBdryQuads, QFV0154);
 				addUniquely(partBdryQuads, QFV1265);
 				addUniquely(partBdryQuads, QFV2376);
@@ -632,25 +636,25 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				// Panic! Should never get here.
 				assert(0);
 				break;
-			case TETRA_20: {
+			case CGNS_ENUMV(TETRA_20): {
 				conn = getTetConn(ind);
 				remapIndices(20, newIndices, conn, newConn);
 				UCM->addTet(newConn);
 				break;
 			}
-			case PYRA_30: {
+			case CGNS_ENUMV(PYRA_30): {
 				conn = getPyrConn(ind);
 				remapIndices(30, newIndices, conn, newConn);
 				UCM->addPyramid(newConn);
 				break;
 			}
-			case PENTA_40: {
+			case CGNS_ENUMV(PENTA_40): {
 				conn = getPrismConn(ind);
 				remapIndices(40, newIndices, conn, newConn);
 				UCM->addPrism(newConn);
 				break;
 			}
-			case HEXA_64: {
+			case CGNS_ENUMV(HEXA_64): {
 				conn = getHexConn(ind);
 				remapIndices(64, newIndices, conn, newConn);
 				UCM->addHex(newConn);
@@ -659,12 +663,12 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		} // end switch
 	} // end loop to copy most connectivity
 
-	for (emInt ii = 0; ii < realBdryTris.size(); ii++) {
+	for (std::size_t ii = 0; ii < realBdryTris.size(); ii++) {
 		conn = getBdryTriConn(realBdryTris[ii]);
 		remapIndices(10, newIndices, conn, newConn);
 		UCM->addBdryTri(newConn);
 	}
-	for (emInt ii = 0; ii < realBdryQuads.size(); ii++) {
+	for (std::size_t ii = 0; ii < realBdryQuads.size(); ii++) {
 		conn = getBdryQuadConn(realBdryQuads[ii]);
 		remapIndices(16, newIndices, conn, newConn);
 		UCM->addBdryQuad(newConn);
@@ -673,11 +677,13 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 	// Now, finally, the part bdry connectivity.
 	// TODO: Currently, there's nothing in the data structure that marks which
 	// are part bdry faces.
+	assert(partBdryTris.size()==tris.size()); 
+
 	for (auto tri : partBdryTris) {
 		emInt cellInd = tri.getVolElement();
 		emInt conn[10];
 		switch (tri.getVolElementType()) {
-			case TETRA_20: {
+			case CGNS_ENUMV(TETRA_20): {
 				emInt *elemConn = m_Tet20Conn[cellInd];
 				// Identify which face this is.  Has to be 012, 013, 123, or 203.
 				if (tri.getCorner(2) == elemConn[2]) {
@@ -758,7 +764,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				}
 				break;
 			}
-			case PYRA_30: {
+			case CGNS_ENUMV(PYRA_30): {
 				emInt *elemConn = m_Pyr30Conn[cellInd];
 				if (tri.getCorner(0) == elemConn[0]) {
 					assert(tri.getCorner(1) == elemConn[1]);
@@ -838,7 +844,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				}
 				break;
 			}
-			case PENTA_40: {
+			case CGNS_ENUMV(PENTA_40): {
 				emInt *elemConn = m_Prism40Conn[cellInd];
 				if (tri.getCorner(0)  == elemConn[0]) {
 					assert(tri.getCorner(1) == elemConn[1]);
@@ -889,14 +895,34 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 		}
 		emInt newConn[10];
 		remapIndices(10, newIndices, conn, newConn);
+		emInt global [3]= {tri.getCorner(0),tri.getCorner(1),
+		tri.getCorner(2)}; 
+		TriFaceVerts TF(numDivs,global,partID,-1,true); 
+		auto itr= tris.find(TF); 
+		if(itr!=tris.end()){
+			assert(itr->getGlobalCorner(0)==global[0] &&
+			itr->getGlobalCorner(1)==global[1] && 
+			itr->getGlobalCorner(2)==global[2] && itr->getPartid()==partID);
+			TriFaceVerts TFV(numDivs,newConn,global,partID,
+			itr->getRemoteId(),0,EMINT_MAX,false);
+			// need to be corrected, I could not generate with correct bool value unless
+			// I pass all arguments 
+		
+			UCM->addPartTritoSet(TFV); 
+
+		}
 		UCM->addBdryTri(newConn);
 	}
+	assert(static_cast<std::size_t>(UCM->getSizePartTris())==tris.size());
+	// std::cout<<"partBdryQuads: "<<partBdryQuads.size()<<" "<<
+	// quads.size()<< std::endl; 
 
+	assert(partBdryQuads.size()==quads.size());
 	for (auto quad : partBdryQuads) {
 		emInt cellInd = quad.getVolElement();
 		emInt conn[16];
 		switch (quad.getVolElementType()) {
-			case PYRA_30: {
+			case CGNS_ENUMV (PYRA_30): {
 				// Only one quad here, so it had better be the right one.
 				emInt *elemConn = m_Pyr30Conn[cellInd];
 				assert(quad.getCorner(0) == elemConn[0]);
@@ -927,7 +953,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				conn[15] = elemConn[24];
 				break;
 			}
-			case PENTA_40: {
+			case CGNS_ENUMV( PENTA_40): {
 				emInt *elemConn = m_Prism40Conn[cellInd];
 
 				// Three possible quads: 0143 1254 2035
@@ -1021,7 +1047,7 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				}
 				break;
 			}
-			case HEXA_64: {
+			case CGNS_ENUMV(HEXA_64): {
 				emInt *elemConn = m_Hex64Conn[cellInd];
 
 				// Six quads: 0154 1265 2376 3047 0123 4567
@@ -1204,10 +1230,28 @@ std::unique_ptr<CubicMesh> CubicMesh::extractCoarseMesh(Part& P,
 				// Should never get here.
 				assert(0);
 		}
-		emInt newConn[10];
-		remapIndices(10, newIndices, conn, newConn);
+		emInt newConn[16];
+		remapIndices(16, newIndices, conn, newConn);
+		emInt global [4]= {quad.getCorner(0),
+		quad.getCorner(1),quad.getCorner(2),quad.getCorner(3)}; 
+		QuadFaceVerts QF(numDivs,global,partID,-1,true); 
+		auto itr= quads.find(QF); 
+		if(itr!=quads.end()){
+			assert(itr->getGlobalCorner(0)==global[0] &&
+			itr->getGlobalCorner(1)==global[1] && 
+			itr->getGlobalCorner(2)==global[2] && 
+			itr->getGlobalCorner(3)==global[3] &&
+			itr->getPartid()==partID);
+			QuadFaceVerts QFV(numDivs,newConn,global,partID,
+			itr->getRemoteId(),0,EMINT_MAX,false);
+			// need to be corrected, I could not generate with correct bool value unless
+			// I pass all arguments 
+			UCM->addPartQuadtoSet(QFV); 
+
+		}
 		UCM->addBdryQuad(newConn);
 	}
+	assert(static_cast<std::size_t>(UCM->getSizePartQuads())==quads.size());
 	delete[] newIndices;
 	CALLGRIND_TOGGLE_COLLECT
 	;
@@ -1285,7 +1329,7 @@ std::unique_ptr<UMesh> CubicMesh::createFineUMesh(const emInt numDivs, Part& P,
 	RS.extractTime = middle - start;
 
 	// For some reason, I needed the helper variable to keep the compiler happy here.
-	auto UUM = std::make_unique<UMesh>(*coarse, numDivs);
+	auto UUM = std::make_unique<UMesh>(*(dynamic_cast<UMesh*>(coarse.release())), numDivs);
 	RS.cells = UUM->numCells();
 	RS.refineTime = exaTime() - middle;
 	return UUM;
@@ -1458,23 +1502,262 @@ void CubicMesh::setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 	// cost differential for different cell types.
 	for (emInt ii = 0; ii < numTets(); ii++) {
 		const emInt* verts = getTetConn(ii);
-		addCellToPartitionData(verts, 20, ii, TETRA_20, vecCPD, xmin, ymin, zmin,
+		addCellToPartitionData(verts, 20, ii, CGNS_ENUMV(TETRA_20), vecCPD, xmin, ymin, zmin,
 														xmax, ymax, zmax);
 	}
 	for (emInt ii = 0; ii < numPyramids(); ii++) {
 		const emInt* verts = getPyrConn(ii);
-		addCellToPartitionData(verts, 30, ii, PYRA_30, vecCPD, xmin, ymin, zmin,
+		addCellToPartitionData(verts, 30, ii, CGNS_ENUMV(PYRA_30), vecCPD, xmin, ymin, zmin,
 														xmax, ymax, zmax);
 	}
 	for (emInt ii = 0; ii < numPrisms(); ii++) {
 		const emInt* verts = getPrismConn(ii);
-		addCellToPartitionData(verts, 40, ii, PENTA_40, vecCPD, xmin, ymin, zmin,
+		addCellToPartitionData(verts, 40, ii, CGNS_ENUMV(PENTA_40), vecCPD, xmin, ymin, zmin,
 														xmax, ymax, zmax);
 	}
 	for (emInt ii = 0; ii < numHexes(); ii++) {
 		const emInt* verts = getHexConn(ii);
-		addCellToPartitionData(verts, 64, ii, HEXA_64, vecCPD, xmin, ymin, zmin,
+		addCellToPartitionData(verts, 64, ii, CGNS_ENUMV(HEXA_64), vecCPD, xmin, ymin, zmin,
 														xmax, ymax, zmax);
 	}
 }
 
+void CubicMesh::partFaceMatching(
+		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
+		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads,size_t &totalTriSize, size_t &totalQuadSize)const{
+	//std::set<TriFaceVerts>  SetTriPartbdry;
+
+	//std::set<QuadFaceVerts> SetQuadPartbdry; 
+
+	std::set<TriFaceVerts> partBdryTris; 
+	std::set<QuadFaceVerts> partBdryQuads; 
+	
+	tris.resize(parts.size()); 
+	quads.resize(parts.size()); 
+
+	emInt numDivs=1; 	
+
+	for(std::size_t iPart=0 ; iPart<parts.size(); iPart++){
+		//emInt iPart=1; 
+		
+		const emInt first = parts[iPart].getFirst();
+		const emInt last =  parts[iPart].getLast();
+
+		const emInt *conn;
+
+		std::vector<bool> isBdryVert(numVerts(), false);
+		std::vector<bool> isVertUsed(numVerts(), false);
+
+		for (emInt ii = first; ii < last; ii++) {
+			emInt type = vecCPD[ii].getCellType();
+			emInt ind =  vecCPD[ii].getIndex();
+			switch (type) {
+				default:
+					// Panic! Should never get here.
+					assert(0);
+					break;
+				case CGNS_ENUMV(TETRA_20): {
+
+					conn = getTetConn(ind);
+		
+					emInt global012 [3]= {conn[0],conn[1],conn[2]}; 
+					emInt global013 [3]= {conn[0],conn[1],conn[3]};
+					emInt global123 [3]= {conn[1],conn[2], conn[3]}; 
+					emInt global203 [3]= {conn[2],conn[0],conn[3]};
+					TriFaceVerts T012 (numDivs,global012,iPart);
+					TriFaceVerts T013 (numDivs,global013,iPart);
+					TriFaceVerts T123 (numDivs,global123,iPart);
+					TriFaceVerts T203 (numDivs,global203,iPart);
+					addUniquely(partBdryTris,T012);
+					addUniquely(partBdryTris,T013);
+					addUniquely(partBdryTris,T123); 
+					addUniquely(partBdryTris,T203); 
+					break;
+				}
+				case CGNS_ENUMV(PYRA_30): {
+					//nPyrs++;
+					conn = getPyrConn(ind);
+					
+					TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4]);
+					TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4]);
+					TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4]);
+					TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4]);
+					emInt global0123[4]= {conn[0],conn[1],conn[2],conn[3]}; 
+					emInt global014[3]= {conn[0],conn[1],conn[4]};
+					emInt global124[3]= {conn[1],conn[2],conn[4]}; 
+					emInt global234[3]= {conn[2],conn[3],conn[4]};
+					emInt global304[3]= {conn[3],conn[0],conn[4]}; 
+					TriFaceVerts T014(numDivs,global014,iPart);
+					TriFaceVerts T124(numDivs,global124,iPart);
+					TriFaceVerts T234(numDivs,global234,iPart);
+					TriFaceVerts T304(numDivs,global304,iPart);
+					QuadFaceVerts Q0123(numDivs,global0123,iPart);
+					addUniquely(partBdryTris,T014);
+					addUniquely(partBdryTris,T124);
+					addUniquely(partBdryTris,T234);
+					addUniquely(partBdryTris,T304);
+					addUniquely(partBdryQuads,Q0123); 
+					break;
+				}
+				case CGNS_ENUMV(PENTA_40): {
+					//nPrisms++;
+					conn = getPrismConn(ind);
+
+					emInt global0143 [4]= {conn[0],conn[1],conn[4],conn[3]}; 
+					emInt global1254 [4]= {conn[1],conn[2],conn[5],conn[4]}; 
+					emInt global2035 [4]= {conn[2],conn[0],conn[3],conn[5]}; 
+
+					emInt global012 [3]= {conn[0],conn[1],conn[2]}; 
+					emInt global345 [3]= {conn[3],conn[4],conn[5]}; 
+
+					TriFaceVerts T012(numDivs,global012,iPart);
+					TriFaceVerts T345(numDivs,global345,iPart);
+					QuadFaceVerts Q0143(numDivs,global0143,iPart);
+					QuadFaceVerts Q1254(numDivs,global1254,iPart);
+					QuadFaceVerts Q2035(numDivs,global2035,iPart);
+
+					addUniquely(partBdryTris,T012); 
+					addUniquely(partBdryTris,T345); 
+					addUniquely(partBdryQuads,Q0143);
+					addUniquely(partBdryQuads,Q1254);
+					addUniquely(partBdryQuads,Q2035);
+					break;
+				}
+				case CGNS_ENUMV(HEXA_64): {
+					//nHexes++;
+					conn = getHexConn(ind);
+
+					
+					emInt global0154 [4]= {conn[0],conn[1],conn[5],conn[4]}; 
+					emInt global1265 [4]= {conn[1],conn[2],conn[6],conn[5]}; 
+					emInt global2376 [4]= {conn[2],conn[3],conn[7],conn[6]}; 
+					emInt global3047 [4]= {conn[3],conn[0],conn[4],conn[7]}; 
+					emInt global0123 [4]= {conn[0],conn[1],conn[2],conn[3]}; 
+					emInt global4567 [4]= {conn[4],conn[5],conn[6],conn[7]}; 
+
+					QuadFaceVerts Q0154(numDivs,global0154,iPart);
+					QuadFaceVerts Q1265(numDivs,global1265,iPart);
+					QuadFaceVerts Q2376(numDivs,global2376,iPart);
+					QuadFaceVerts Q3047(numDivs,global3047,iPart);
+					QuadFaceVerts Q0123(numDivs,global0123,iPart);
+					QuadFaceVerts Q4567(numDivs,global4567,iPart);
+					addUniquely(partBdryQuads,Q0154); 
+					addUniquely(partBdryQuads,Q1265);
+					addUniquely(partBdryQuads,Q2376); 
+					addUniquely(partBdryQuads,Q3047); 
+					addUniquely(partBdryQuads,Q0123); 
+					addUniquely(partBdryQuads,Q4567); 
+
+
+
+					break;
+				}
+			} // end switch
+		} // end loop to gather information
+
+	}
+
+	totalTriSize  = partBdryTris.size(); 
+	totalQuadSize = partBdryQuads.size();
+	std::size_t k=0 ;  
+
+	for(auto itr=partBdryTris.begin(); itr!=partBdryTris.end();itr++){
+		k++; 
+
+		auto next= std::next(itr,1); 
+		if(k!=partBdryTris.size()){
+					if(
+			itr->getSortedGlobal(0) == next->getSortedGlobal(0) 
+			&&
+
+			itr->getSortedGlobal(1)== next->getSortedGlobal(1) 
+			&&
+			itr->getSortedGlobal(2)== next->getSortedGlobal(2)
+			){
+						
+
+				emInt global[3] = {itr->getGlobalCorner(0),
+				itr->getGlobalCorner(1),itr->getGlobalCorner(2)}; 
+				emInt globalNext[3]= {next->getGlobalCorner(0),
+				next->getGlobalCorner(1), next->getGlobalCorner(2)}; 
+
+				TriFaceVerts tripart(numDivs,global,itr->getPartid(),
+				next->getPartid(),true);
+		
+				
+				TriFaceVerts tripartNext(numDivs,globalNext,next->getPartid()
+				,itr->getPartid(),true);
+		
+				
+				addUniquely(tris[itr->getPartid()],tripart);
+				addUniquely(tris[next->getPartid()],tripartNext);
+
+			}
+			
+		}
+
+	}
+	std::size_t kquad=0; 
+	for(auto itr=partBdryQuads.begin(); 
+	itr!=partBdryQuads.end();itr++){
+
+		auto next= std::next(itr,1); 
+		kquad++; 
+		if(kquad!=partBdryQuads.size()){
+			emInt v0Global= next->getGlobalCorner(0);
+			emInt v1Global= next->getGlobalCorner(1);
+			emInt v2Global= next->getGlobalCorner(2); 
+			emInt v3Global= next->getGlobalCorner(3); 
+
+
+
+			emInt partid= next->getPartid(); 
+
+			emInt v0SortedGlobal= next->getSortedGlobal(0);
+			emInt v1SortedGlobal= next->getSortedGlobal(1);
+			emInt v2SortedGlobal= next->getSortedGlobal(2);
+			emInt v3SortedGlobal= next->getSortedGlobal(3); 
+
+
+
+			emInt v0Global_= itr->getGlobalCorner(0);
+			emInt v1Global_= itr->getGlobalCorner(1);
+			emInt v2Global_= itr->getGlobalCorner(2); 
+			emInt v3Global_= itr->getGlobalCorner(3); 
+
+
+
+			emInt partid_= itr->getPartid(); 
+
+			emInt v0SortedGlobal_= itr->getSortedGlobal(0);
+			emInt v1SortedGlobal_= itr->getSortedGlobal(1);
+			emInt v2SortedGlobal_= itr->getSortedGlobal(2);
+			emInt v3SortedGlobal_= itr->getSortedGlobal(3); 
+
+			if(v0SortedGlobal_==v0SortedGlobal &&
+				v1SortedGlobal==v1SortedGlobal_ &&
+				v2SortedGlobal==v2SortedGlobal_ &&
+				v3SortedGlobal==v3SortedGlobal_){
+					emInt global[4] = {v0Global,v1Global,v2Global,v3Global}; 
+					emInt global_[4]= {v0Global_,v1Global_,v2Global_,v3Global_}; 
+
+					QuadFaceVerts quadpart(numDivs,global,partid,partid_,true);
+					QuadFaceVerts quadpart_(numDivs,global_,partid_,partid,true);
+					addUniquely(quads[partid],quadpart); 
+					addUniquely(quads[partid_],quadpart_); 
+
+			}
+
+		}
+
+
+	}
+
+};	
+
+
+// void CubicMesh::buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>>& face2cell, const emInt nCells)
+// {
+// 	// Needs to be Implemented 
+// }

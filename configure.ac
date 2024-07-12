@@ -148,5 +148,28 @@ CPPFLAGS=$CPPFLAGS_tmp
 
 AC_SUBST(HAVE_LIBHDF5_SERIAL)
 
+AC_ARG_WITH( CGNS-path,
+	     [AS_HELP_STRING([--with-CGNS-path=PATH],[specify installed location for the CGNS file format library])],,
+	     [with_CGNS_path="no"] )
+
+if (test "x$with_CGNS_path" == "xno") ; then
+   AC_CHECK_HEADER(cgnslib.h,
+	[ AC_DEFINE([HAVE_CGNS],[1],["Have CGNS headers"])]
+	)
+   AC_CHECK_LIB([cgns], [cg_set_file_type])
+else 
+   CPPFLAGS_tmp=$CPPFLAGS
+   CPPFLAGS="$CPPFLAGS -I$with_CGNS_path/include"
+   AC_CHECK_HEADER(cgnslib.h,
+	[ AC_DEFINE([HAVE_CGNS],[1],["Have CGNS headers"])])
+   CGNS_INCLUDES+=" -I$with_CGNS_path/include"
+   AC_CHECK_LIB([cgns], [cg_set_file_type],[LDFLAGS="-L$with_CGNS_path/lib $LDFLAGS"
+			     LIBS="-lcgns $LIBS"],,[-L$with_CGNS_path/lib])
+   CPPFLAGS=$CPPFLAGS_tmp
+fi
+CPPFLAGS+=" $CGNS_INCLUDES"
+
+AC_SUBST(HAVE_LIBCGNS)
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

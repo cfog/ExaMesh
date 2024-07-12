@@ -43,6 +43,13 @@ class CubicMesh: public ExaMesh {
 	emInt (*m_Pyr30Conn)[30];
 	emInt (*m_Prism40Conn)[40];
 	emInt (*m_Hex64Conn)[64];
+	exa_set <TriFaceVerts> TemppartTris;;
+	exa_set <QuadFaceVerts> TemppartQuads; 
+	exa_set<TriFaceVerts>  partTris; 
+	exa_set<QuadFaceVerts> partQuads;
+	exa_set<TriFaceVerts>  refinedPartTris;
+
+	std::vector<std::vector<emInt>>   vcell2cell;
 
 	CubicMesh(const CubicMesh&);
 	CubicMesh& operator=(const CubicMesh&);
@@ -94,8 +101,22 @@ public:
 	virtual emInt numHexes() const {
 		return m_nHex64;
 	}
+	virtual emInt numCells() const {
+		// This needs to be changed and having number of boundary quads and tris as well 
+		return numTets() + numPyramids() + numPrisms() + numHexes();
+	}
 	virtual emInt numVertsToCopy() const {
 		return m_nVertNodes;
+	}
+	emInt numBdryTrisFromReader()  const
+	{
+		//return m_nTrisFromReader; 
+		// it needs to be implemented 
+	} 
+	emInt numBdryQuadsFromReader() const
+	{
+		//return m_nQuadsFromReader; 
+		// it needs to be implemented 
 	}
 
 	emInt addVert(const double newCoords[3]);
@@ -161,19 +182,58 @@ public:
 	Mapping::MappingType getDefaultMappingType() const {
 		return Mapping::Lagrange;
 	}
+	// TODO ; NOT SET FOR CUBIC MESH 
+	// emInt getSizePartTris()const{
+	// 	return TemppartTris.size();
+	// }
+	// emInt getSizePartQuads()const{
+	// 	return TemppartQuads.size();
+	// }
+	// exa_set <QuadFaceVerts> getTempQuadPart() const{
+	// 	return TemppartQuads; 
+	// }
+	// exa_set <TriFaceVerts> getTempTriPart() const {
+	// 	return TemppartTris; 
+	// }
+	// exa_set<QuadFaceVerts> getQuadPart() const{
+	// 	return partQuads; 
+	// }
+	// exa_set<TriFaceVerts> getTriPart() const {
+	// 	return partTris; 
+	// }
+	// exa_set<TriFaceVerts> getRefinedPartTris() const{
+	// 	return refinedPartTris; 
+	// }
+	void partFaceMatching(
+		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
+		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
+		 std::vector<std::unordered_set<QuadFaceVerts>> &quads,size_t &totalTriSize, size_t &totalQuadSize )const;
 
-	std::unique_ptr<CubicMesh> extractCoarseMesh(Part& P,
-			std::vector<CellPartData>& vecCPD, const int numDivs) const;
+	std::unique_ptr<ExaMesh> extractCoarseMesh(Part& P,
+			std::vector<CellPartData>& vecCPD, const int numDivs,			
+			const std::unordered_set<TriFaceVerts> &tris= std::unordered_set<TriFaceVerts>(), 
+			const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>(), 
+			const emInt partID=-1) const;
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;
-
 	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
 			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
 			double& zmax) const;
 
 	void setNVertNodes(emInt nVertNodes) {
 		m_nVertNodes = nVertNodes;
+	}
+	//void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>>& face2cell, const emInt nCells);
+	std::size_t getCellConnSize (const emInt cellID)
+	const 
+	{
+		return vcell2cell[cellID].size(); 
+	}
+	emInt getCellConn (const emInt cellID, const emInt neighID)
+	const 
+	{
+		return vcell2cell[cellID][neighID]; 
 	}
 };
 
