@@ -65,10 +65,10 @@ void TriFaceVerts::setupSorted() {
 }
 
 void TriFaceVerts::getVertAndST(const int ii, const int jj, emInt& vert,
-		double st[2], const int rotCase) const {
+		double st[2], const int rotationCase) const {
 	assert(isValidIJ(ii, jj));
 	int trueI = -1, trueJ = -1;
-	switch (rotCase) {
+	switch (rotationCase) {
 	case 1:
 		// Just reversed orientation, no rotation
 		trueI = ii;
@@ -101,7 +101,7 @@ void TriFaceVerts::getVertAndST(const int ii, const int jj, emInt& vert,
 	}
 	double sTmp = m_param_st[trueI][trueJ][0];
 	double tTmp = m_param_st[trueI][trueJ][1];
-	switch (rotCase) {
+	switch (rotationCase) {
 	case 1:
 		st[0] = sTmp;
 		st[1] = tTmp;
