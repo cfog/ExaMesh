@@ -56,6 +56,9 @@ protected:
 	exa_set<TriFaceVerts>  m_refinedPartTris; 
 	exa_set<QuadFaceVerts> m_refinedPartQuads; 
 
+	std::vector<std::vector<emInt>>   vcell2cell;
+	std::vector<emInt>                vcellID2type;
+
 
 	void setupLengthScales();
 
@@ -82,6 +85,9 @@ public:
 	virtual emInt numPrisms() const = 0;
 	virtual emInt numHexes() const = 0;
 	virtual emInt numCells() const = 0 ; 
+	emInt numVolCells() const {
+	    return numCells() - numBdryTris() - numBdryQuads();
+	}
 		
 	virtual emInt numVertsToCopy() const {
 		return numVerts();
@@ -105,6 +111,21 @@ public:
 
 	virtual Mapping::MappingType getDefaultMappingType() const = 0;
 
+	std::size_t getCellConnSize (const emInt cellID)
+	const
+	{
+		return vcell2cell[cellID].size();
+	}
+	emInt getCellConn (const emInt cellID, const emInt neighID)
+	const
+	{
+		return vcell2cell[cellID][neighID];
+	}
+	emInt getCellType (const emInt cellID)
+	const
+	{
+		return vcellID2type[cellID];
+	}
 
 
 	void printMeshSizeStats();

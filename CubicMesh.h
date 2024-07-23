@@ -49,8 +49,6 @@ class CubicMesh: public ExaMesh {
 	exa_set<QuadFaceVerts> partQuads;
 	exa_set<TriFaceVerts>  refinedPartTris;
 
-	std::vector<std::vector<emInt>>   vcell2cell;
-
 	CubicMesh(const CubicMesh&);
 	CubicMesh& operator=(const CubicMesh&);
 	void readCGNSfile(const char CGNSfilename[]);
@@ -223,17 +221,6 @@ public:
 
 	void setNVertNodes(emInt nVertNodes) {
 		m_nVertNodes = nVertNodes;
-	}
-	//void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>>& face2cell, const emInt nCells);
-	std::size_t getCellConnSize (const emInt cellID)
-	const 
-	{
-		return vcell2cell[cellID].size(); 
-	}
-	emInt getCellConn (const emInt cellID, const emInt neighID)
-	const 
-	{
-		return vcell2cell[cellID][neighID]; 
 	}
 };
 

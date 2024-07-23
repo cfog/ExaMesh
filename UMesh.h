@@ -52,8 +52,6 @@ class UMesh: public ExaMesh {
 	TableCell2Cell                                                  cell2cell; 
 	std::map < std::pair<emInt,emInt>, std::set<std::set<emInt>>>   cell2faces; 
 	std::unordered_map<emInt, std::set<std::set<emInt>>>            cell2bdryfaces; 
-	std::vector<std::vector<emInt>>                                 vcell2cell;
-	std::vector<emInt>                                              vcellID2type; 
 	std::vector<std::pair<emInt,emInt>>                             cellID2cellTypeLocalID;
 	UMesh& operator=(const UMesh& inPut);
 
@@ -74,7 +72,7 @@ public:
 			const std::vector<double> &vLengthSclae, 
 			const std::vector<std::vector<emInt>> &vQuadConn,
 			const std::vector<std::vector<emInt>> &vPyrConn, 
-			const std::vector<std::vector<emInt>> &vPrsimConn, 
+			const std::vector<std::vector<emInt>> &vPrismConn,
 			const std::vector<std::vector<emInt>> &vHexConn);		
 	UMesh(const char baseFileName[], const char type[], const char ugridInfix[]);
 	UMesh(const UMesh& UM_in, const int nDivs, const emInt partID=-1);
@@ -201,21 +199,6 @@ public:
 		return m_HexConn[hex];
 	}
 
-	std::size_t getCellConnSize (const emInt cellID)
-	const 
-	{
-		return vcell2cell[cellID].size(); 
-	}
-	emInt getCellConn (const emInt cellID, const emInt neighID)
-	const
-	{
-		return vcell2cell[cellID][neighID]; 
-	}
-	emInt getCellType (const emInt cellID) 
-	const
-	{
-		return vcellID2type[cellID]; 
-	}
 	const double (*getAllCoords() const)[3]
 	{
 		return m_coords; 

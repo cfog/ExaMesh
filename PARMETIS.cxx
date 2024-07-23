@@ -62,18 +62,18 @@ emInt iParts, std::vector<emInt> &vaicelltopart)
     idx_t *xadj   = nullptr;
     idx_t *adjncy = nullptr;
     idx_t *adjwgt = nullptr;
-    idx_t *aicelltopart = new idx_t[pEM->numCells()];
+    idx_t *aicelltopart = new idx_t[pEM->numVolCells()];
 
     idx_t ncon=1; 
     idx_t objval; 
     idx_t npart  = iParts; 
 
     
-    idx_t nCells = pEM->numCells(); 
+    idx_t nCells = pEM->numVolCells();
 
-    xadj    = (idx_t*)calloc((size_t)(pEM->numCells()+1), sizeof(idx_t));
-    adjncy  = (idx_t*)calloc((size_t)(pEM->numCells()*MAXADJ), sizeof(idx_t));
-    adjwgt  = (idx_t*)calloc((size_t)(pEM->numCells()*MAXADJ), sizeof(idx_t));
+    xadj    = (idx_t*)calloc((size_t)(nCells+1), sizeof(idx_t));
+    adjncy  = (idx_t*)calloc((size_t)(nCells*MAXADJ), sizeof(idx_t));
+    adjwgt  = (idx_t*)calloc((size_t)(nCells*MAXADJ), sizeof(idx_t));
 
     setMetisOptions(options); 
     mesh2MetisGraphs(pEM,xadj,adjncy,adjwgt); 
@@ -81,7 +81,7 @@ emInt iParts, std::vector<emInt> &vaicelltopart)
                         NULL, NULL, adjwgt,&npart, NULL,
                         NULL, options, &objval,aicelltopart); 
 
-    auto part2cell = buildPart2Cell(aicelltopart,pEM->numCells(),npart);
+    auto part2cell = buildPart2Cell(aicelltopart,nCells,npart);
     
     vaicelltopart.resize(nCells);
 
@@ -104,9 +104,7 @@ void mesh2MetisGraphs(const UMesh* const pEM, idx_t xadj[], idx_t adjncy[], idx_
 {
     xadj [0] = 0 ;
 
-
-
-    for (emInt icell=0 ; icell< pEM->numCells(); icell++)
+    for (emInt icell=0 ; icell< pEM->numVolCells(); icell++)
     {
         xadj[icell+1] = xadj[icell]; 
 
