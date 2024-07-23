@@ -1,14 +1,34 @@
-/* config.h.in.  Generated from configure.ac by autoheader.  */
+/* exa_config.h.in.  Generated from configure.ac by autoheader.  */
 
-#undef PACKAGE_BUGREPORT
-#undef PACKAGE_NAME
-#undef PACKAGE_VERSION
-#undef PACKAGE_STRING
-#undef PACKAGE_URL
-#undef PACKAGE_TARNAME
+/* Defined if the requested minimum BOOST version is satisfied */
+#undef HAVE_BOOST
+
+/* Define to 1 if you have <boost/archive/text_oarchive.hpp> */
+#undef HAVE_BOOST_ARCHIVE_TEXT_OARCHIVE_HPP
+
+/* Defined if the Boost mpi library is available */
+#undef HAVE_BOOST_MPI
+
+/* Define to 1 if you have the <boost/mpi.hpp> header file. */
+#undef HAVE_BOOST_MPI_HPP
+
+/* Defined if the Boost serialization library is available */
+#undef HAVE_BOOST_SERIALIZATION
+
+/* Define to 1 if you have <boost/test/unit_test.hpp> */
+#undef HAVE_BOOST_TEST_UNIT_TEST_HPP
+
+/* Defined if the Boost unit_test_framework library is available */
+#undef HAVE_BOOST_UNIT_TEST_FRAMEWORK
 
 /* "Have CGNS headers" */
 #undef HAVE_CGNS
+
+/* Define if you find the CGNS library. */
+#undef HAVE_CGNS_LIB
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
 
 /* "Have HDF5 headers" */
 #undef HAVE_HDF5
@@ -16,9 +36,8 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the `boost_unit_test_framework' library
-   (-lboost_unit_test_framework). */
-#undef HAVE_LIBBOOST_UNIT_TEST_FRAMEWORK
+/* Define to 1 if you have the `boost_mpi' library (-lboost_mpi). */
+#undef HAVE_LIBBOOST_MPI
 
 /* Define to 1 if you have the `cgns' library (-lcgns). */
 #undef HAVE_LIBCGNS
@@ -35,17 +54,17 @@
 /* Define to 1 if you have the <locale.h> header file. */
 #undef HAVE_LOCALE_H
 
-/* Define to 1 if you have the <memory.h> header file. */
-#undef HAVE_MEMORY_H
-
-/* Define if OpenMP is enabled */
-#undef HAVE_OPENMP
+/* Define if you have the MPI library. */
+#undef HAVE_MPI
 
 /* Define to 1 if you have the `setlocale' function. */
 #undef HAVE_SETLOCALE
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdio.h> header file. */
+#undef HAVE_STDIO_H
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
@@ -71,6 +90,9 @@
 /* Define to 1 if the system has the type `_Bool'. */
 #undef HAVE__BOOL
 
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
+#undef LT_OBJDIR
+
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 
@@ -89,7 +111,9 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
-/* Define to 1 if you have the ANSI C header files. */
+/* Define to 1 if all of the C90 standard headers exist (not just the ones
+   required in a freestanding environment). This macro is provided for
+   backward compatibility; new code need not use it. */
 #undef STDC_HEADERS
 
 /* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,

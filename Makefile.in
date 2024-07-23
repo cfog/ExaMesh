@@ -26,7 +26,8 @@
 CXXOBJECTS=refine.o 
 
 LIBOBJECTS=TetDivider.o PyrDivider.o PrismDivider.o HexDivider.o CellDivider.o \
-BdryTriDivider.o BdryQuadDivider.o refinePart.o ExaMesh.o UMesh.o CubicMesh.o GeomUtils.o \
+BdryTriDivider.o BdryQuadDivider.o refinePart.o ExaMesh.o UMesh.o CubicMesh.o \
+GeomUtils.o FaceVerts.o \
 LagrangeMapping.o UniformMapping.o \
 LagrangeCubicTet.o LagrangeCubicPyr.o LagrangeCubicPrism.o LagrangeCubicHex.o \
 Part.o partition.o ParallelTester.o mpiImpl.o resultGenerator.o PARMETIS.o 
@@ -34,12 +35,12 @@ Part.o partition.o ParallelTester.o mpiImpl.o resultGenerator.o PARMETIS.o
 OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
 DEBUG=-g
 OPT=-O3 -DNDEBUG -g
-OPT_DEBUG=$(OPT) 
-CXX_COMPILE=mpic++ @OPENMP_CXXFLAGS@ -Wall -Wno-unused -Wextra -fPIC $(OPT_DEBUG) @CPPFLAGS@ $(EXTRAFLAGS)
+OPT_DEBUG=$(DEBUG) 
+CXX_COMPILE=mpic++ -Wall -Wno-unused -Wextra -fPIC $(OPT_DEBUG) @CPPFLAGS@ $(EXTRAFLAGS)
 CXX_LINK=mpic++ -fPIC $(EXTRAFLAGS) $(OPT_DEBUG)
 THISDIR=`pwd`
 EXAMESHLIB=-L$(THISDIR) -Wl,-rpath=$(THISDIR) -lexamesh -lboost_mpi -lboost_serialization -lmetis 
-LDFLAGS=@LDFLAGS@ @OPENMP_CXXFLAGS@
+LDFLAGS=@LDFLAGS@
 LIBRARY=libexamesh.so
 
 .cxx.o:
@@ -49,7 +50,7 @@ LIBRARY=libexamesh.so
 	(echo "Compile of $*.cxx failed!  Command was: " ; \
 	echo $(CXX_COMPILE) -c $*.cxx)
 
-all default: $(OBJECTS) library test-exa refine
+all default: Makefile $(OBJECTS) library test-exa refine
 	./test-exa
 
 library $(LIBRARY) : $(LIBOBJECTS)
@@ -80,3 +81,5 @@ cover:
 	genhtml --demangle-cpp --output-directory coverage coverage/lcov.info
 	firefox coverage/index.html
 
+Makefile: Makefile.in
+	./config.status

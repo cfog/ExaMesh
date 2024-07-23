@@ -143,14 +143,14 @@ void PyrDivider::createNewCells() {
 //    }
 //  }
 
-	for (int kk = 0; kk < nDivs; kk++) {
+	for (int kk = 0; kk < int(nDivs); kk++) {
 //		fprintf(stderr, "Level: %d\n", level);
     // Create up-pointing pyrs.  For a given level, there are
     // (nDivs - k)^2 of these.
-		int jMax = maxJ(0, kk);
-		int iMax = maxI(0, kk);
-    for (int jj = 0; jj <= jMax - 1; jj++) {
-      for (int ii = 0; ii <= iMax - 1; ii++) {
+		emInt jMax = maxJ(0, kk);
+		emInt iMax = maxI(0, kk);
+    for (int jj = 0; jj <= int(jMax) - 1; jj++) {
+      for (int ii = 0; ii <= int(iMax) - 1; ii++) {
 				emInt vertsNew[] = { localVerts[ii][jj][kk],
 						localVerts[ii + 1][jj][kk],
 						localVerts[ii + 1][jj + 1][kk],
@@ -171,8 +171,8 @@ void PyrDivider::createNewCells() {
 
     // Down-pointing pyramids, hanging from quads on the next level.  There
     // are (level-1)^2 of these.
-    for (int jj = 0; jj <= jMax - 2; jj++) {
-      for (int ii = 0; ii <= iMax - 2; ii++) {
+    for (int jj = 0; jj <= int(jMax) - 2; jj++) {
+      for (int ii = 0; ii <= int(iMax) - 2; ii++) {
 				emInt vertsNew[] = { localVerts[ii][jj][kk + 1],
 						localVerts[ii][jj + 1][kk + 1],
 						localVerts[ii + 1][jj + 1][kk + 1],
@@ -181,7 +181,7 @@ void PyrDivider::createNewCells() {
 				m_pMesh->addPyramid(vertsNew);
 #ifndef NDEBUG
 				double coords[5][3];
-				for (int vv = 0; vv < 5; vv++) {
+				for (emInt vv = 0; vv < 5; vv++) {
 					m_pMesh->getCoords(vertsNew[vv], coords[vv]);
 				}
 				assert(pyrVolume(coords[0], coords[1], coords[2], coords[3],
@@ -195,8 +195,8 @@ void PyrDivider::createNewCells() {
     // 2 (level-1) (level-2) of these.
 
     // The set on lines of constant j on level l.
-    for (int jj = 1; jj <= jMax - 1; jj++) {
-      for (int ii = 0; ii <= iMax - 1; ii++) {
+    for (int jj = 1; jj <= int(jMax) - 1; jj++) {
+      for (int ii = 0; ii <= int(iMax) - 1; ii++) {
 				emInt vertsNew[] = { localVerts[ii][jj][kk],
 						localVerts[ii + 1][jj][kk],
 						localVerts[ii][jj][kk + 1],
@@ -208,8 +208,8 @@ void PyrDivider::createNewCells() {
     }
 
     // The set on lines of constant i on level l.
-    for (int jj = 0; jj <= jMax - 1; jj++) {
-      for (int ii = 1; ii <= iMax - 1; ii++) {
+    for (int jj = 0; jj <= int(jMax) - 1; jj++) {
+      for (int ii = 1; ii <= int(iMax) - 1; ii++) {
 				emInt vertsNew[] = { localVerts[ii][jj][kk],
 						localVerts[ii][jj + 1][kk],
 						localVerts[ii - 1][jj][kk + 1],

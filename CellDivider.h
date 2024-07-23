@@ -31,6 +31,7 @@
 
 #include "exa-defs.h"
 #include "ExaMesh.h"
+#include "FaceVerts.h"
 #include "Mapping.h"
 #include "UMesh.h"
 
@@ -40,27 +41,27 @@ protected:
 	Mapping *m_Map;
 	emInt (*localVerts)[MAX_DIVS + 1][MAX_DIVS + 1];
 	double (*m_uvw)[MAX_DIVS+1][MAX_DIVS+1][3];
-	int edgeVertIndices[12][2];
-	int faceVertIndices[6][4];
-	int faceEdgeIndices[6][4];
+	emInt edgeVertIndices[12][2];
+	emInt faceVertIndices[6][4];
+	emInt faceEdgeIndices[6][4];
 	EdgeVerts m_EV[12];
-	int numTriFaces, numQuadFaces, numEdges, numVerts;
-	int vertIJK[8][3];
+	emInt numTriFaces, numQuadFaces, numEdges, numVerts;
+	emInt vertIJK[8][3];
 	double uvwIJK[8][3];
 	emInt cellVerts[8];
-	int nDivs;
+	emInt nDivs;
 
 	// Used by both tets and pyramids.
 	int checkOrient3D(const emInt verts[4]) const;
 private:
-	void getEdgeVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges, const int edge,
+	void getEdgeVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges, const emInt edge,
 			const double dihedral, EdgeVerts &EV);
 
-	QuadFaceVerts getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads, const int face);
+	QuadFaceVerts getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads, const emInt face);
 
 	TriFaceVerts getTriVerts(
 			exa_set<TriFaceVerts> &vertsOnTris,
-			const int face);
+			const emInt face);
 public:
 	CellDivider(UMesh *pVolMesh, const emInt segmentsPerEdge) :
 			m_pMesh(pVolMesh), m_Map(nullptr),
@@ -119,23 +120,23 @@ public:
 	}
 
 	// The virtual functions here will be overridden in most subclasses.
-	int minI(const int /*j*/, const int /*k*/) const {return 0;}
-	int minJ(const int /*i*/, const int /*k*/) const {return 0;}
-	int minK(const int /*i*/, const int /*j*/) const {return 0;}
+	emInt minI(const emInt /*j*/, const emInt /*k*/) const {return 0;}
+	emInt minJ(const emInt /*i*/, const emInt /*k*/) const {return 0;}
+	emInt minK(const emInt /*i*/, const emInt /*j*/) const {return 0;}
 
-	virtual int maxI(const int /*j*/, const int /*k*/) const {return nDivs;}
-	virtual int maxJ(const int /*i*/, const int /*k*/) const {return nDivs;}
-	virtual int maxK(const int /*i*/, const int /*j*/) const {return nDivs;}
+	virtual emInt maxI(const emInt /*j*/, const emInt /*k*/) const {return nDivs;}
+	virtual emInt maxJ(const emInt /*i*/, const emInt /*k*/) const {return nDivs;}
+	virtual emInt maxK(const emInt /*i*/, const emInt /*j*/) const {return nDivs;}
 
-	virtual int getMinInteriorDivs() const {return 3;}
-	void computeParaCoords(const int ii, const int jj, const int kk,
+	virtual emInt getMinInteriorDivs() const {return 3;}
+	void computeParaCoords(const emInt ii, const emInt jj, const emInt kk,
 			double uvw[3]) const;
 	// Output for diagnostic purposes
 	void printAllPoints();
 private:
 	void getEdgeParametricDivision(EdgeVerts &EV) const;
-	void initPerimeterParams(TriFaceVerts& TFV, const int face) const;
-	void initPerimeterParams(QuadFaceVerts& QFV, const int face) const;
+	void initPerimeterParams(TriFaceVerts& TFV, const emInt face) const;
+	void initPerimeterParams(QuadFaceVerts& QFV, const emInt face) const;
 	bool isEdgeForwardForFace(const EdgeVerts &EV,
 			emInt cornerStart, emInt cornerEnd) const;
 };

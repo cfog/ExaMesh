@@ -52,7 +52,7 @@ void sortVerts3(const emInt input[3], emInt output[3]) {
 	}
 }
 
-TriFaceVerts::TriFaceVerts(const int nDivs, const emInt v0, const emInt v1,
+TriFaceVerts::TriFaceVerts(const emInt nDivs, const emInt v0, const emInt v1,
 		const emInt v2,const emInt type, 
 		const emInt elemInd,const emInt partID ,const emInt remoteId,bool globalComparison) :
 		FaceVerts(nDivs, 3) {
@@ -63,7 +63,7 @@ TriFaceVerts::TriFaceVerts(const int nDivs, const emInt v0, const emInt v1,
 	setCorners(v0, v1, v2);
 }
 
-TriFaceVerts::TriFaceVerts(const int nDivs, const emInt local[3], 
+TriFaceVerts::TriFaceVerts(const emInt nDivs, const emInt local[3],
 	const emInt global[3],const emInt partid_,const emInt remoteID_, 
 	const emInt type ,const emInt elemInd,
 	bool globalComparison):FaceVerts(nDivs,3){
@@ -80,7 +80,7 @@ TriFaceVerts::TriFaceVerts(const int nDivs, const emInt local[3],
 			m_sortedGlobal[i]= output[i];
 		}	 
 }
-TriFaceVerts::TriFaceVerts(const int nDivs,const emInt global[3],
+TriFaceVerts::TriFaceVerts(const emInt nDivs,const emInt global[3],
 const emInt partid_, const emInt remoteID_ ,bool globalComparison,
 const emInt type, const emInt elemInd
 ):FaceVerts(nDivs,3){
@@ -89,7 +89,7 @@ const emInt type, const emInt elemInd
 		m_partId=partid_; 
 		m_remoteId=remoteID_; 
 		m_globalComparison=globalComparison;
-		emInt local[3]={-1,-1,-1};
+		emInt local[3]={EMINT_MAX, EMINT_MAX, EMINT_MAX};
 	
 		setCorners(local[0],local[1],local[2]); 
 		emInt output [3]; 
@@ -99,7 +99,7 @@ const emInt type, const emInt elemInd
 			m_sortedGlobal[i]= output[i];
 		}	 
 }
-TriFaceVerts::TriFaceVerts(const int nDivs, const emInt local[3], 
+TriFaceVerts::TriFaceVerts(const emInt nDivs, const emInt local[3],
 	const emInt global[3], const emInt remoteIndices_ [3] ,const emInt partid_, 
 	const emInt remoteID_ ,
 	const emInt type ,const emInt elemInd,bool globalComparison):
@@ -128,10 +128,10 @@ void TriFaceVerts::setupSorted() {
 	sortVerts3(m_corners, m_sorted);
 }
 
-void TriFaceVerts::getVertAndST(const int ii, const int jj, emInt& vert,
+void TriFaceVerts::getVertAndST(const emInt ii, const emInt jj, emInt& vert,
 		double st[2], const int rotationCase) const {
 	assert(isValidIJ(ii, jj));
-	int trueI = -1, trueJ = -1;
+	emInt trueI = EMINT_MAX, trueJ = EMINT_MAX;
 	switch (rotationCase) {
 	case 1:
 		// Just reversed orientation, no rotation
@@ -198,8 +198,8 @@ void TriFaceVerts::getVertAndST(const int ii, const int jj, emInt& vert,
 	assert(isValidParam(st[1]));
 	vert = getIntVertInd(trueI, trueJ);
 }
-void TriFaceVerts:: getTrueIJ(const int ii, const int jj,
-			int &trueI, int &trueJ , const int rotCase )const{
+void TriFaceVerts:: getTrueIJ(const emInt ii, const emInt jj,
+			emInt &trueI, emInt &trueJ , const int rotCase )const{
 	trueI = -1, trueJ = -1;
 	switch (rotCase) {
 	case 1:
@@ -235,16 +235,21 @@ void TriFaceVerts:: getTrueIJ(const int ii, const int jj,
 
 }
 bool operator==(const TriFaceVerts &a, const TriFaceVerts &b) {
-
+	    assert(a.m_globalComparison == b.m_globalComparison);
 		if(a.m_globalComparison==false && b.m_globalComparison==false){
 					return (a.m_sorted[0] == b.m_sorted[0] && a.m_sorted[1] == b.m_sorted[1]
 			&& a.m_sorted[2] == b.m_sorted[2] 
 			//&& a.partid==b.partid
 			);
-		}if(a.m_globalComparison==true && b.m_globalComparison==true){
+		}
+		if(a.m_globalComparison==true && b.m_globalComparison==true){
 			return (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
 			&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
 			);
+		}
+		else {
+			// Should never get here.
+			return false;
 		}
 
 		
@@ -263,7 +268,7 @@ bool operator==(const TriFaceVerts &a, const TriFaceVerts &b) {
 
 bool operator<(const TriFaceVerts &a, const TriFaceVerts &b)
 {
-	if(a.m_remoteId==-1 && b.m_remoteId==-1)
+	if(a.m_remoteId==EMINT_MAX && b.m_remoteId==EMINT_MAX)
 	{
 		if(a.m_partId==b.m_partId &&
 			a.m_sortedGlobal[0]==b.m_sortedGlobal[0]&&
@@ -288,23 +293,23 @@ bool operator<(const TriFaceVerts &a, const TriFaceVerts &b)
 
 }
 
-void TriFaceVerts::computeParaCoords(const int ii, const int jj,
+void TriFaceVerts::computeParaCoords(const emInt ii, const emInt jj,
 		double st[2]) const {
 	assert(ii >= 1 && ii <= m_nDivs - jj - 1);
 	assert(jj >= 1 && jj <= m_nDivs - 1);
 
 	// This is sufficient only for the very simplest of tests.
-	int iLeft = 0;
-	int jLeft = jj;
+	emInt iLeft = 0;
+	emInt jLeft = jj;
 
-	int iRight = m_nDivs - jj;
-	int jRight = jj;
+	emInt iRight = m_nDivs - jj;
+	emInt jRight = jj;
 
-	int iBot = ii;
-	int jBot = 0;
+	emInt iBot = ii;
+	emInt jBot = 0;
 
-	int iTop = ii;
-	int jTop = m_nDivs - ii;
+	emInt iTop = ii;
+	emInt jTop = m_nDivs - ii;
 
 	double stLeft[] =
 			{ m_param_st[iLeft][jLeft][0], m_param_st[iLeft][jLeft][1] };
@@ -317,7 +322,7 @@ void TriFaceVerts::computeParaCoords(const int ii, const int jj,
 	assert(isValidParam(st[1]));
 }
 
-QuadFaceVerts::QuadFaceVerts(const int nDivs, const emInt v0, const emInt v1,
+QuadFaceVerts::QuadFaceVerts(const emInt nDivs, const emInt v0, const emInt v1,
 		const emInt v2, const emInt v3,const emInt type, 
 		const emInt elemInd,  const emInt partID, const emInt remoteID,
 		bool globalCompare) :
@@ -329,7 +334,7 @@ QuadFaceVerts::QuadFaceVerts(const int nDivs, const emInt v0, const emInt v1,
 	m_globalComparison=globalCompare;
 	setCorners(v0, v1, v2, v3);
 }
-QuadFaceVerts::QuadFaceVerts(const int nDivs, const emInt local[4], 
+QuadFaceVerts::QuadFaceVerts(const emInt nDivs, const emInt local[4],
 	const emInt global[4],const emInt partid_, const emInt remoteID_ ,
 	const emInt type ,const emInt elemInd,bool globalCompare):FaceVerts(nDivs,4){
 		m_volElem = elemInd;
@@ -346,7 +351,7 @@ QuadFaceVerts::QuadFaceVerts(const int nDivs, const emInt local[4],
 		}	
 		
 }
-QuadFaceVerts::QuadFaceVerts(const int nDivs,const emInt global[4],
+QuadFaceVerts::QuadFaceVerts(const emInt nDivs,const emInt global[4],
 const emInt partid_, const emInt remoteID, bool globalCompare, 
 	const emInt type,const emInt elemInd):FaceVerts(nDivs,4){
 
@@ -355,7 +360,7 @@ const emInt partid_, const emInt remoteID, bool globalCompare,
 		m_partId=partid_; 
 		m_remoteId=remoteID; 
 		m_globalComparison=globalCompare;
-		emInt local[4]= {-1,-1,-1,-1}; 
+		emInt local[4]= {EMINT_MAX, EMINT_MAX, EMINT_MAX, EMINT_MAX}; 
 		setCorners(local[0],local[1],local[2],local[3]); 
 		emInt output [4]; 
 		sortVerts4(global,output);
@@ -365,7 +370,7 @@ const emInt partid_, const emInt remoteID, bool globalCompare,
 		}
 
 }
-QuadFaceVerts::QuadFaceVerts(const int nDivs, const emInt local[4], 
+QuadFaceVerts::QuadFaceVerts(const emInt nDivs, const emInt local[4],
 	const emInt global[4], const emInt remotelocal[4] ,const emInt partid_, const emInt remoteID,const emInt type 
 	,const emInt elemInd,
 	bool globalCompare):FaceVerts(nDivs,4){
@@ -433,22 +438,28 @@ void sortVerts4(const emInt input[4], emInt output[4]) {
 }
 
 bool operator==(const QuadFaceVerts &a, const QuadFaceVerts &b) {
+    assert(a.m_globalComparison == b.m_globalComparison);
 	if(a.m_globalComparison==false && b.m_globalComparison==false){
 		return (a.m_sorted[0] == b.m_sorted[0] && a.m_sorted[1] == b.m_sorted[1]
 			&& a.m_sorted[2] == b.m_sorted[2] && a.m_sorted[3] == b.m_sorted[3] 
 			);
-	}if(a.m_globalComparison==true && b.m_globalComparison==true){
+	}
+	if(a.m_globalComparison==true && b.m_globalComparison==true){
 		return (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && 
 		a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
 			&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2] && 
 			a.m_sortedGlobal[3] == b.m_sortedGlobal[3]);
+	}
+	else {
+		// Should never get here.
+		return false;
 	}
 	
 }
 
 bool operator<(const QuadFaceVerts &a, const QuadFaceVerts &b) {
 
-	if(a.m_remoteId==-1 && b.m_remoteId==-1)
+	if(a.m_remoteId==EMINT_MAX && b.m_remoteId==EMINT_MAX)
 	{
 		if(a.m_partId==b.m_partId &&
 				a.m_sortedGlobal[0]== b.m_sortedGlobal[0]&&
@@ -484,22 +495,22 @@ bool operator<(const QuadFaceVerts &a, const QuadFaceVerts &b) {
 
 }
 
-void QuadFaceVerts::computeParaCoords(const int ii, const int jj,
+void QuadFaceVerts::computeParaCoords(const emInt ii, const emInt jj,
 		double st[2]) const {
 	assert(ii >= 1 && ii <= m_nDivs - 1);
 	assert(jj >= 1 && jj <= m_nDivs - 1);
 
-	int iLeft = 0;
-	int jLeft = jj;
+	emInt iLeft = 0;
+	emInt jLeft = jj;
 
-	int iRight = m_nDivs;
-	int jRight = jj;
+	emInt iRight = m_nDivs;
+	emInt jRight = jj;
 
-	int iBot = ii;
-	int jBot = 0;
+	emInt iBot = ii;
+	emInt jBot = 0;
 
-	int iTop = ii;
-	int jTop = m_nDivs;
+	emInt iTop = ii;
+	emInt jTop = m_nDivs;
 
 	double stLeft[] =
 			{ m_param_st[iLeft][jLeft][0], m_param_st[iLeft][jLeft][1] };
@@ -512,10 +523,10 @@ void QuadFaceVerts::computeParaCoords(const int ii, const int jj,
 	assert(isValidParam(st[1]));
 }
 
-void QuadFaceVerts::getVertAndST(const int ii, const int jj, emInt& vert,
+void QuadFaceVerts::getVertAndST(const emInt ii, const emInt jj, emInt& vert,
 		double st[2], const int rotCase) const {
 	assert(isValidIJ(ii, jj));
-	int trueI = -1, trueJ = -1;
+	emInt trueI = EMINT_MAX, trueJ = EMINT_MAX;
 	switch (rotCase) {
 	case 1:
 		// No change from the original
@@ -598,8 +609,8 @@ void QuadFaceVerts::getVertAndST(const int ii, const int jj, emInt& vert,
 	assert(isValidParam(st[1]));
 	vert = getIntVertInd(trueI, trueJ);
 }
-void QuadFaceVerts::getTrueIJ(const int ii, const int jj,
-			int &trueI, int &trueJ, const int rotCase) const{
+void QuadFaceVerts::getTrueIJ(const emInt ii, const emInt jj,
+			emInt &trueI, emInt &trueJ, const int rotCase) const{
 assert(isValidIJ(ii, jj));
 	trueI = -1, trueJ = -1;
 	switch (rotCase) {
@@ -673,7 +684,7 @@ void CellDivider::getEdgeParametricDivision(EdgeVerts &EV) const {
 	assert(isfinite(startLen));
 	assert(isfinite(endLen));
 
-	for (int ii = 1; ii < nDivs; ii++) {
+	for (emInt ii = 1; ii < nDivs; ii++) {
 		double xi = ((double) ii) / nDivs;
 		EV.m_param_t[ii] = startLen * xi + (3 - 2 * startLen - endLen) * xi * xi
 				+ (startLen + endLen - 2) * xi * xi * xi;
@@ -683,9 +694,9 @@ void CellDivider::getEdgeParametricDivision(EdgeVerts &EV) const {
 }
 
 void CellDivider::getEdgeVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges,
-		const int edge, const double dihedral, EdgeVerts &EV) {
-	int ind0 = edgeVertIndices[edge][0];
-	int ind1 = edgeVertIndices[edge][1];
+		const emInt edge, const double dihedral, EdgeVerts &EV) {
+	emInt ind0 = edgeVertIndices[edge][0];
+	emInt ind1 = edgeVertIndices[edge][1];
 
 	emInt vert0 = cellVerts[ind0];
 	emInt vert1 = cellVerts[ind1];
@@ -727,7 +738,7 @@ void CellDivider::getEdgeVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges,
 		double delta[] = { (uvwEnd[0] - uvwStart[0]), (uvwEnd[1] - uvwStart[1]),
 				(uvwEnd[2] - uvwStart[2]) };
 		getEdgeParametricDivision(EV);
-		for (int ii = 1; ii < nDivs; ii++) {
+		for (emInt ii = 1; ii < nDivs; ii++) {
 			double uvw[] = { uvwStart[0] + EV.m_param_t[ii] * delta[0],
 					uvwStart[1] + EV.m_param_t[ii] * delta[1], uvwStart[2]
 							+ EV.m_param_t[ii] * delta[2] };
@@ -780,7 +791,7 @@ bool CellDivider::isEdgeForwardForFace(const EdgeVerts &EV, emInt cornerStart,
 	return isForward;
 }
 
-void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const int face) const {
+void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const emInt face) const {
 	// Need to identify which edge of the tri is which previously defined
 	// edge, and use the edge parameter info to set up parameter info
 	// for the triangle.
@@ -790,8 +801,8 @@ void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const int face) const {
 	// Grab the appropriate edge.  Indices are shifted by numEdges for
 	// edges that are reversed in the face compared to the edge definition.
 	{
-		int actualEdge = faceEdgeIndices[face][0];
-		assert(actualEdge >= 0 && actualEdge < numEdges);
+		emInt actualEdge = faceEdgeIndices[face][0];
+		assert(actualEdge < numEdges);
 		const EdgeVerts &EV = m_EV[actualEdge];
 		emInt cornerStart = TFV.getCorner(0);
 		emInt cornerEnd = TFV.getCorner(1);
@@ -799,9 +810,9 @@ void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const int face) const {
 
 		// Transcribe that edge's parametric division on the triangle.  This
 		// is idiosyncratic enough for edges that I'm not trying to loop it.
-		for (int pp = 0; pp <= nDivs; pp++) {
+		for (emInt pp = 0; pp <= nDivs; pp++) {
 			double st[] = { EV.m_param_t[pp], 0 };
-			int ii = pp, jj = 0;
+			emInt ii = pp, jj = 0;
 			if (!isForward) {
 				st[0] = 1 - st[0];
 				ii = nDivs - ii;
@@ -814,8 +825,8 @@ void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const int face) const {
 	// Grab the appropriate edge.  Indices are shifted by numEdges for
 	// edges that are reversed in the face compared to the edge definition.
 	{
-		int actualEdge = faceEdgeIndices[face][1];
-		assert(actualEdge >= 0 && actualEdge < numEdges);
+		emInt actualEdge = faceEdgeIndices[face][1];
+		assert(actualEdge < numEdges);
 		const EdgeVerts &EV = m_EV[actualEdge];
 		emInt cornerStart = TFV.getCorner(1);
 		emInt cornerEnd = TFV.getCorner(2);
@@ -823,13 +834,13 @@ void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const int face) const {
 
 		// Transcribe that edge's parametric division on the triangle.  This
 		// is idiosyncratic enough for edges that I'm not trying to loop it.
-		for (int pp = 0; pp <= nDivs; pp++) {
+		for (emInt pp = 0; pp <= nDivs; pp++) {
 			// This is the hypotenuse in the st parametric space, so
 			// the edge runs from (s,t) = (1,0) to (0,1).
 			double st[] = { 0, 0 };
 			// Get t right.
 			st[1] = EV.m_param_t[pp];
-			int jj = pp;
+			emInt jj = pp;
 			if (!isForward) {
 				st[1] = 1 - st[1];
 				jj = nDivs - jj;
@@ -845,8 +856,8 @@ void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const int face) const {
 	// Grab the appropriate edge.  Indices are shifted by numEdges for
 	// edges that are reversed in the face compared to the edge definition.
 	{
-		int actualEdge = faceEdgeIndices[face][2];
-		assert(actualEdge >= 0 && actualEdge < numEdges);
+		emInt actualEdge = faceEdgeIndices[face][2];
+		assert(actualEdge < numEdges);
 		const EdgeVerts &EV = m_EV[actualEdge];
 		emInt cornerStart = TFV.getCorner(2);
 		emInt cornerEnd = TFV.getCorner(0);
@@ -854,10 +865,10 @@ void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const int face) const {
 
 		// Transcribe that edge's parametric division on the triangle.  This
 		// is idiosyncratic enough for edges that I'm not trying to loop it.
-		for (int pp = 0; pp <= nDivs; pp++) {
+		for (emInt pp = 0; pp <= nDivs; pp++) {
 			// This edge runs from (s,t) = (0,1) to (0,0)
 			double st[] = { 0, 1 - EV.m_param_t[pp] };
-			int jj = nDivs - pp;
+			emInt jj = nDivs - pp;
 			if (!isForward) {
 				st[1] = 1 - st[1];
 				jj = nDivs - jj;
@@ -868,10 +879,10 @@ void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const int face) const {
 }
 
 TriFaceVerts CellDivider::getTriVerts(
-exa_set<TriFaceVerts> &vertsOnTris, const int face) {
-	int ind0 = faceVertIndices[face][0];
-	int ind1 = faceVertIndices[face][1];
-	int ind2 = faceVertIndices[face][2];
+exa_set<TriFaceVerts> &vertsOnTris, const emInt face) {
+	emInt ind0 = faceVertIndices[face][0];
+	emInt ind1 = faceVertIndices[face][1];
+	emInt ind2 = faceVertIndices[face][2];
 
 	emInt vert0 = cellVerts[ind0];
 	emInt vert1 = cellVerts[ind1];
@@ -895,7 +906,7 @@ exa_set<TriFaceVerts> &vertsOnTris, const int face) {
 	bool newFace = (iterTris == vertsOnTris.end());
 	int rotCase = 0;
 	if (!newFace) {
-		for (int cc = 0; cc < 3; cc++) {
+		for (emInt cc = 0; cc < 3; cc++) {
 			if (vert0 == iterTris->getCorner(cc)) {
 				if (vert1 == iterTris->getCorner((cc+1)%3)) {
 					// Oriented forward; bdry tri
@@ -912,8 +923,8 @@ exa_set<TriFaceVerts> &vertsOnTris, const int face) {
 		assert(rotCase != 0);
 	}
 
-	for (int jj = 1; jj <= nDivs - 2; jj++) {
-		for (int ii = 1; ii <= nDivs - 1 - jj; ii++) {
+	for (emInt jj = 1; jj <= nDivs - 2; jj++) {
+		for (emInt ii = 1; ii <= nDivs - 1 - jj; ii++) {
 			double st[] = { -100, -100 };
 			emInt vert;
 			if (newFace) {
@@ -946,7 +957,7 @@ exa_set<TriFaceVerts> &vertsOnTris, const int face) {
 }
 
 void CellDivider::initPerimeterParams(QuadFaceVerts &QFV,
-		const int face) const {
+		const emInt face) const {
 // Need to identify which edge of the quad is which previously defined
 // edge, and use the edge parameter info to set up parameter info
 // for the quad.
@@ -955,8 +966,8 @@ void CellDivider::initPerimeterParams(QuadFaceVerts &QFV,
 
 // Grab the appropriate edge.
 	{
-		int actualEdge = faceEdgeIndices[face][0];
-		assert(actualEdge >= 0 && actualEdge < numEdges);
+		emInt actualEdge = faceEdgeIndices[face][0];
+		assert(actualEdge < numEdges);
 		const EdgeVerts &EV = m_EV[actualEdge];
 		emInt cornerStart = QFV.getCorner(0);
 		emInt cornerEnd = QFV.getCorner(1);
@@ -964,9 +975,9 @@ void CellDivider::initPerimeterParams(QuadFaceVerts &QFV,
 
 		// Transcribe that edge's parametric division on the quad.  This
 		// is idiosyncratic enough for edges that I'm not trying to loop it.
-		for (int pp = 0; pp <= nDivs; pp++) {
+		for (emInt pp = 0; pp <= nDivs; pp++) {
 			double st[] = { EV.m_param_t[pp], 0 };
-			int ii = pp, jj = 0;
+			emInt ii = pp, jj = 0;
 			if (!isForward) {
 				st[0] = 1 - st[0];
 				ii = nDivs - ii;
@@ -978,8 +989,8 @@ void CellDivider::initPerimeterParams(QuadFaceVerts &QFV,
 
 // Grab the appropriate edge.
 	{
-		int actualEdge = faceEdgeIndices[face][1];
-		assert(actualEdge >= 0 && actualEdge < numEdges);
+		emInt actualEdge = faceEdgeIndices[face][1];
+		assert(actualEdge < numEdges);
 		const EdgeVerts &EV = m_EV[actualEdge];
 		emInt cornerStart = QFV.getCorner(1);
 		emInt cornerEnd = QFV.getCorner(2);
@@ -987,11 +998,11 @@ void CellDivider::initPerimeterParams(QuadFaceVerts &QFV,
 
 		// Transcribe that edge's parametric division on the quad.  This
 		// is idiosyncratic enough for edges that I'm not trying to loop it.
-		for (int pp = 0; pp <= nDivs; pp++) {
+		for (emInt pp = 0; pp <= nDivs; pp++) {
 			// This is the hypotenuse in the st parametric space, so
 			// the edge runs from (s,t) = (1,0) to (0,1).
 			double st[] = { 1, EV.m_param_t[pp] };
-			int jj = pp;
+			emInt jj = pp;
 			if (!isForward) {
 				st[1] = 1 - st[1];
 				jj = nDivs - pp;
@@ -1004,8 +1015,8 @@ void CellDivider::initPerimeterParams(QuadFaceVerts &QFV,
 
 // Grab the appropriate edge.
 	{
-		int actualEdge = faceEdgeIndices[face][2];
-		assert(actualEdge >= 0 && actualEdge < numEdges);
+		emInt actualEdge = faceEdgeIndices[face][2];
+		assert(actualEdge < numEdges);
 		const EdgeVerts &EV = m_EV[actualEdge];
 		emInt cornerStart = QFV.getCorner(2);
 		emInt cornerEnd = QFV.getCorner(3);
@@ -1013,10 +1024,10 @@ void CellDivider::initPerimeterParams(QuadFaceVerts &QFV,
 
 		// Transcribe that edge's parametric division on the quad.  This
 		// is idiosyncratic enough for edges that I'm not trying to loop it.
-		for (int pp = 0; pp <= nDivs; pp++) {
+		for (emInt pp = 0; pp <= nDivs; pp++) {
 			// This edge runs from (s,t) = (1,1) to (0,1)
 			double st[] = { 1 - EV.m_param_t[pp], 1 };
-			int ii = nDivs - pp;
+			emInt ii = nDivs - pp;
 			if (!isForward) {
 				st[0] = 1 - st[0];
 				ii = pp;
@@ -1029,8 +1040,8 @@ void CellDivider::initPerimeterParams(QuadFaceVerts &QFV,
 
 // Grab the appropriate edge.
 	{
-		int actualEdge = faceEdgeIndices[face][3];
-		assert(actualEdge >= 0 && actualEdge < numEdges);
+		emInt actualEdge = faceEdgeIndices[face][3];
+		assert(actualEdge < numEdges);
 		const EdgeVerts &EV = m_EV[actualEdge];
 		emInt cornerStart = QFV.getCorner(3);
 		emInt cornerEnd = QFV.getCorner(0);
@@ -1038,10 +1049,10 @@ void CellDivider::initPerimeterParams(QuadFaceVerts &QFV,
 
 		// Transcribe that edge's parametric division on the quad.  This
 		// is idiosyncratic enough for edges that I'm not trying to loop it.
-		for (int pp = 0; pp <= nDivs; pp++) {
+		for (emInt pp = 0; pp <= nDivs; pp++) {
 			// This edge runs from (s,t) = (0,1) to (0,0)
 			double st[] = { 0, 1 - EV.m_param_t[pp] };
-			int jj = nDivs - pp;
+			emInt jj = nDivs - pp;
 			if (!isForward) {
 				st[1] = 1 - st[1];
 				jj = nDivs - jj;
@@ -1052,11 +1063,11 @@ void CellDivider::initPerimeterParams(QuadFaceVerts &QFV,
 }
 
 QuadFaceVerts CellDivider::getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
-		const int face) {
-	int ind0 = faceVertIndices[face][0];
-	int ind1 = faceVertIndices[face][1];
-	int ind2 = faceVertIndices[face][2];
-	int ind3 = faceVertIndices[face][3];
+		const emInt face) {
+	emInt ind0 = faceVertIndices[face][0];
+	emInt ind1 = faceVertIndices[face][1];
+	emInt ind2 = faceVertIndices[face][2];
+	emInt ind3 = faceVertIndices[face][3];
 
 	emInt vert0 = cellVerts[ind0];
 	emInt vert1 = cellVerts[ind1];
@@ -1089,7 +1100,7 @@ QuadFaceVerts CellDivider::getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
 	bool newFace = (iterQuads == vertsOnQuads.end());
 	int rotCase = 0;
 	if (!newFace) {
-		for (int cc = 0; cc < 4; cc++) {
+		for (emInt cc = 0; cc < 4; cc++) {
 			if (vert0 == iterQuads->getCorner(cc)) {
 				if (vert1 == iterQuads->getCorner((cc+1)%4)) {
 					// Oriented forward; bdry quad
@@ -1108,11 +1119,11 @@ QuadFaceVerts CellDivider::getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
 		assert(rotCase != 0);
 	}
 
-	for (int jj = 1; jj <= nDivs - 1; jj++) {
-		for (int ii = 1; ii <= nDivs - 1; ii++) {
+	for (emInt jj = 1; jj <= nDivs - 1; jj++) {
+		for (emInt ii = 1; ii <= nDivs - 1; ii++) {
 			double st[] = { -100, -100 };
 			double &s = st[0], &t = st[1];
-			emInt vert = -100;
+			emInt vert = EMINT_MAX;
 			if (newFace) {
 				QFV.computeParaCoords(ii, jj, st);
 				QFV.setVertSTParams(ii, jj, st);
@@ -1146,7 +1157,7 @@ QuadFaceVerts CellDivider::getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
 void CellDivider::divideEdges(exa_map<Edge, EdgeVerts> &vertsOnEdges) {
 // Divide all the edges, including storing info about which new verts
 // are on which edges
-	for (int iE = 0; iE < numEdges; iE++) {
+	for (emInt iE = 0; iE < numEdges; iE++) {
 
 		EdgeVerts &EV = m_EV[iE];
 		double dihedral = 0;
@@ -1162,12 +1173,14 @@ void CellDivider::divideEdges(exa_map<Edge, EdgeVerts> &vertsOnEdges) {
 			startIndex = edgeVertIndices[iE][1];
 			endIndex = edgeVertIndices[iE][0];
 		}
+		// Increments must be signed, so we can count down
 		int startI = vertIJK[startIndex][0];
 		int startJ = vertIJK[startIndex][1];
 		int startK = vertIJK[startIndex][2];
-		int incrI = (vertIJK[endIndex][0] - startI) / nDivs;
-		int incrJ = (vertIJK[endIndex][1] - startJ) / nDivs;
-		int incrK = (vertIJK[endIndex][2] - startK) / nDivs;
+
+		int incrI = (int(vertIJK[endIndex][0]) - startI) / int(nDivs);
+		int incrJ = (int(vertIJK[endIndex][1]) - startJ) / int(nDivs);
+		int incrK = (int(vertIJK[endIndex][2]) - startK) / int(nDivs);
 
 		double startU = uvwIJK[startIndex][0];
 		double startV = uvwIJK[startIndex][1];
@@ -1176,13 +1189,13 @@ void CellDivider::divideEdges(exa_map<Edge, EdgeVerts> &vertsOnEdges) {
 		double deltaV = (uvwIJK[endIndex][1] - startV);
 		double deltaW = (uvwIJK[endIndex][2] - startW);
 
-		for (int ii = 0; ii <= nDivs; ii++) {
-			int II = startI + ii * incrI;
-			int JJ = startJ + ii * incrJ;
-			int KK = startK + ii * incrK;
-			assert(II >= 0 && II <= nDivs);
-			assert(JJ >= 0 && JJ <= nDivs);
-			assert(KK >= 0 && KK <= nDivs);
+		for (emInt ii = 0; ii <= nDivs; ii++) {
+			emInt II = startI + ii * incrI;
+			emInt JJ = startJ + ii * incrJ;
+			emInt KK = startK + ii * incrK;
+			assert(II <= nDivs);
+			assert(JJ <= nDivs);
+			assert(KK <= nDivs);
 			localVerts[II][JJ][KK] = EV.m_verts[ii];
 
 			// Now the param coords
@@ -1202,7 +1215,7 @@ exa_set<QuadFaceVerts> &vertsOnQuads) {
 // are on which faces
 
 // The quad faces are first.
-	for (int iF = 0; iF < numQuadFaces; iF++) {
+	for (emInt iF = 0; iF < numQuadFaces; iF++) {
 		QuadFaceVerts QFV = getQuadVerts(vertsOnQuads, iF);
 		// Now extract info from the QFV and stuff it into the cell's point
 		// array.
@@ -1210,9 +1223,9 @@ exa_set<QuadFaceVerts> &vertsOnQuads) {
 		// Critical first step: identify which vert is which.
 		emInt corner[] = { 1000, 1000, 1000, 1000 };
 
-		for (int iC = 0; iC < 4; iC++) {
+		for (emInt iC = 0; iC < 4; iC++) {
 			const emInt corn = QFV.getCorner(iC);
-			for (int iV = 0; iV < numVerts; iV++) {
+			for (emInt iV = 0; iV < numVerts; iV++) {
 				const emInt cand = cellVerts[iV];
 				if (corn == cand) {
 					corner[iC] = iV;
@@ -1221,24 +1234,26 @@ exa_set<QuadFaceVerts> &vertsOnQuads) {
 			}
 		}
 
+		// Increments must be signed, so we can count down
 		int startI = vertIJK[corner[0]][0];
 		int startJ = vertIJK[corner[0]][1];
 		int startK = vertIJK[corner[0]][2];
-		int incrIi = (vertIJK[corner[1]][0] - startI) / nDivs;
-		int incrJi = (vertIJK[corner[1]][1] - startJ) / nDivs;
-		int incrKi = (vertIJK[corner[1]][2] - startK) / nDivs;
-		int incrIj = (vertIJK[corner[3]][0] - startI) / nDivs;
-		int incrJj = (vertIJK[corner[3]][1] - startJ) / nDivs;
-		int incrKj = (vertIJK[corner[3]][2] - startK) / nDivs;
 
-		for (int jj = 1; jj <= nDivs - 1; jj++) {
-			for (int ii = 1; ii <= nDivs - 1; ii++) {
-				int II = startI + incrIi * ii + incrIj * jj;
-				int JJ = startJ + incrJi * ii + incrJj * jj;
-				int KK = startK + incrKi * ii + incrKj * jj;
-				assert(II >= 0 && II <= nDivs);
-				assert(JJ >= 0 && JJ <= nDivs);
-				assert(KK >= 0 && KK <= nDivs);
+		int incrIi = (int(vertIJK[corner[1]][0]) - startI) / int(nDivs);
+		int incrJi = (int(vertIJK[corner[1]][1]) - startJ) / int(nDivs);
+		int incrKi = (int(vertIJK[corner[1]][2]) - startK) / int(nDivs);
+		int incrIj = (int(vertIJK[corner[3]][0]) - startI) / int(nDivs);
+		int incrJj = (int(vertIJK[corner[3]][1]) - startJ) / int(nDivs);
+		int incrKj = (int(vertIJK[corner[3]][2]) - startK) / int(nDivs);
+
+		for (emInt jj = 1; jj <= nDivs - 1; jj++) {
+			for (emInt ii = 1; ii <= nDivs - 1; ii++) {
+				emInt II = startI + incrIi * ii + incrIj * jj;
+				emInt JJ = startJ + incrJi * ii + incrJj * jj;
+				emInt KK = startK + incrKi * ii + incrKj * jj;
+				assert(II <= nDivs);
+				assert(JJ <= nDivs);
+				assert(KK <= nDivs);
 
 				localVerts[II][JJ][KK] = QFV.getIntVertInd(ii, jj);
 				double uvw[3];
@@ -1250,7 +1265,7 @@ exa_set<QuadFaceVerts> &vertsOnQuads) {
 		}
 	}
 
-	for (int iF = numQuadFaces; iF < numQuadFaces + numTriFaces; iF++) {
+	for (emInt iF = numQuadFaces; iF < numQuadFaces + numTriFaces; iF++) {
 		TriFaceVerts TFV = getTriVerts(vertsOnTris, iF);
 		// Now extract info from the TFV and stuff it into the cell's point
 		// array.
@@ -1258,9 +1273,9 @@ exa_set<QuadFaceVerts> &vertsOnQuads) {
 		// 1000 is way more points than cells have.
 		emInt corner[] = { 1000, 1000, 1000 };
 		// Critical first step: identify which vert is which.
-		for (int iC = 0; iC < 3; iC++) {
+		for (emInt iC = 0; iC < 3; iC++) {
 			const emInt corn = TFV.getCorner(iC);
-			for (int iV = 0; iV < numVerts; iV++) {
+			for (emInt iV = 0; iV < numVerts; iV++) {
 				const emInt cand = cellVerts[iV];
 				if (corn == cand) {
 					corner[iC] = iV;
@@ -1269,24 +1284,26 @@ exa_set<QuadFaceVerts> &vertsOnQuads) {
 			}
 		}
 
+		// Increments must be signed, so we can count down
 		int startI = vertIJK[corner[0]][0];
 		int startJ = vertIJK[corner[0]][1];
 		int startK = vertIJK[corner[0]][2];
-		int incrIi = (vertIJK[corner[1]][0] - startI) / nDivs;
-		int incrJi = (vertIJK[corner[1]][1] - startJ) / nDivs;
-		int incrKi = (vertIJK[corner[1]][2] - startK) / nDivs;
-		int incrIj = (vertIJK[corner[2]][0] - startI) / nDivs;
-		int incrJj = (vertIJK[corner[2]][1] - startJ) / nDivs;
-		int incrKj = (vertIJK[corner[2]][2] - startK) / nDivs;
 
-		for (int jj = 1; jj <= nDivs - 2; jj++) {
-			for (int ii = 1; ii <= nDivs - 1 - jj; ii++) {
-				int II = startI + incrIi * ii + incrIj * jj;
-				int JJ = startJ + incrJi * ii + incrJj * jj;
-				int KK = startK + incrKi * ii + incrKj * jj;
-				assert(II >= 0 && II <= nDivs);
-				assert(JJ >= 0 && JJ <= nDivs);
-				assert(KK >= 0 && KK <= nDivs);
+		int incrIi = (int(vertIJK[corner[1]][0]) - startI) / int(nDivs);
+		int incrJi = (int(vertIJK[corner[1]][1]) - startJ) / int(nDivs);
+		int incrKi = (int(vertIJK[corner[1]][2]) - startK) / int(nDivs);
+		int incrIj = (int(vertIJK[corner[2]][0]) - startI) / int(nDivs);
+		int incrJj = (int(vertIJK[corner[2]][1]) - startJ) / int(nDivs);
+		int incrKj = (int(vertIJK[corner[2]][2]) - startK) / int(nDivs);
+
+		for (emInt jj = 1; jj <= nDivs - 2; jj++) {
+			for (emInt ii = 1; ii <= nDivs - 1 - jj; ii++) {
+				emInt II = startI + incrIi * ii + incrIj * jj;
+				emInt JJ = startJ + incrJi * ii + incrJj * jj;
+				emInt KK = startK + incrKi * ii + incrKj * jj;
+				assert(II <= nDivs);
+				assert(JJ <= nDivs);
+				assert(KK <= nDivs);
 
 				localVerts[II][JJ][KK] = TFV.getIntVertInd(ii, jj);
 				double uvw[3];
@@ -1299,16 +1316,16 @@ exa_set<QuadFaceVerts> &vertsOnQuads) {
 	}
 }
 
-void CellDivider::computeParaCoords(const int ii, const int jj, const int kk,
+void CellDivider::computeParaCoords(const emInt ii, const emInt jj, const emInt kk,
 		double uvw[3]) const {
-	int iMin = minI(jj, kk);
-	int iMax = maxI(jj, kk);
+	emInt iMin = minI(jj, kk);
+	emInt iMax = maxI(jj, kk);
 
-	int jMin = minJ(ii, kk);
-	int jMax = maxJ(ii, kk);
+	emInt jMin = minJ(ii, kk);
+	emInt jMax = maxJ(ii, kk);
 
-	int kMin = minK(ii, jj);
-	int kMax = maxK(ii, jj);
+	emInt kMin = minK(ii, jj);
+	emInt kMax = maxK(ii, jj);
 
 	double *uvwL = m_uvw[iMin][jj][kk];
 	double *uvwR = m_uvw[iMax][jj][kk];
@@ -1334,11 +1351,11 @@ void CellDivider::divideInterior() {
 //    Hexes:     (nD-1)^3
 	if (nDivs < getMinInteriorDivs())
 	return;
-	for (int kk = 1; kk < nDivs; kk++) {
-		int jMax = maxJ(1, kk);
-		for (int jj = 1; jj < jMax; jj++) {
-			int iMax = maxI(jj, kk);
-			for (int ii = 1; ii < iMax; ii++) {
+	for (emInt kk = 1; kk < nDivs; kk++) {
+		emInt jMax = maxJ(1, kk);
+		for (emInt jj = 1; jj < jMax; jj++) {
+			emInt iMax = maxI(jj, kk);
+			for (emInt ii = 1; ii < iMax; ii++) {
 				double uvw[3];
 				// Now find uvw by finding the near-intersection point
 				// of the lines of constant i, j, k
@@ -1489,9 +1506,9 @@ void getCellInteriorParametricIntersectionPoint(const double uvwA[3],
 }
 
 void CellDivider::printAllPoints() {
-	for (int kk = 0; kk <= nDivs; kk++) {
-		for (int jj = minJ(0, kk); jj <= maxJ(0, kk); jj++) {
-			for (int ii = minI(jj, kk); ii <= maxI(jj, kk); ii++) {
+	for (emInt kk = 0; kk <= nDivs; kk++) {
+		for (emInt jj = minJ(0, kk); jj <= maxJ(0, kk); jj++) {
+			for (emInt ii = minI(jj, kk); ii <= maxI(jj, kk); ii++) {
 				double *uvw = m_uvw[ii][jj][kk];
 				emInt point = localVerts[ii][jj][kk];
 				printf("%3d %3d %3d (%5f %5f %5f) (%8f %8f %8f)\n", ii, jj, kk,

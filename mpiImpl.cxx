@@ -9,7 +9,7 @@
 #include <boost/serialization/unique_ptr.hpp>
 #include <boost/mpi/collectives.hpp>
 #include <cstdio>
-#include<mpi.h>
+#include <mpi.h>
 
 
 void writeForMaster (   
@@ -65,28 +65,29 @@ void writeForMaster (
     
 
      
-    if (getSeekFile(fMaxTimes) == 0)  
+    if (getSeekFile(fMaxTimes) == 0) {
         fprintf(fMaxTimes, "%-5s %-10s %-14s %-15s %-12s %-12s %-12s %-12s %-14s %-14s %-16s %-12s %-20s %-12s\n",
                 "Rank", "PreProcessing", "Partitioning", "IniFaceMatching","Broadcasting","Serial",
                 "Extracting", "Refining", "FaceExchanging",
                 "Wait", "FaceMatching", "Total", "TotalCells","Rate");
-        
-        fprintf(fMaxTimes, "%-5u %-10.2f %-14.2f %-15.2f %-12.2f %-12.2f %-12.2f %-12.2f %-14.2f %-14.2f %-16.2f %-12.2f %'-20zd %-12.2f\n",
+    }
+
+        fprintf(fMaxTimes, "%-5lu %-10.2f %-14.2f %-15.2f %-12.2f %-12.2f %-12.2f %-12.2f %-14.2f %-14.2f %-16.2f %-12.2f %'-20zd %-12.2f\n",
           nParts, times.preProcessing, times.partition, times.InitialFaceMatching, maxTimes.broadcasting,maxTimes.serial,
            maxTimes.extract, maxTimes.refine, maxTimes.faceExchange,
            maxTimes.totalFacesWait, maxTimes.totalMatch, maxTimes.total,totalCells,maxRate);
 
 
         
-        if (getSeekFile(fAvgTimes) == 0)  
+        if (getSeekFile(fAvgTimes) == 0) {
                     fprintf(fAvgTimes, "%-5s %-10s %-14s %-15s %-12s %-12s %-12s %-12s %-14s %-14s %-16s %-12s %-20s %-12s\n",
                 "nP", "Read", "Partitioning", "IniFaceMatching", "Broadcasting","Serial",
                 "Extracting", "Refining", "FaceExchanging",
                 "Wait", "FaceMatching", "Total", "TotalCells","Rate");
-        
+        }
 
         double dParts= nParts;
-        fprintf(fAvgTimes, "%-5u %-10.2f %-14.2f %-15.2f %-12.2f %-12.2f %-12.2f %-12.2f %-14.2f %-14.2f %-16.2f %-12.2f %'-20zd %-12.2f\n",
+        fprintf(fAvgTimes, "%-5lu %-10.2f %-14.2f %-15.2f %-12.2f %-12.2f %-12.2f %-12.2f %-14.2f %-14.2f %-16.2f %-12.2f %'-20zd %-12.2f\n",
            nParts, times.preProcessing, times.partition, times.InitialFaceMatching, avgTimes.broadcasting ,avgTimes.serial,
            avgTimes.extract, avgTimes.refine, avgTimes.faceExchange,
            avgTimes.totalFacesWait, avgTimes.totalMatch, avgTimes.total,totalCells,avgRate);  
@@ -97,25 +98,25 @@ void writeForMaster (
             fprintf(fAvgPart, "%-5s %-5s %-14s %-14s %-14s\n","nP", "nDivs"  ,
             "nInitialCells", "nRefinedCells","nCoarseFaces");
 
-        fprintf(fAvgPart, "%-5u %-5u %-14zu %-14zu %-14zu\n",
+        fprintf(fAvgPart, "%-5lu %-5lu %-14zu %-14zu %-14zu\n",
            nParts, nDivs ,nAvgInitalcells,  nAvgRefinedCells  ,nAvgTriFaces+nAvgQuadFaces);  
 
         if (getSeekFile(fAvgExtract) == 0)  
             fprintf(fAvgExtract, "%-5s %-5s \n","nP", "Extracting");
 
-        fprintf(fAvgExtract, "%-5u %-5.2f \n",
+        fprintf(fAvgExtract, "%-5lu %-5.2f \n",
            nParts,avgTimes.extract);   
 
         if (getSeekFile(fAvgRefine) == 0)  
             fprintf(fAvgRefine, "%-5s %-5s \n","nP", "Refining");
 
-        fprintf(fAvgRefine, "%-5u %-5.2f \n",
+        fprintf(fAvgRefine, "%-5lu %-5.2f \n",
            nParts,avgTimes.refine); 
 
 
         if (getSeekFile(fAvgTotal)== 0)  
             fprintf(fAvgTotal, "%-5s %-12s\n", "nP", "Total");
-        fprintf(fAvgTotal, "%-5u %-12.2f\n",
+        fprintf(fAvgTotal, "%-5lu %-12.2f\n",
             nParts,avgTimes.total);     
 }
 
@@ -321,6 +322,7 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
     std::vector<std::size_t>  quadsize(nParts);
 
     // All processors read the mesh 
+    // TODO: Currently UMesh-specific
 
     times.preProcessing=exaTime();
 	std::unique_ptr<UMesh> inimesh = 

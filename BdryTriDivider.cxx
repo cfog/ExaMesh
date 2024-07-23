@@ -31,9 +31,9 @@ void BdryTriDivider::divideInterior() {
 void BdryTriDivider::createNewCells() {
 	// Okay, sure, these aren't actually cells in the usual sense, but so what?
 	// Create topologically up-pointing triangles.
-	for (int jj = 0; jj <= nDivs - 1; jj++) {
-		int ii = -1;
-		for (ii = 0; ii <= nDivs - jj - 2; ii++) {
+	for (int jj = 0; jj <= int(nDivs) - 1; jj++) {
+		int ii = 0;
+		for (ii = 0; ii <= int(nDivs) - jj - 2; ii++) {
 			emInt vertsNew1[] = { localVerts[ii][jj][0], localVerts[ii + 1][jj][0],
 														localVerts[ii][jj + 1][0] };
 			m_pMesh->addBdryTri(vertsNew1);
@@ -46,7 +46,7 @@ void BdryTriDivider::createNewCells() {
 			assert(m_pMesh->numBdryTris() < m_pMesh->maxNBdryTris());
 		} // Done with all prism pairs for this row.
 		// Now one more at the end.
-		ii = nDivs - jj - 1;
+		ii = int(nDivs) - jj - 1;
 		emInt vertsNewLast[] = { localVerts[ii][jj][0], localVerts[ii + 1][jj][0],
 															localVerts[ii][jj + 1][0] };
 
@@ -56,8 +56,8 @@ void BdryTriDivider::createNewCells() {
 }
 
 void BdryTriDivider::setRefinedVerts(TriFaceVerts &TF){
-	for (int ii = 0; ii <= nDivs ; ii++) {
-	 	for (int jj = 0; jj <= nDivs-ii ; jj++) {
+	for (emInt ii = 0; ii <= nDivs ; ii++) {
+	 	for (emInt jj = 0; jj <= nDivs-ii ; jj++) {
 			//int trueI;
 			//int trueJ;
 			emInt vert= localVerts[ii][jj][0]; 

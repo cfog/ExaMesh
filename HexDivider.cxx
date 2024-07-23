@@ -121,11 +121,11 @@ void HexDivider::createNewCells() {
 //    }
 //  }
 
-	for (int level = 1; level <= nDivs; level++) {
+	for (emInt level = 1; level <= nDivs; level++) {
 //		fprintf(stderr, "Level: %d\n", level);
 		// Create new hexes.  Always (nDivs-1)^2 for each level.
-		for (int jj = 0; jj <= nDivs - 1; jj++) {
-			for (int ii = 0; ii <= nDivs - 1; ii++) {
+		for (emInt jj = 0; jj <= nDivs - 1; jj++) {
+			for (emInt ii = 0; ii <= nDivs - 1; ii++) {
 				emInt vertsNew[] = { localVerts[ii][jj][level],
 															localVerts[ii + 1][jj][level],
 															localVerts[ii + 1][jj + 1][level],

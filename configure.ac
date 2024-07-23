@@ -4,49 +4,34 @@
 AC_PREREQ([2.71])
 AC_INIT([examesh],[1.0],[cfog@mech.ubc.ca])
 AC_CONFIG_AUX_DIR([conf])
-AC_CONFIG_MACRO_DIR([conf])
-AC_CONFIG_SRCDIR([ExaMesh.h])
+AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_SRCDIR([refine.cxx])
 AC_CONFIG_HEADERS([exa_config.h])
 
 # Checks for programs.
-AC_PROG_CXX_MPI
-AC_PROG_CC_MPI
+AX_PROG_CXX_MPI
+AX_PROG_CC_MPI
 
-m4_include([conf/m4_ax_openmp.m4])
+LT_INIT
 
-AC_LANG_PUSH(C++)
-AX_OPENMP
-AC_SUBST(OPENMP_CXXFLAGS)
-AC_LANG_POP(C++)
+dnl m4_include([conf/m4_ax_openmp.m4])
 
-m4_include([conf/boost.m4])
+dnl AC_LANG_PUSH(C++)
+dnl AX_OPENMP
+dnl AC_SUBST(OPENMP_CXXFLAGS)
+dnl AC_LANG_POP(C++)
 
-BOOST_REQUIRE([1.74],[AC_FATAL([Install boost version >= 1.74])])
-BOOST_UNIT_TEST
+m4_include([m4/boost.m4])
+
+BOOST_TEST
 BOOST_MPI
 BOOST_SERIALIZATION
 
 dnl This is only a start on doing configuration for boost better
 
-AC_CHECK_HEADERS(boost/test/unit_test.hpp)
-AC_CHECK_LIB([boost_unit_test_framework], [main],
-[
-POST_BUILD=unit-test
-BOOST_UNIT_TEST_FRAMEWORK_LIB=-lboost_unit_test_framework
-AC_SUBST(BOOST_UNIT_TEST_FRAMEWORK_LIB)
-])
-AC_LANG_POP
-fi
 
 AC_CHECK_HEADERS(boost/mpi.hpp)
-AC_CHECK_LIB([boost_mpi], [main],
-[
-POST_BUILD=unit-test
-BOOST_UNIT_TEST_FRAMEWORK_LIB=-lboost_unit_test_framework
-AC_SUBST(BOOST_UNIT_TEST_FRAMEWORK_LIB)
-])
-AC_LANG_POP
-fi
+AC_CHECK_LIB([boost_mpi], [main])
 
 # Checks for header files.
 AC_CHECK_HEADERS([limits.h locale.h stdint.h stdlib.h string.h unistd.h values.h])
@@ -125,9 +110,6 @@ AC_CHECK_LIB([MeshIO], [libMeshIO_is_present],
 		       LIBS="-lMeshIO $LIBS"],,
 		       ["-L$with_MeshIO_path"])
 
-
-# FIXME: Replace `main' with a function in `-lboost_unit_test_framework':
-AC_CHECK_LIB([boost_unit_test_framework], [main])
 
 AC_CHECK_LIB([sz], [SZ_encoder_enabled])
 

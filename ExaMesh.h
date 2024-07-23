@@ -33,6 +33,7 @@
 #include "Mapping.h"
 #include "Part.h"
 #include "exa-defs.h"
+#include "FaceVerts.h"
 #include "mpiDefs.h"
 #include "ParallelTester.h"
 #include <set>

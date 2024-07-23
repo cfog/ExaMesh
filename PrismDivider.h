@@ -184,8 +184,8 @@ public:
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
 
-	virtual int maxI(const int j, const int /*k*/) const {return nDivs - j;}
-	virtual int maxJ(const int i, const int /*k*/) const {return nDivs - i;}
+	virtual emInt maxI(const emInt j, const emInt /*k*/) const {return nDivs - j;}
+	virtual emInt maxJ(const emInt i, const emInt /*k*/) const {return nDivs - i;}
 
 };
 

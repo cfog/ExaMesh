@@ -28,7 +28,7 @@
 
 #include <assert.h>
 
-#include "exa_config.h"
+#include "exa-defs.h"
 #include "ExaMesh.h"
 
 // This data structure is organized to read and write easily to/from CGNS files.
@@ -110,12 +110,12 @@ public:
 	}
 	emInt numBdryTrisFromReader()  const
 	{
-		//return m_nTrisFromReader; 
+		// return m_nTrisFromReader;
 		// it needs to be implemented 
 	} 
 	emInt numBdryQuadsFromReader() const
 	{
-		//return m_nQuadsFromReader; 
+		// return m_nQuadsFromReader;
 		// it needs to be implemented 
 	}
 

@@ -168,9 +168,9 @@ public:
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
 
-	virtual int maxI(const int /*j*/, const int k) const {return nDivs - k;}
-	virtual int maxJ(const int /*i*/, const int k) const {return nDivs - k;}
-	virtual int maxK(const int i, const int j) const {
+	virtual emInt maxI(const emInt /*j*/, const emInt k) const {return nDivs - k;}
+	virtual emInt maxJ(const emInt /*i*/, const emInt k) const {return nDivs - k;}
+	virtual emInt maxK(const emInt i, const emInt j) const {
 		return nDivs - (i >= j ? i : j);
 	}
 };

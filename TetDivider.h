@@ -153,11 +153,11 @@ public:
 			double wderiv3[3]);
 	void stuffTetsIntoOctahedron(emInt vertsNew[][4]);
 
-	virtual int maxI(const int j, const int k) const {return nDivs - k - j;}
-	virtual int maxJ(const int i, const int k) const {return nDivs - k - i;}
-	virtual int maxK(const int i, const int j) const {return nDivs - i - j;}
+	virtual emInt maxI(const emInt j, const emInt k) const {return nDivs - k - j;}
+	virtual emInt maxJ(const emInt i, const emInt k) const {return nDivs - k - i;}
+	virtual emInt maxK(const emInt i, const emInt j) const {return nDivs - i - j;}
 
-	virtual int getMinInteriorDivs() const {return 4;}
+	virtual emInt getMinInteriorDivs() const {return 4;}
 };
 
 #endif /* APPS_EXAMESH_TETDIVIDER_H_ */

@@ -79,7 +79,6 @@ public:
 	UMesh(const char baseFileName[], const char type[], const char ugridInfix[]);
 	UMesh(const UMesh& UM_in, const int nDivs, const emInt partID=-1);
 	UMesh(const CubicMesh& CM, const int nDivs, const emInt partID=-1);
-	friend void sendUMesh(boost::mpi::communicator  world, UMesh* pEM);
 
 	~UMesh();
 	emInt maxNVerts() const {
@@ -138,7 +137,7 @@ public:
 	emInt numCells() const {
 		return numTets() + numPyramids() + numPrisms() 
 		+ numHexes() 
-		+ numBdryTrisFromReader() + numBdryQuadsFromReader();
+		+ numBdryTris() + numBdryQuads();
 	}
 
 	emInt addVert(const double newCoords[3]);

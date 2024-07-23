@@ -224,7 +224,7 @@ public:
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
 
-	virtual int getMinInteriorDivs() const {return 2;}
+	virtual emInt getMinInteriorDivs() const {return 2;}
 
 };
 

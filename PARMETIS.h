@@ -1,9 +1,6 @@
 //#include </home/kebriti/local/include/metis.h>
 #include <metis.h>
-#if (HAVE_CGNS == 1)
-#include "cgnslib.h"
-#endif
-//#include "ExaMesh.h"
+#include "exa-defs.h"
 #include "UMesh.h"
 std::vector<std::vector<emInt>> partitionMetis(const UMesh* const pEM, emInt iParts, std::vector<emInt> &vaicelltopart); 
 void extractPartitions(); 

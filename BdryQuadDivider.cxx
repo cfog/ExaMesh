@@ -30,9 +30,8 @@ void BdryQuadDivider::divideInterior() {
 
 void BdryQuadDivider::createNewCells() {
 	// Okay, sure, these aren't actually cells in the usual sense, but so what?
-	for (int jj = 0; jj <= nDivs - 1; jj++) {
-		int ii = -1;
-		for (ii = 0; ii <= nDivs - 1; ii++) {
+	for (emInt jj = 0; jj <= nDivs - 1; jj++) {
+		for (emInt ii = 0; ii <= nDivs - 1; ii++) {
 			emInt vertsNew1[] = { localVerts[ii][jj][0], localVerts[ii + 1][jj][0],
 														localVerts[ii + 1][jj + 1][0],
 														localVerts[ii][jj + 1][0] };
@@ -44,8 +43,8 @@ void BdryQuadDivider::createNewCells() {
 }
 void BdryQuadDivider::setRefinedVerts(QuadFaceVerts &QFV){
 	//std::cout<<"My part id is: "<<QFV.getPartid()<<std::endl; 
-	for (int ii = 0; ii <= nDivs ; ii++) {
-	 	for (int jj = 0; jj <= nDivs; jj++) {
+	for (emInt ii = 0; ii <= nDivs ; ii++) {
+	 	for (emInt jj = 0; jj <= nDivs; jj++) {
 			//int trueI;
 			//int trueJ;
 			emInt vert= localVerts[ii][jj][0]; 

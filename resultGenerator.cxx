@@ -25,7 +25,7 @@ void inline writeAllTimeResults(FILE *file, int nP, double Tpartition,
     // if(sizeof(nCells)==sizeof(int32_t))
     // {
 
-    fprintf(file, "%-5u %-12f %-18f %-12f %-12f %-12f %-18f %-12f %-12f %-12f %-12f  %-12u %-12u %'zd\n",
+    fprintf(file, "%-5u %-12f %-18f %-12f %-12f %-12f %-18f %-12f %-12f %-12f %-12f  %-12lu %-12lu %'zd\n",
             nP, Tpartition, TpartFaceMatching, Tserial, Textraction, Trefinement, TfaceExchange, syncTime,
             TtriMatch, TquadMatch, Ttotal, triSize, quadSize, nCells);
     //}
@@ -85,7 +85,7 @@ void inline printTimeEachRank(FILE *file, emInt rank, double partitioning,
     long size = ftell(file);
     if (size == 0)
     {
-        fprintf(file, "%-5s %-12s %-18s %-12s %-12s %-12s% -12s %-12s %-12s %-12s %-12s \n",
+        fprintf(file, "%-5s %-12s %-18s %-12s %-12s %-12s %-12s %-12s %-12s %-12s %-12s \n",
                 "Rank", "Tpartition", "TpartFaceMatch", "Serial Time",
                 "Textract", "Trefine", "TfaceExchange", "TotalSyncTime", "TtriMatch", "TquadMatch", "Ttoal");
     }

@@ -36,12 +36,12 @@ void setMetisOptions(idx_t options[])
     METIS_OPTION_CONTIG, METIS_OPTION_SEED, METIS_OPTION_NUMBERING,
     METIS_OPTION_DBGLVL */
 }
-std::vector<std::vector<idx_t>> 
+std::vector<std::vector<emInt>>
 buildPart2Cell (const idx_t* aicelltopart, emInt numCells,emInt numParts)
 {
-    std::vector<std::vector<idx_t>> part2cell(numParts);
+    std::vector<std::vector<emInt>> part2cell(numParts);
 
-    for (auto cellID = 0; cellID < numCells; cellID++) 
+    for (emInt cellID = 0; cellID < numCells; cellID++)
     {
         idx_t partID = aicelltopart[cellID];
         part2cell[partID].push_back(cellID);
@@ -110,7 +110,7 @@ void mesh2MetisGraphs(const UMesh* const pEM, idx_t xadj[], idx_t adjncy[], idx_
     {
         xadj[icell+1] = xadj[icell]; 
 
-        for (int iNeigh = 0 ; iNeigh < pEM->getCellConnSize(icell) ; iNeigh++)
+        for (emInt iNeigh = 0 ; iNeigh < pEM->getCellConnSize(icell) ; iNeigh++)
         {
             adjncy[ xadj[icell+1] ] = pEM->getCellConn(icell,iNeigh);
             adjwgt[ xadj[icell+1] ] = 1;	

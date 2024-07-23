@@ -43,8 +43,8 @@ void printLocalVerts(const exa_set<TriFaceVerts> tris, const emInt nDivs){
 	for(auto itr=tris.begin(); itr!=tris.end(); itr++){
 		std::cout<<"For this tri: "<< itr->getCorner(0)<<
 		" "<<itr->getCorner(1)<<" "<<itr->getCorner(2)<<std::endl; 
-		for (int jj = 1; jj <= nDivs - 2; jj++){
-			for (int ii = 1; ii <= nDivs - 1 - jj; ii++){
+		for (emInt jj = 1; jj <= nDivs - 2; jj++){
+			for (emInt ii = 1; ii <= nDivs - 1 - jj; ii++){
 				std::cout<<itr->getIntVertInd(ii,jj)<<" "; 
 			} 
 		}

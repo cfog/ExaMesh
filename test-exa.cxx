@@ -52,15 +52,15 @@ static void checkExpectedSize(const UMesh &UM) {
 void SetArtificialIntVertQuad(QuadFaceVerts &quad, const emInt nDivs){
 	// Numbering from 1 to .. 
 	emInt k=1; 	
-	for (int jj = 0; jj <= nDivs ; jj++) {
-	 	for (int ii = 0; ii <= nDivs; ii++) {
+	for (emInt jj = 0; jj <= nDivs ; jj++) {
+	 	for (emInt ii = 0; ii <= nDivs; ii++) {
 			quad.setIntVertInd(ii,jj,k);
 			k++; 
 		}
 	}
 
 }
-void setExpectedMapping (const emInt rotation, 
+void setExpectedMapping (const int rotation,
 std::unordered_map<emInt,emInt> &map){
 	switch (rotation) {
   		case -1:
@@ -1918,7 +1918,7 @@ BOOST_AUTO_TEST_CASE(QuadMatching){
 
 		exa_set<QuadFaceVerts> setQuads={quad};
 	
-		emInt rotation= getQuadRotation(refQuad,setQuads,nDivs); 
+		int rotation= getQuadRotation(refQuad,setQuads,nDivs);
 		
 		SetArtificialIntVertQuad(quad,nDivs);
 		remoteQuads.insert(quad); 

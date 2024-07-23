@@ -102,7 +102,7 @@ void TetDivider::createNewCells() {
 
 	// Level 1 is the tip of the original tet; level nDivs
 	// is at the bottom (level with most entities).
-	for (int level = 1; level <= nDivs; level++) {
+	for (int level = 1; level <= int(nDivs); level++) {
 //		fprintf(stderr, "Level: %d\n", level);
 		// Create up-pointing tets.  For a given level, there are
 		// (level+1)(level)/2 of these.

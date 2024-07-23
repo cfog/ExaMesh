@@ -25,13 +25,14 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdint>
+#include <cstddef>
 #include <memory>
 #include <stdlib.h>
 
-#include "exa_config.h"
+#include "exa-defs.h"
 #include "GeomUtils.h"
-#include <cstdint>
-#include <cstddef>
+
 #if (HAVE_CGNS == 1)
 #include <cgnslib.h>
 
@@ -681,7 +682,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 
 	for (auto tri : partBdryTris) {
 		emInt cellInd = tri.getVolElement();
-		emInt conn[10];
+		emInt conn[10] = {0};
 		switch (tri.getVolElementType()) {
 			case CGNS_ENUMV(TETRA_20): {
 				emInt *elemConn = m_Tet20Conn[cellInd];
@@ -920,7 +921,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 	assert(partBdryQuads.size()==quads.size());
 	for (auto quad : partBdryQuads) {
 		emInt cellInd = quad.getVolElement();
-		emInt conn[16];
+		emInt conn[16] = {0};
 		switch (quad.getVolElementType()) {
 			case CGNS_ENUMV (PYRA_30): {
 				// Only one quad here, so it had better be the right one.

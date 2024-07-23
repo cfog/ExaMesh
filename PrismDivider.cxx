@@ -135,12 +135,12 @@ void PrismDivider::createNewCells() {
 //		}
 //	}
 
-	for (int level = 1; level <= nDivs; level++) {
+	for (int level = 1; level <= int(nDivs); level++) {
 //		fprintf(stderr, "Level: %d\n", level);
 		// Create up-pointing Prisms.
-		for (int jj = 0; jj <= nDivs - 1; jj++) {
-      int ii = -1;
-			for (ii = 0; ii <= nDivs - jj - 2; ii++) {
+		for (int jj = 0; jj <= int(nDivs) - 1; jj++) {
+			int ii = 0;
+			for (ii = 0; ii <= int(nDivs) - jj - 2; ii++) {
 				emInt vertsNew1[] = { localVerts[ii][jj][level],
 															localVerts[ii + 1][jj][level], localVerts[ii][jj
 																	+ 1][level],
@@ -159,7 +159,7 @@ void PrismDivider::createNewCells() {
 				assert(m_pMesh->numPrisms() < m_pMesh->maxNPrisms());
       } // Done with all prism pairs for this row.
       // Now one more at the end.
-      ii = nDivs - jj - 1;
+      ii = int(nDivs) - jj - 1;
 			emInt vertsNewLast[] = { localVerts[ii][jj][level],
 																localVerts[ii + 1][jj][level], localVerts[ii][jj
 																		+ 1][level],

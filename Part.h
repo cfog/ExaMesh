@@ -29,9 +29,12 @@
 #include <vector>
 
 #include <values.h>
-#include "mpi.h"
+#include <mpi.h>
 #include <boost/serialization/access.hpp>
 #include <boost/mpi/datatype.hpp>
+
+#include "exa-defs.h"
+
 class CellPartData {
 private: 
 	friend class boost::serialization::access; 
@@ -45,7 +48,7 @@ private:
 	double m_coords[3];
 public:
 	// for registering MPI-type-CAUTION 
-	CellPartData(){}; 
+	CellPartData() : m_index(EMINT_MAX), m_cellType(TETRA_4) {};
 	CellPartData(const emInt ind, const emInt type, const double x,
 			const double y, const double z) :
 			m_index(ind), m_cellType(type) {
