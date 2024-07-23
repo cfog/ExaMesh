@@ -58,6 +58,7 @@ protected:
 
 	std::vector<std::vector<emInt>>   vcell2cell;
 	std::vector<emInt>                vcellID2type;
+	std::vector<std::pair<emInt,emInt>>  cellID2cellTypeLocalID;
 
 
 	void setupLengthScales();
@@ -126,7 +127,17 @@ public:
 	{
 		return vcellID2type[cellID];
 	}
-
+	emInt FastpartFaceMatching(const emInt nParts, const std::vector<std::vector<emInt>> &part2cells,
+			const std::vector<emInt> &cell2part,
+			vecVecTri &tris, vecVecQuad &quads) const;
+	std::vector<std::pair<emInt,emInt>> getCellID2CellType2LocalID() const
+	{
+		return cellID2cellTypeLocalID;
+	}
+	void getFaceLists (const emInt ind, const emInt type,
+			const emInt partID, const emInt numDivs,
+			std::vector<TriFaceVerts> &tris,
+			std::vector<QuadFaceVerts> &quads) const;
 
 	void printMeshSizeStats();
 	double getLengthScale(const emInt vert) const {
@@ -251,8 +262,6 @@ public:
 		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize )const=0;	
 	//void refineMPI();
 	//virtual void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>> & face2cell, const emInt nCells)=0; 	 
-	virtual std::size_t getCellConnSize (const emInt cellID) const = 0; 
-	virtual emInt getCellConn (const emInt cellID, const emInt neighID) const = 0; 
 
 protected:
 	void addCellToPartitionData(const emInt* verts, emInt nPts, emInt ii,

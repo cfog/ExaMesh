@@ -100,7 +100,7 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 		fprintf(stderr, "Bad zone type %d\n", zoneType);
 		exit(1);
 	}
-	int zoneSize[3];
+	cgsize_t zoneSize[3];
 	char zoneName[33];
 	status = cg_zone_read(index_file, 1, 1, zoneName, zoneSize);
 	CHECK_STATUS;
@@ -115,12 +115,13 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 	// Now parse the sections to see how many of what kind of elements there are.
 	size_t elementCounts[CGNS_ENUMV(HEXA_125) + 1] = { 0 };
 	for (int iSec = 1; iSec <= nSections; iSec++) {
-		int start, end, count;
+		cgsize_t start, end;
+		int count;
 		int nBdry, parentFlag;
 		CGNS_ENUMT(ElementType_t) eType;
 		char sectionName[33];
 		status = cg_section_read(index_file, 1, 1, iSec, sectionName, &eType,
-															&start, &end, &nBdry, &parentFlag);
+				&start, &end, &nBdry, &parentFlag);
 		CHECK_STATUS;
 		count = end - start + 1;
 		fprintf(stderr, "Scanned section %3d (%20s).  %10u elements of type %d.\n",
@@ -151,7 +152,8 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 	emInt tri10count = 0, quad16count = 0, tet20count = 0, pyr30count = 0,
 			prism40count = 0, hex64count = 0;
 	for (int iSec = 1; iSec <= nSections; iSec++) {
-		int start, end, count, totalCount;
+		cgsize_t start, end;
+		int count, totalCount;
 		int nBdry, parentFlag;
 		CGNS_ENUMT(ElementType_t) eType;
 		char sectionName[33];
@@ -163,37 +165,37 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 			case CGNS_ENUMV(TRI_10):
 				status = cg_elements_partial_read(
 						index_file, 1, 1, iSec, start, end,
-						reinterpret_cast<int*>(m_Tri10Conn + tri10count), nullptr);
+						reinterpret_cast<cgsize_t*>(m_Tri10Conn + tri10count), nullptr);
 				totalCount = tri10count += count;
 				break;
 			case CGNS_ENUMV(QUAD_16):
 				status = cg_elements_partial_read(
 						index_file, 1, 1, iSec, start, end,
-						reinterpret_cast<int*>(m_Quad16Conn + quad16count), nullptr);
+						reinterpret_cast<cgsize_t*>(m_Quad16Conn + quad16count), nullptr);
 				totalCount = quad16count += count;
 				break;
 			case CGNS_ENUMV(TETRA_20):
 				status = cg_elements_partial_read(
 						index_file, 1, 1, iSec, start, end,
-						reinterpret_cast<int*>(m_Tet20Conn + tet20count), nullptr);
+						reinterpret_cast<cgsize_t*>(m_Tet20Conn + tet20count), nullptr);
 				totalCount = tet20count += count;
 				break;
 			case CGNS_ENUMV(PYRA_30):
 				status = cg_elements_partial_read(
 						index_file, 1, 1, iSec, start, end,
-						reinterpret_cast<int*>(m_Pyr30Conn + pyr30count), nullptr);
+						reinterpret_cast<cgsize_t*>(m_Pyr30Conn + pyr30count), nullptr);
 				totalCount = pyr30count += count;
 				break;
 			case CGNS_ENUMV(PENTA_40):
 				status = cg_elements_partial_read(
 						index_file, 1, 1, iSec, start, end,
-						reinterpret_cast<int*>(m_Prism40Conn + prism40count), nullptr);
+						reinterpret_cast<cgsize_t*>(m_Prism40Conn + prism40count), nullptr);
 				totalCount = prism40count += count;
 				break;
 			case CGNS_ENUMV(HEXA_64):
 				status = cg_elements_partial_read(
 						index_file, 1, 1, iSec, start, end,
-						reinterpret_cast<int*>(m_Hex64Conn + hex64count), nullptr);
+						reinterpret_cast<cgsize_t*>(m_Hex64Conn + hex64count), nullptr);
 				totalCount = hex64count += count;
 				break;
 			default:
@@ -210,7 +212,7 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 	m_ycoords = new double[zoneSize[0]];
 	m_zcoords = new double[zoneSize[0]];
 	CGNS_ENUMT(DataType_t) dataType = CGNS_ENUMT(RealDouble);
-	int min = 1, max = zoneSize[0];
+	cgsize_t min = 1, max = zoneSize[0];
 	status = cg_coord_read(index_file, 1, 1, "CoordinateX", dataType, &min, &max,
 													m_xcoords);
 	CHECK_STATUS;

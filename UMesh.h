@@ -52,7 +52,6 @@ class UMesh: public ExaMesh {
 	TableCell2Cell                                                  cell2cell; 
 	std::map < std::pair<emInt,emInt>, std::set<std::set<emInt>>>   cell2faces; 
 	std::unordered_map<emInt, std::set<std::set<emInt>>>            cell2bdryfaces; 
-	std::vector<std::pair<emInt,emInt>>                             cellID2cellTypeLocalID;
 	UMesh& operator=(const UMesh& inPut);
 
 public:
@@ -234,10 +233,6 @@ public:
 	Mapping::MappingType getDefaultMappingType() const {
 		return Mapping::Uniform;
 	}
-	std::vector<std::pair<emInt,emInt>> getCellID2CellType2LocalID() const 
-	{
-		return cellID2cellTypeLocalID;
-	}
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;
@@ -287,15 +282,8 @@ public:
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
 		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize) const;
 
-	emInt 
-	FastpartFaceMatching(const emInt nParts, const std::vector<std::vector<emInt>> &part2cells,
-	const std::vector<emInt> &cell2part, 
-	vecVecTri &tris, vecVecQuad &quads) const;	 
 
-	void getFaceLists (const emInt ind, const emInt type, 
-	const emInt partID, const emInt numDivs,
-	std::vector<TriFaceVerts> &tris, 
-	std::vector<QuadFaceVerts> &quads) const;; 					
+
 
 	// Writing with compression reduces file size by a little over a factor of two,
 	// at the expense of making file write slower by two orders of magnitude.

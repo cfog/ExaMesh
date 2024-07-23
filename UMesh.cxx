@@ -2416,7 +2416,7 @@ void UMesh::convertToUmeshFormat() {
 }
 ;
 
-emInt UMesh::FastpartFaceMatching(const emInt nParts,
+emInt ExaMesh::FastpartFaceMatching(const emInt nParts,
 		const std::vector<std::vector<emInt>> &part2cells,
 		const std::vector<emInt> &cell2part, vecVecTri &tris,
 		vecVecQuad &quads) const {
@@ -2495,7 +2495,7 @@ emInt UMesh::FastpartFaceMatching(const emInt nParts,
 }
 ;
 
-void UMesh::getFaceLists(const emInt ind, const emInt type, const emInt partID,
+void ExaMesh::getFaceLists(const emInt ind, const emInt type, const emInt partID,
 		const emInt numDivs, std::vector<TriFaceVerts> &tris,
 		std::vector<QuadFaceVerts> &quads) const {
 	const emInt *conn;
