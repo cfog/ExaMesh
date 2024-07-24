@@ -574,7 +574,7 @@ const char MeshType)
 
 	for (emInt i = 0; i < nParts; i++)
 	{
-		auto coarse = this->extractCoarseMesh(parts[i], vecCPD, nDivs, tris[i], quads[i], i);
+		auto coarse = this->extractCoarseMeshPseudoParallel(parts[i], vecCPD, nDivs, tris[i], quads[i], i);
 		submeshes.emplace_back(coarse.release()); 
 	}
 
@@ -839,7 +839,7 @@ const
 	}
 	serialTime = exaTime()- StartSerialTime; 
 	StartExtractionTime = exaTime(); 
-	auto coarse= this->extractCoarseMesh(parts[world.rank()],vecCPD,numDivs, 
+	auto coarse= this->extractCoarseMeshPseudoParallel(parts[world.rank()],vecCPD,numDivs, 
 	 trisS,quadsS,world.rank()); 
 	ExtractionTime = exaTime()- StartExtractionTime;  
 	

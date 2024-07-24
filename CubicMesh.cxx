@@ -413,14 +413,14 @@ CubicMesh::~CubicMesh() {
 	delete[] m_Hex64Conn;
 }
 
-static void remapIndices(const emInt nPts, const emInt newIndices[],
+static void remapIndices(const emInt nPts, const std::vector<emInt>& newIndices,
 		const emInt* conn, emInt* newConn) {
 	for (emInt jj = 0; jj < nPts; jj++) {
 		newConn[jj] = newIndices[conn[jj]];
 	}
 }
 
-std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
+std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMeshPseudoParallel(Part& P,
 		std::vector<CellPartData>& vecCPD, const int numDivs,
 			const std::unordered_set<TriFaceVerts> &tris, 
 			const std::unordered_set<QuadFaceVerts> &quads, 
@@ -438,10 +438,9 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 	emInt nTris(0), nQuads(0), nTets(0), nPyrs(0), nPrisms(0), nHexes(0);
 	const emInt *conn;
 
-//	std::vector<bool> isVertUsed(numVerts(), false);
-	bool *isVertUsed = reinterpret_cast<bool*>(calloc(numVerts(), sizeof(bool)));
-	exa_set<emInt> bdryVerts;
-	exa_set<emInt> cornerNodes;
+	std::vector<bool> isVertUsed(numVerts(), false);
+	std::vector<bool> isBdryVert(numVerts(), false);
+	std::vector<bool> isCornerNode(numVerts(), false);
 
 	for (emInt ii = first; ii < last; ii++) {
 		emInt type = vecCPD[ii].getCellType();
@@ -451,88 +450,106 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				// Panic! Should never get here.
 				assert(0);
 				break;
+			case CGNS_ENUMV(TRI_10):
+				break;
+			case CGNS_ENUMV(QUAD_16):
+				break;
 			case CGNS_ENUMV(TETRA_20): {
 				nTets++;
 				conn = getTetConn(ind);
-				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], CGNS_ENUMV(TETRA_20), ind);
-				TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3], CGNS_ENUMV(TETRA_20), ind);
-				TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3], CGNS_ENUMV(TETRA_20), ind);
-				TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3], CGNS_ENUMV(TETRA_20), ind);
+				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], type, ind);
+				TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3], type, ind);
+				TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3], type, ind);
+				TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3], type, ind);
 				addUniquely(partBdryTris, TFV012);
 				addUniquely(partBdryTris, TFV013);
 				addUniquely(partBdryTris, TFV123);
 				addUniquely(partBdryTris, TFV203);
-//				vertsUsed.insert(conn, conn + 20);
 				for (int jj = 0; jj < 20; jj++) {
 					isVertUsed[conn[jj]] = true;
 				}
-				cornerNodes.insert(conn, conn + 4);
+				isCornerNode[conn[0]] = true;
+				isCornerNode[conn[1]] = true;
+				isCornerNode[conn[2]] = true;
+				isCornerNode[conn[3]] = true;
 				break;
 			}
 			case CGNS_ENUMV(PYRA_30): {
 				nPyrs++;
 				conn = getPyrConn(ind);
-				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3],CGNS_ENUMV(PYRA_30), ind);
-				TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4],CGNS_ENUMV (PYRA_30), ind);
-				TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4],CGNS_ENUMV (PYRA_30), ind);
-				TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4],CGNS_ENUMV (PYRA_30), ind);
-				TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4],CGNS_ENUMV (PYRA_30), ind);
+				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], type, ind);
+				TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4], type, ind);
+				TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4], type, ind);
+				TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4], type, ind);
+				TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4], type, ind);
 				addUniquely(partBdryQuads, QFV0123);
 				addUniquely(partBdryTris, TFV014);
 				addUniquely(partBdryTris, TFV124);
 				addUniquely(partBdryTris, TFV234);
 				addUniquely(partBdryTris, TFV304);
-//				vertsUsed.insert(conn, conn + 30);
 				for (int jj = 0; jj < 30; jj++) {
 					isVertUsed[conn[jj]] = true;
 				}
-				cornerNodes.insert(conn, conn + 5);
+				isCornerNode[conn[0]] = true;
+				isCornerNode[conn[1]] = true;
+				isCornerNode[conn[2]] = true;
+				isCornerNode[conn[3]] = true;
+				isCornerNode[conn[4]] = true;
 				break;
 			}
 			case CGNS_ENUMV(PENTA_40): {
 				nPrisms++;
 				conn = getPrismConn(ind);
-				QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3], CGNS_ENUMV(PENTA_40),
+				QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3], type,
 															ind);
-				QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4], CGNS_ENUMV(PENTA_40),
+				QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4], type,
 															ind);
-				QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5], CGNS_ENUMV(PENTA_40),
+				QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5], type,
 															ind);
-				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], CGNS_ENUMV (PENTA_40), ind);
-				TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5], CGNS_ENUMV (PENTA_40), ind);
+				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], type, ind);
+				TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5], type, ind);
 				addUniquely(partBdryQuads, QFV0143);
 				addUniquely(partBdryQuads, QFV1254);
 				addUniquely(partBdryQuads, QFV2035);
 				addUniquely(partBdryTris, TFV012);
 				addUniquely(partBdryTris, TFV345);
-//				vertsUsed.insert(conn, conn + 40);
-
 				for (int jj = 0; jj < 40; jj++) {
 					isVertUsed[conn[jj]] = true;
 				}
-				cornerNodes.insert(conn, conn + 6);
+				isCornerNode[conn[0]] = true;
+				isCornerNode[conn[1]] = true;
+				isCornerNode[conn[2]] = true;
+				isCornerNode[conn[3]] = true;
+				isCornerNode[conn[4]] = true;
+				isCornerNode[conn[5]] = true;
 				break;
 			}
 			case CGNS_ENUMV(HEXA_64): {
 				nHexes++;
 				conn = getHexConn(ind);
-				QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4], CGNS_ENUMV(HEXA_64), ind);
-				QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5], CGNS_ENUMV(HEXA_64), ind);
-				QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6], CGNS_ENUMV(HEXA_64), ind);
-				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7], CGNS_ENUMV(HEXA_64), ind);
-				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], CGNS_ENUMV(HEXA_64), ind);
-				QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7], CGNS_ENUMV(HEXA_64), ind);
+				QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4], type, ind);
+				QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5], type, ind);
+				QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6], type, ind);
+				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7], type, ind);
+				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], type, ind);
+				QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7], type, ind);
 				addUniquely(partBdryQuads, QFV0154);
 				addUniquely(partBdryQuads, QFV1265);
 				addUniquely(partBdryQuads, QFV2376);
 				addUniquely(partBdryQuads, QFV3047);
 				addUniquely(partBdryQuads, QFV0123);
 				addUniquely(partBdryQuads, QFV4567);
-//				vertsUsed.insert(conn, conn + 64);
 				for (int jj = 0; jj < 64; jj++) {
 					isVertUsed[conn[jj]] = true;
 				}
-				cornerNodes.insert(conn, conn + 8);
+				isCornerNode[conn[0]] = true;
+				isCornerNode[conn[1]] = true;
+				isCornerNode[conn[2]] = true;
+				isCornerNode[conn[3]] = true;
+				isCornerNode[conn[4]] = true;
+				isCornerNode[conn[5]] = true;
+				isCornerNode[conn[6]] = true;
+				isCornerNode[conn[7]] = true;
 				break;
 			}
 		} // end switch
@@ -554,9 +571,9 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 			// bdry face from slipping through.
 			if (iter != partBdryTris.end()) {
 				partBdryTris.erase(iter);
-				bdryVerts.insert(conn[0]);
-				bdryVerts.insert(conn[1]);
-				bdryVerts.insert(conn[2]);
+				isBdryVert[conn[0]] = true;
+				isBdryVert[conn[1]] = true;
+				isBdryVert[conn[2]] = true;
 				realBdryTris.push_back(ii);
 				nTris++;
 			}
@@ -574,10 +591,10 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 			// bdry face from slipping through.
 			if (iter != partBdryQuads.end()) {
 				partBdryQuads.erase(iter);
-				bdryVerts.insert(conn[0]);
-				bdryVerts.insert(conn[1]);
-				bdryVerts.insert(conn[2]);
-				bdryVerts.insert(conn[3]);
+				isBdryVert[conn[0]] = true;
+				isBdryVert[conn[1]] = true;
+				isBdryVert[conn[2]] = true;
+				isBdryVert[conn[3]] = true;
 				realBdryQuads.push_back(ii);
 				nQuads++;
 			}
@@ -588,46 +605,45 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 	emInt nPartBdryQuads = partBdryQuads.size();
 
 	for (auto tri : partBdryTris) {
-		bdryVerts.insert(tri.getCorner(0));
-		bdryVerts.insert(tri.getCorner(1));
-		bdryVerts.insert(tri.getCorner(2));
+		isBdryVert[tri.getCorner(0)] = true;
+		isBdryVert[tri.getCorner(1)] = true;
+		isBdryVert[tri.getCorner(2)] = true;
 	}
 	for (auto quad : partBdryQuads) {
-		bdryVerts.insert(quad.getCorner(0));
-		bdryVerts.insert(quad.getCorner(1));
-		bdryVerts.insert(quad.getCorner(2));
-		bdryVerts.insert(quad.getCorner(3));
+		isBdryVert[quad.getCorner(0)] = true;
+		isBdryVert[quad.getCorner(1)] = true;
+		isBdryVert[quad.getCorner(2)] = true;
+		isBdryVert[quad.getCorner(3)] = true;
 	}
 	emInt nBdryVerts = 0, nNodes = 0;
 	emInt nVertNodes = 0;
 	emInt nVerts = numVerts();
 	for (emInt ii = 0; ii < nVerts; ii++) {
 		if (isVertUsed[ii]) nNodes++;
+		if (isBdryVert[ii]) nBdryVerts++;
+		if (isCornerNode[ii]) nVertNodes++;
 	}
-	nBdryVerts = bdryVerts.size();
-	nVertNodes = cornerNodes.size();
 
 	// Now set up the data structures for the new coarse UMesh
-	auto UCM = std::make_unique<CubicMesh>(nNodes, nBdryVerts,
+	auto extractedMesh = std::make_unique<CubicMesh>(nNodes, nBdryVerts,
 																					nTris + nPartBdryTris,
 																					nQuads + nPartBdryQuads, nTets, nPyrs,
 																					nPrisms, nHexes);
-	UCM->setNVertNodes(nVertNodes);
+	extractedMesh->setNVertNodes(nVertNodes);
 
 	// Store the vertices, while keeping a mapping from the full list of verts
 	// to the restricted list so the connectivity can be copied properly.
-	emInt *newIndices = new emInt[nVerts];
+	std::vector<emInt> newIndices(numVerts(), EMINT_MAX);
 	for (emInt ii = 0; ii < nVerts; ii++) {
 		if (isVertUsed[ii]) {
 			double coords[3];
 			getCoords(ii, coords);
-			newIndices[ii] = UCM->addVert(coords);
+			newIndices[ii] = extractedMesh->addVert(coords);
 			// Copy length scale for vertices from the parent; otherwise, there will be
 			// mismatches in the refined meshes.
-			UCM->setLengthScale(newIndices[ii], getLengthScale(ii));
+			extractedMesh->setLengthScale(newIndices[ii], getLengthScale(ii));
 		}
 	}
-	free(isVertUsed);
 
 	// Now copy connectivity.
 	emInt newConn[64];
@@ -642,25 +658,25 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 			case CGNS_ENUMV(TETRA_20): {
 				conn = getTetConn(ind);
 				remapIndices(20, newIndices, conn, newConn);
-				UCM->addTet(newConn);
+				extractedMesh->addTet(newConn);
 				break;
 			}
 			case CGNS_ENUMV(PYRA_30): {
 				conn = getPyrConn(ind);
 				remapIndices(30, newIndices, conn, newConn);
-				UCM->addPyramid(newConn);
+				extractedMesh->addPyramid(newConn);
 				break;
 			}
 			case CGNS_ENUMV(PENTA_40): {
 				conn = getPrismConn(ind);
 				remapIndices(40, newIndices, conn, newConn);
-				UCM->addPrism(newConn);
+				extractedMesh->addPrism(newConn);
 				break;
 			}
 			case CGNS_ENUMV(HEXA_64): {
 				conn = getHexConn(ind);
 				remapIndices(64, newIndices, conn, newConn);
-				UCM->addHex(newConn);
+				extractedMesh->addHex(newConn);
 				break;
 			}
 		} // end switch
@@ -669,22 +685,24 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 	for (std::size_t ii = 0; ii < realBdryTris.size(); ii++) {
 		conn = getBdryTriConn(realBdryTris[ii]);
 		remapIndices(10, newIndices, conn, newConn);
-		UCM->addBdryTri(newConn);
+		extractedMesh->addBdryTri(newConn);
 	}
 	for (std::size_t ii = 0; ii < realBdryQuads.size(); ii++) {
 		conn = getBdryQuadConn(realBdryQuads[ii]);
 		remapIndices(16, newIndices, conn, newConn);
-		UCM->addBdryQuad(newConn);
+		extractedMesh->addBdryQuad(newConn);
 	}
 
 	// Now, finally, the part bdry connectivity.
 	// TODO: Currently, there's nothing in the data structure that marks which
 	// are part bdry faces.
-	assert(partBdryTris.size()==tris.size()); 
+	assert(partBdryTris.size() == tris.size());
 
 	for (auto tri : partBdryTris) {
 		emInt cellInd = tri.getVolElement();
 		emInt conn[10] = {0};
+		// This long switch with nested if's is required to get the full connectivity
+		// for the part bdry tri, which originally has only corner nodes.
 		switch (tri.getVolElementType()) {
 			case CGNS_ENUMV(TETRA_20): {
 				emInt *elemConn = m_Tet20Conn[cellInd];
@@ -896,34 +914,32 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				assert(0);
 			}
 		}
-		emInt newConn[10];
-		remapIndices(10, newIndices, conn, newConn);
-		emInt global [3]= {tri.getCorner(0),tri.getCorner(1),
-		tri.getCorner(2)}; 
-		TriFaceVerts TF(numDivs,global,partID,-1,true); 
-		auto itr= tris.find(TF); 
-		if(itr!=tris.end()){
-			assert(itr->getGlobalCorner(0)==global[0] &&
-			itr->getGlobalCorner(1)==global[1] && 
-			itr->getGlobalCorner(2)==global[2] && itr->getPartid()==partID);
-			TriFaceVerts TFV(numDivs,newConn,global,partID,
-			itr->getRemoteId(),0,EMINT_MAX,false);
+		emInt localConn[10];
+		remapIndices(10, newIndices, conn, localConn);
+		emInt global[3] = {tri.getCorner(0), tri.getCorner(1), tri.getCorner(2)};
+		TriFaceVerts TF(numDivs, global, partID, -1, true);
+		auto itr = tris.find(TF);
+		if (itr != tris.end()) {
+			assert(itr->getGlobalCorner(0) == global[0] &&
+			       itr->getGlobalCorner(1) == global[1] &&
+			       itr->getGlobalCorner(2) == global[2] &&
+			       itr->getPartid() == partID);
+			TriFaceVerts TFV(numDivs, localConn, global, partID, itr->getRemoteId(),
+					 0, EMINT_MAX, false);
 			// need to be corrected, I could not generate with correct bool value unless
-			// I pass all arguments 
-		
-			UCM->addPartTritoSet(TFV); 
+			// I pass all arguments
 
+			extractedMesh->addPartTritoSet(TFV);
 		}
-		UCM->addBdryTri(newConn);
+		extractedMesh->addBdryTri(localConn);
 	}
-	assert(static_cast<std::size_t>(UCM->getSizePartTris())==tris.size());
-	// std::cout<<"partBdryQuads: "<<partBdryQuads.size()<<" "<<
-	// quads.size()<< std::endl; 
+	assert(extractedMesh->getSizePartTris() == tris.size());
 
-	assert(partBdryQuads.size()==quads.size());
+	assert(partBdryQuads.size() == quads.size());
 	for (auto quad : partBdryQuads) {
 		emInt cellInd = quad.getVolElement();
 		emInt conn[16] = {0};
+		// Just as for tris, we need the full high order connectivity here.
 		switch (quad.getVolElementType()) {
 			case CGNS_ENUMV (PYRA_30): {
 				// Only one quad here, so it had better be the right one.
@@ -1233,32 +1249,886 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMesh(Part& P,
 				// Should never get here.
 				assert(0);
 		}
-		emInt newConn[16];
-		remapIndices(16, newIndices, conn, newConn);
-		emInt global [4]= {quad.getCorner(0),
-		quad.getCorner(1),quad.getCorner(2),quad.getCorner(3)}; 
-		QuadFaceVerts QF(numDivs,global,partID,-1,true); 
-		auto itr= quads.find(QF); 
-		if(itr!=quads.end()){
-			assert(itr->getGlobalCorner(0)==global[0] &&
-			itr->getGlobalCorner(1)==global[1] && 
-			itr->getGlobalCorner(2)==global[2] && 
-			itr->getGlobalCorner(3)==global[3] &&
-			itr->getPartid()==partID);
-			QuadFaceVerts QFV(numDivs,newConn,global,partID,
-			itr->getRemoteId(),0,EMINT_MAX,false);
+		emInt localConn[16];
+		remapIndices(16, newIndices, conn, localConn);
+		emInt global[4] = {quad.getCorner(0), quad.getCorner(1),
+		  quad.getCorner(2), quad.getCorner(3)};
+		QuadFaceVerts QF(numDivs, global, partID, -1, true);
+		auto itr = quads.find(QF);
+		if (itr != quads.end()) {
+			assert(itr->getGlobalCorner(0) == global[0] &&
+			       itr->getGlobalCorner(1) == global[1] &&
+			       itr->getGlobalCorner(2) == global[2] &&
+			       itr->getGlobalCorner(3) == global[3] &&
+			       itr->getPartid() == partID);
+			QuadFaceVerts QFV(numDivs, localConn, global, partID, itr->getRemoteId(),
+					  0, EMINT_MAX, false);
 			// need to be corrected, I could not generate with correct bool value unless
-			// I pass all arguments 
-			UCM->addPartQuadtoSet(QFV); 
-
+			// I pass all arguments
+			extractedMesh->addPartQuadtoSet(QFV);
 		}
-		UCM->addBdryQuad(newConn);
+		extractedMesh->addBdryQuad(localConn);
 	}
-	assert(static_cast<std::size_t>(UCM->getSizePartQuads())==quads.size());
-	delete[] newIndices;
+	assert(extractedMesh->getSizePartQuads() == quads.size());
+	CALLGRIND_TOGGLE_COLLECT;
+	return extractedMesh;
+}
+
+std::unique_ptr<UMesh>
+CubicMesh::extractCoarseMeshMPI(const emInt partID, const std::vector<emInt> &partcells , const int numDivs,
+const std::unordered_set<TriFaceVerts> tris,
+const std::unordered_set<QuadFaceVerts> quads) const
+{
 	CALLGRIND_TOGGLE_COLLECT
 	;
-	return UCM;
+
+	// Count the number of tris, quads, tets, pyrs, prisms and hexes.
+
+	exa_set<TriFaceVerts> partBdryTris;
+	exa_set<QuadFaceVerts> partBdryQuads;
+
+	emInt nTris(0), nQuads(0), nTets(0), nPyrs(0), nPrisms(0), nHexes(0);
+	const emInt *conn;
+
+	std::vector<bool> isVertUsed(numVerts(), false);
+	std::vector<bool> isBdryVert(numVerts(), false);
+	std::vector<bool> isCornerNode(numVerts(), false);
+
+	for (emInt ii = 0; ii < partcells.size(); ii++) {
+		emInt globalInd = partcells[ii];
+		emInt ind = (cellID2cellTypeLocalID[globalInd].second) - 1;
+		emInt type = cellID2cellTypeLocalID[globalInd].first;
+
+		switch (type) {
+			default:
+				// Panic! Should never get here.
+				assert(0);
+				break;
+			case CGNS_ENUMV(TRI_10):
+				break;
+			case CGNS_ENUMV(QUAD_16):
+				break;
+			case CGNS_ENUMV(TETRA_20): {
+				nTets++;
+				conn = getTetConn(ind);
+				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], type, ind);
+				TriFaceVerts TFV013(numDivs, conn[0], conn[1], conn[3], type, ind);
+				TriFaceVerts TFV123(numDivs, conn[1], conn[2], conn[3], type, ind);
+				TriFaceVerts TFV203(numDivs, conn[2], conn[0], conn[3], type, ind);
+				addUniquely(partBdryTris, TFV012);
+				addUniquely(partBdryTris, TFV013);
+				addUniquely(partBdryTris, TFV123);
+				addUniquely(partBdryTris, TFV203);
+				for (int jj = 0; jj < 20; jj++) {
+					isVertUsed[conn[jj]] = true;
+				}
+				isCornerNode[conn[0]] = true;
+				isCornerNode[conn[1]] = true;
+				isCornerNode[conn[2]] = true;
+				isCornerNode[conn[3]] = true;
+				break;
+			}
+			case CGNS_ENUMV(PYRA_30): {
+				nPyrs++;
+				conn = getPyrConn(ind);
+				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], type, ind);
+				TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4], type, ind);
+				TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4], type, ind);
+				TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4], type, ind);
+				TriFaceVerts TFV304(numDivs, conn[3], conn[0], conn[4], type, ind);
+				addUniquely(partBdryQuads, QFV0123);
+				addUniquely(partBdryTris, TFV014);
+				addUniquely(partBdryTris, TFV124);
+				addUniquely(partBdryTris, TFV234);
+				addUniquely(partBdryTris, TFV304);
+				for (int jj = 0; jj < 30; jj++) {
+					isVertUsed[conn[jj]] = true;
+				}
+				isCornerNode[conn[0]] = true;
+				isCornerNode[conn[1]] = true;
+				isCornerNode[conn[2]] = true;
+				isCornerNode[conn[3]] = true;
+				isCornerNode[conn[4]] = true;
+				break;
+			}
+			case CGNS_ENUMV(PENTA_40): {
+				nPrisms++;
+				conn = getPrismConn(ind);
+				QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3], type,
+															ind);
+				QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4], type,
+															ind);
+				QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5], type,
+															ind);
+				TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], type, ind);
+				TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5], type, ind);
+				addUniquely(partBdryQuads, QFV0143);
+				addUniquely(partBdryQuads, QFV1254);
+				addUniquely(partBdryQuads, QFV2035);
+				addUniquely(partBdryTris, TFV012);
+				addUniquely(partBdryTris, TFV345);
+				for (int jj = 0; jj < 40; jj++) {
+					isVertUsed[conn[jj]] = true;
+				}
+				isCornerNode[conn[0]] = true;
+				isCornerNode[conn[1]] = true;
+				isCornerNode[conn[2]] = true;
+				isCornerNode[conn[3]] = true;
+				isCornerNode[conn[4]] = true;
+				isCornerNode[conn[5]] = true;
+				break;
+			}
+			case CGNS_ENUMV(HEXA_64): {
+				nHexes++;
+				conn = getHexConn(ind);
+				QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4], type, ind);
+				QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5], type, ind);
+				QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6], type, ind);
+				QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7], type, ind);
+				QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], type, ind);
+				QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7], type, ind);
+				addUniquely(partBdryQuads, QFV0154);
+				addUniquely(partBdryQuads, QFV1265);
+				addUniquely(partBdryQuads, QFV2376);
+				addUniquely(partBdryQuads, QFV3047);
+				addUniquely(partBdryQuads, QFV0123);
+				addUniquely(partBdryQuads, QFV4567);
+				for (int jj = 0; jj < 64; jj++) {
+					isVertUsed[conn[jj]] = true;
+				}
+				isCornerNode[conn[0]] = true;
+				isCornerNode[conn[1]] = true;
+				isCornerNode[conn[2]] = true;
+				isCornerNode[conn[3]] = true;
+				isCornerNode[conn[4]] = true;
+				isCornerNode[conn[5]] = true;
+				isCornerNode[conn[6]] = true;
+				isCornerNode[conn[7]] = true;
+				break;
+			}
+		} // end switch
+	} // end loop to gather information
+
+	// Now check to see which bdry entities are in this part.  That'll be the
+	// ones whose verts are all marked as used.  Unfortunately, this requires
+	// searching through -all- the bdry entities for each part.
+	std::vector<emInt> realBdryTris;
+	std::vector<emInt> realBdryQuads;
+	for (emInt ii = 0; ii < numBdryTris(); ii++) {
+		conn = getBdryTriConn(ii);
+		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]) {
+			TriFaceVerts TFV(numDivs, conn[0], conn[1], conn[2]);
+			auto iter = partBdryTris.find(TFV);
+			// If this bdry tri is an unmatched tri from this part, match it, and
+			// add the bdry tri to the list of things to copy to the part coarse
+			// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
+			// bdry face from slipping through.
+			if (iter != partBdryTris.end()) {
+				partBdryTris.erase(iter);
+				isBdryVert[conn[0]] = true;
+				isBdryVert[conn[1]] = true;
+				isBdryVert[conn[2]] = true;
+				realBdryTris.push_back(ii);
+				nTris++;
+			}
+		}
+	}
+	for (emInt ii = 0; ii < numBdryQuads(); ii++) {
+		conn = getBdryQuadConn(ii);
+		if (isVertUsed[conn[0]] && isVertUsed[conn[1]] && isVertUsed[conn[2]]
+				&& isVertUsed[conn[3]]) {
+			QuadFaceVerts QFV(numDivs, conn[0], conn[1], conn[2], conn[3]);
+			auto iter = partBdryQuads.find(QFV);
+			// If this bdry tri is an unmatched tri from this part, match it, and
+			// add the bdry tri to the list of things to copy to the part coarse
+			// mesh.  Otherwise, do nothing.  This will keep the occasional wrong
+			// bdry face from slipping through.
+			if (iter != partBdryQuads.end()) {
+				partBdryQuads.erase(iter);
+				isBdryVert[conn[0]] = true;
+				isBdryVert[conn[1]] = true;
+				isBdryVert[conn[2]] = true;
+				isBdryVert[conn[3]] = true;
+				realBdryQuads.push_back(ii);
+				nQuads++;
+			}
+		}
+	}
+
+	emInt nPartBdryTris = partBdryTris.size();
+	emInt nPartBdryQuads = partBdryQuads.size();
+
+	for (auto tri : partBdryTris) {
+		isBdryVert[tri.getCorner(0)] = true;
+		isBdryVert[tri.getCorner(1)] = true;
+		isBdryVert[tri.getCorner(2)] = true;
+	}
+	for (auto quad : partBdryQuads) {
+		isBdryVert[quad.getCorner(0)] = true;
+		isBdryVert[quad.getCorner(1)] = true;
+		isBdryVert[quad.getCorner(2)] = true;
+		isBdryVert[quad.getCorner(3)] = true;
+	}
+	emInt nBdryVerts = 0, nNodes = 0;
+	emInt nVertNodes = 0;
+	emInt nVerts = numVerts();
+	for (emInt ii = 0; ii < nVerts; ii++) {
+		if (isVertUsed[ii]) nNodes++;
+		if (isBdryVert[ii]) nBdryVerts++;
+		if (isCornerNode[ii]) nVertNodes++;
+	}
+
+	// TODO: All of this needs to be uncommented and made to work.
+	auto extractedMesh = std::make_unique<UMesh>(4,4,4,0,1, 0, 0, 0);
+//	// Now set up the data structures for the new coarse UMesh
+//	auto extractedMesh = std::make_unique<CubicMesh>(nNodes, nBdryVerts,
+//																					nTris + nPartBdryTris,
+//																					nQuads + nPartBdryQuads, nTets, nPyrs,
+//																					nPrisms, nHexes);
+//	extractedMesh->setNVertNodes(nVertNodes);
+//
+//	// Store the vertices, while keeping a mapping from the full list of verts
+//	// to the restricted list so the connectivity can be copied properly.
+//	std::vector<emInt> newIndices(numVerts(), EMINT_MAX);
+//	for (emInt ii = 0; ii < nVerts; ii++) {
+//		if (isVertUsed[ii]) {
+//			double coords[3];
+//			getCoords(ii, coords);
+//			newIndices[ii] = extractedMesh->addVert(coords);
+//			// Copy length scale for vertices from the parent; otherwise, there will be
+//			// mismatches in the refined meshes.
+//			extractedMesh->setLengthScale(newIndices[ii], getLengthScale(ii));
+//		}
+//	}
+//
+//	// Now copy connectivity.
+//	emInt newConn[64];
+//	for (emInt ii = 0; ii < partcells.size(); ii++) {
+//		emInt globalInd = partcells[ii];
+//		emInt ind = (cellID2cellTypeLocalID[globalInd].second) - 1;
+//		emInt type = cellID2cellTypeLocalID[globalInd].first;
+//		switch (type) {
+//			default:
+//				// Panic! Should never get here.
+//				assert(0);
+//				break;
+//			case CGNS_ENUMV(TETRA_20): {
+//				conn = getTetConn(ind);
+//				remapIndices(20, newIndices, conn, newConn);
+//				extractedMesh->addTet(newConn);
+//				break;
+//			}
+//			case CGNS_ENUMV(PYRA_30): {
+//				conn = getPyrConn(ind);
+//				remapIndices(30, newIndices, conn, newConn);
+//				extractedMesh->addPyramid(newConn);
+//				break;
+//			}
+//			case CGNS_ENUMV(PENTA_40): {
+//				conn = getPrismConn(ind);
+//				remapIndices(40, newIndices, conn, newConn);
+//				extractedMesh->addPrism(newConn);
+//				break;
+//			}
+//			case CGNS_ENUMV(HEXA_64): {
+//				conn = getHexConn(ind);
+//				remapIndices(64, newIndices, conn, newConn);
+//				extractedMesh->addHex(newConn);
+//				break;
+//			}
+//		} // end switch
+//	} // end loop to copy most connectivity
+//
+//	for (std::size_t ii = 0; ii < realBdryTris.size(); ii++) {
+//		conn = getBdryTriConn(realBdryTris[ii]);
+//		remapIndices(10, newIndices, conn, newConn);
+//		extractedMesh->addBdryTri(newConn);
+//	}
+//	for (std::size_t ii = 0; ii < realBdryQuads.size(); ii++) {
+//		conn = getBdryQuadConn(realBdryQuads[ii]);
+//		remapIndices(16, newIndices, conn, newConn);
+//		extractedMesh->addBdryQuad(newConn);
+//	}
+//
+//	// Now, finally, the part bdry connectivity.
+//	// TODO: Currently, there's nothing in the data structure that marks which
+//	// are part bdry faces.
+//	assert(partBdryTris.size() == tris.size());
+//
+//	for (auto tri : partBdryTris) {
+//		emInt cellInd = tri.getVolElement();
+//		emInt conn[10] = {0};
+//		// This long switch with nested if's is required to get the full connectivity
+//		// for the part bdry tri, which originally has only corner nodes.
+//		switch (tri.getVolElementType()) {
+//			case CGNS_ENUMV(TETRA_20): {
+//				emInt *elemConn = m_Tet20Conn[cellInd];
+//				// Identify which face this is.  Has to be 012, 013, 123, or 203.
+//				if (tri.getCorner(2) == elemConn[2]) {
+//					// Has to be 012
+//					assert(tri.getCorner(0) == elemConn[0]);
+//					assert(tri.getCorner(1) == elemConn[1]);
+//					conn[0] = elemConn[0];
+//					conn[1] = elemConn[1];
+//					conn[2] = elemConn[2];
+//					conn[3] = elemConn[4];
+//					conn[4] = elemConn[5];
+//					conn[5] = elemConn[6];
+//					conn[6] = elemConn[7];
+//					conn[7] = elemConn[8];
+//					conn[8] = elemConn[9];
+//					conn[9] = elemConn[16];
+//				}
+//				else if (tri.getCorner(0) == elemConn[0]) {
+//					// Has to be 013
+//					assert(tri.getCorner(1) == elemConn[1]);
+//					assert(tri.getCorner(2) == elemConn[3]);
+//					conn[0] = elemConn[0];
+//					conn[1] = elemConn[1];
+//					conn[2] = elemConn[3];
+//					// Between 0 and 1
+//					conn[3] = elemConn[4];
+//					conn[4] = elemConn[5];
+//					// Between 1 and 3
+//					conn[5] = elemConn[12];
+//					conn[6] = elemConn[13];
+//					// Between 3 and 0
+//					conn[7] = elemConn[11];
+//					conn[8] = elemConn[10];
+//					// On face
+//					conn[9] = elemConn[17];
+//				}
+//				else if (tri.getCorner(0) == elemConn[1]) {
+//					// Has to be 123
+//					assert(tri.getCorner(1) == elemConn[2]);
+//					assert(tri.getCorner(2) == elemConn[3]);
+//					conn[0] = elemConn[1];
+//					conn[1] = elemConn[2];
+//					conn[2] = elemConn[3];
+//					// Between 1 and 2
+//					conn[3] = elemConn[6];
+//					conn[4] = elemConn[7];
+//					// Between 2 and 3
+//					conn[5] = elemConn[14];
+//					conn[6] = elemConn[15];
+//					// Between 3 and 1
+//					conn[7] = elemConn[13];
+//					conn[8] = elemConn[12];
+//					// On face
+//					conn[9] = elemConn[18];
+//				}
+//				else if (tri.getCorner(0) == elemConn[2]) {
+//					// Has to be 203
+//					assert(tri.getCorner(1) == elemConn[0]);
+//					assert(tri.getCorner(2) == elemConn[3]);
+//					conn[0] = elemConn[2];
+//					conn[1] = elemConn[0];
+//					conn[2] = elemConn[3];
+//					// Between 2 and 0
+//					conn[3] = elemConn[8];
+//					conn[4] = elemConn[9];
+//					// Between 0 and 3
+//					conn[5] = elemConn[10];
+//					conn[6] = elemConn[11];
+//					// Between 3 and 2
+//					conn[7] = elemConn[15];
+//					conn[8] = elemConn[14];
+//					// On face
+//					conn[9] = elemConn[19];
+//				}
+//				else {
+//					// Should never get here
+//					assert(0);
+//				}
+//				break;
+//			}
+//			case CGNS_ENUMV(PYRA_30): {
+//				emInt *elemConn = m_Pyr30Conn[cellInd];
+//				if (tri.getCorner(0) == elemConn[0]) {
+//					assert(tri.getCorner(1) == elemConn[1]);
+//					assert(tri.getCorner(2) == elemConn[4]);
+//					conn[0] = elemConn[0];
+//					conn[1] = elemConn[1];
+//					conn[2] = elemConn[4];
+//					// Between 0 and 1
+//					conn[3] = elemConn[5];
+//					conn[4] = elemConn[6];
+//					// Between 1 and 4
+//					conn[5] = elemConn[15];
+//					conn[6] = elemConn[16];
+//					// Between 4 and 0
+//					conn[7] = elemConn[14];
+//					conn[8] = elemConn[13];
+//					// On face
+//					conn[9] = elemConn[25];
+//				}
+//				else if (tri.getCorner(0) == elemConn[1]) {
+//					assert(tri.getCorner(1) == elemConn[2]);
+//					assert(tri.getCorner(2) == elemConn[4]);
+//					conn[0] = elemConn[1];
+//					conn[1] = elemConn[2];
+//					conn[2] = elemConn[4];
+//					// Between 1 and 2
+//					conn[3] = elemConn[7];
+//					conn[4] = elemConn[8];
+//					// Between 2 and 4
+//					conn[5] = elemConn[17];
+//					conn[6] = elemConn[18];
+//					// Between 4 and 1
+//					conn[7] = elemConn[16];
+//					conn[8] = elemConn[15];
+//					// On face
+//					conn[9] = elemConn[26];
+//				}
+//				else if (tri.getCorner(0) == elemConn[2]) {
+//					assert(tri.getCorner(1) == elemConn[3]);
+//					assert(tri.getCorner(2) == elemConn[4]);
+//					conn[0] = elemConn[2];
+//					conn[1] = elemConn[3];
+//					conn[2] = elemConn[4];
+//					// Between 2 and 3
+//					conn[3] = elemConn[9];
+//					conn[4] = elemConn[10];
+//					// Between 3 and 4
+//					conn[5] = elemConn[19];
+//					conn[6] = elemConn[20];
+//					// Between 4 and 1
+//					conn[7] = elemConn[18];
+//					conn[8] = elemConn[17];
+//					// On face
+//					conn[9] = elemConn[27];
+//				}
+//				else if (tri.getCorner(0) == elemConn[3]) {
+//					assert(tri.getCorner(1) == elemConn[0]);
+//					assert(tri.getCorner(2) == elemConn[4]);
+//					conn[0] = elemConn[3];
+//					conn[1] = elemConn[0];
+//					conn[2] = elemConn[4];
+//					// Between 3 and 0
+//					conn[3] = elemConn[13];
+//					conn[4] = elemConn[14];
+//					// Between 0 and 4
+//					conn[5] = elemConn[17];
+//					conn[6] = elemConn[18];
+//					// Between 4 and 3
+//					conn[7] = elemConn[20];
+//					conn[8] = elemConn[19];
+//					// On face
+//					conn[9] = elemConn[28];
+//				}
+//				else {
+//					// Should never get here
+//					assert(0);
+//				}
+//				break;
+//			}
+//			case CGNS_ENUMV(PENTA_40): {
+//				emInt *elemConn = m_Prism40Conn[cellInd];
+//				if (tri.getCorner(0)  == elemConn[0]) {
+//					assert(tri.getCorner(1) == elemConn[1]);
+//					assert(tri.getCorner(2) == elemConn[2]);
+//					conn[0] = elemConn[0];
+//					conn[1] = elemConn[1];
+//					conn[2] = elemConn[2];
+//					// Between 0 and 1
+//					conn[3] = elemConn[6];
+//					conn[4] = elemConn[7];
+//					// Between 1 and 2
+//					conn[5] = elemConn[8];
+//					conn[6] = elemConn[9];
+//					// Between 2 and 0
+//					conn[7] = elemConn[10];
+//					conn[8] = elemConn[11];
+//					// On face
+//					conn[9] = elemConn[24];
+//				}
+//				else if (tri.getCorner(0) == elemConn[3]) {
+//					assert(tri.getCorner(1) == elemConn[4]);
+//					assert(tri.getCorner(2) == elemConn[5]);
+//					conn[0] = elemConn[3];
+//					conn[1] = elemConn[4];
+//					conn[2] = elemConn[5];
+//					// Between 3 and 4
+//					conn[3] = elemConn[18];
+//					conn[4] = elemConn[19];
+//					// Between 4 and 5
+//					conn[5] = elemConn[20];
+//					conn[6] = elemConn[21];
+//					// Between 5 and 3
+//					conn[7] = elemConn[22];
+//					conn[8] = elemConn[23];
+//					// On face
+//					conn[9] = elemConn[37];
+//				}
+//				else {
+//					// Should never get here
+//					assert(0);
+//				}
+//				break;
+//			}
+//			default: {
+//				// Should never get here.
+//				assert(0);
+//			}
+//		}
+//		emInt localConn[10];
+//		remapIndices(10, newIndices, conn, localConn);
+//		emInt global[3] = {tri.getCorner(0), tri.getCorner(1), tri.getCorner(2)};
+//		TriFaceVerts TF(numDivs, global, partID, -1, true);
+//		auto itr = tris.find(TF);
+//		if (itr != tris.end()) {
+//			assert(itr->getGlobalCorner(0) == global[0] &&
+//			       itr->getGlobalCorner(1) == global[1] &&
+//			       itr->getGlobalCorner(2) == global[2] &&
+//			       itr->getPartid() == partID);
+//			TriFaceVerts TFV(numDivs, localConn, global, partID, itr->getRemoteId(),
+//					 0, EMINT_MAX, false);
+//			// need to be corrected, I could not generate with correct bool value unless
+//			// I pass all arguments
+//
+//			extractedMesh->addPartTritoSet(TFV);
+//		}
+//		extractedMesh->addBdryTri(localConn);
+//	}
+//	assert(extractedMesh->getSizePartTris() == tris.size());
+//
+//	assert(partBdryQuads.size() == quads.size());
+//	for (auto quad : partBdryQuads) {
+//		emInt cellInd = quad.getVolElement();
+//		emInt conn[16] = {0};
+//		// Just as for tris, we need the full high order connectivity here.
+//		switch (quad.getVolElementType()) {
+//			case CGNS_ENUMV (PYRA_30): {
+//				// Only one quad here, so it had better be the right one.
+//				emInt *elemConn = m_Pyr30Conn[cellInd];
+//				assert(quad.getCorner(0) == elemConn[0]);
+//				assert(quad.getCorner(1) == elemConn[1]);
+//				assert(quad.getCorner(2) == elemConn[2]);
+//				assert(quad.getCorner(3) == elemConn[3]);
+//
+//				conn[0] = elemConn[0];
+//				conn[1] = elemConn[1];
+//				conn[2] = elemConn[2];
+//				conn[3] = elemConn[3];
+//				// Between 0 and 1
+//				conn[4] = elemConn[5];
+//				conn[5] = elemConn[6];
+//				// Between 1 and 2
+//				conn[6] = elemConn[7];
+//				conn[7] = elemConn[8];
+//				// Between 2 and 3
+//				conn[8] = elemConn[9];
+//				conn[9] = elemConn[10];
+//				// Between 3 and 0
+//				conn[10] = elemConn[11];
+//				conn[11] = elemConn[12];
+//				// On face
+//				conn[12] = elemConn[21];
+//				conn[13] = elemConn[22];
+//				conn[14] = elemConn[23];
+//				conn[15] = elemConn[24];
+//				break;
+//			}
+//			case CGNS_ENUMV( PENTA_40): {
+//				emInt *elemConn = m_Prism40Conn[cellInd];
+//
+//				// Three possible quads: 0143 1254 2035
+//				if (quad.getCorner(0) == elemConn[0]) {
+//					// 0143
+//					assert(quad.getCorner(1) == elemConn[1]);
+//					assert(quad.getCorner(2) == elemConn[4]);
+//					assert(quad.getCorner(3) == elemConn[3]);
+//
+//					conn[0] = elemConn[0];
+//					conn[1] = elemConn[1];
+//					conn[2] = elemConn[4];
+//					conn[3] = elemConn[3];
+//					// Between 0 and 1
+//					conn[4] = elemConn[6];
+//					conn[5] = elemConn[7];
+//					// Between 1 and 4
+//					conn[6] = elemConn[14];
+//					conn[7] = elemConn[15];
+//					// Between 4 and 3
+//					conn[8] = elemConn[19];
+//					conn[9] = elemConn[18];
+//					// Between 3 and 0
+//					conn[10] = elemConn[13];
+//					conn[11] = elemConn[12];
+//					// On face
+//					conn[12] = elemConn[25];
+//					conn[13] = elemConn[26];
+//					conn[14] = elemConn[27];
+//					conn[15] = elemConn[28];
+//				}
+//				else if (quad.getCorner(0) == elemConn[1]) {
+//					// 1254
+//					assert(quad.getCorner(1) == elemConn[2]);
+//					assert(quad.getCorner(2) == elemConn[5]);
+//					assert(quad.getCorner(3) == elemConn[4]);
+//
+//					conn[0] = elemConn[1];
+//					conn[1] = elemConn[2];
+//					conn[2] = elemConn[5];
+//					conn[3] = elemConn[4];
+//					// Between 1 and 2
+//					conn[4] = elemConn[8];
+//					conn[5] = elemConn[9];
+//					// Between 2 and 5
+//					conn[6] = elemConn[16];
+//					conn[7] = elemConn[17];
+//					// Between 5 and 4
+//					conn[8] = elemConn[21];
+//					conn[9] = elemConn[20];
+//					// Between 4 and 1
+//					conn[10] = elemConn[15];
+//					conn[11] = elemConn[14];
+//					// On face
+//					conn[12] = elemConn[29];
+//					conn[13] = elemConn[30];
+//					conn[14] = elemConn[31];
+//					conn[15] = elemConn[32];
+//				}
+//				else if (quad.getCorner(0) == elemConn[2]) {
+//					// 2035
+//					assert(quad.getCorner(1) == elemConn[0]);
+//					assert(quad.getCorner(2) == elemConn[3]);
+//					assert(quad.getCorner(3) == elemConn[5]);
+//
+//					conn[0] = elemConn[2];
+//					conn[1] = elemConn[0];
+//					conn[2] = elemConn[3];
+//					conn[3] = elemConn[5];
+//					// Between 2 and 0
+//					conn[4] = elemConn[10];
+//					conn[5] = elemConn[11];
+//					// Between 0 and 3
+//					conn[6] = elemConn[12];
+//					conn[7] = elemConn[13];
+//					// Between 3 and 5
+//					conn[8] = elemConn[23];
+//					conn[9] = elemConn[22];
+//					// Between 5 and 0
+//					conn[10] = elemConn[17];
+//					conn[11] = elemConn[16];
+//					// On face
+//					conn[12] = elemConn[33];
+//					conn[13] = elemConn[34];
+//					conn[14] = elemConn[35];
+//					conn[15] = elemConn[36];
+//				}
+//				else {
+//					// Should never get here
+//					assert(0);
+//				}
+//				break;
+//			}
+//			case CGNS_ENUMV(HEXA_64): {
+//				emInt *elemConn = m_Hex64Conn[cellInd];
+//
+//				// Six quads: 0154 1265 2376 3047 0123 4567
+//				if (quad.getCorner(2) == elemConn[2]) {
+//					// Bottom: 0123
+//					assert(quad.getCorner(0) == elemConn[0]);
+//					assert(quad.getCorner(1) == elemConn[1]);
+//					assert(quad.getCorner(3) == elemConn[3]);
+//
+//					conn[0] = elemConn[0];
+//					conn[1] = elemConn[1];
+//					conn[2] = elemConn[2];
+//					conn[3] = elemConn[3];
+//					// Between 0 and 1
+//					conn[4] = elemConn[8];
+//					conn[5] = elemConn[9];
+//					// Between 1 and 2
+//					conn[6] = elemConn[10];
+//					conn[7] = elemConn[11];
+//					// Between 2 and 3
+//					conn[8] = elemConn[12];
+//					conn[9] = elemConn[13];
+//					// Between 3 and 0
+//					conn[10] = elemConn[14];
+//					conn[11] = elemConn[15];
+//					// On face
+//					conn[12] = elemConn[32];
+//					conn[13] = elemConn[33];
+//					conn[14] = elemConn[34];
+//					conn[15] = elemConn[35];
+//				}
+//				else if (quad.getCorner(0) == elemConn[4]) {
+//					// Top: 4567
+//					assert(quad.getCorner(1) == elemConn[5]);
+//					assert(quad.getCorner(2) == elemConn[6]);
+//					assert(quad.getCorner(3) == elemConn[7]);
+//
+//					conn[0] = elemConn[4];
+//					conn[1] = elemConn[5];
+//					conn[2] = elemConn[6];
+//					conn[3] = elemConn[7];
+//					// Between 4 and 5
+//					conn[4] = elemConn[24];
+//					conn[5] = elemConn[25];
+//					// Between 5 and 6
+//					conn[6] = elemConn[26];
+//					conn[7] = elemConn[27];
+//					// Between 6 and 7
+//					conn[8] = elemConn[28];
+//					conn[9] = elemConn[29];
+//					// Between 7 and 4
+//					conn[10] = elemConn[30];
+//					conn[11] = elemConn[31];
+//					// On face
+//					conn[12] = elemConn[52];
+//					conn[13] = elemConn[53];
+//					conn[14] = elemConn[54];
+//					conn[15] = elemConn[55];
+//				}
+//				else if (quad.getCorner(0) == elemConn[0]) {
+//					// Side: 0154
+//					assert(quad.getCorner(1) == elemConn[1]);
+//					assert(quad.getCorner(2) == elemConn[5]);
+//					assert(quad.getCorner(3) == elemConn[4]);
+//
+//					conn[0] = elemConn[0];
+//					conn[1] = elemConn[1];
+//					conn[2] = elemConn[5];
+//					conn[3] = elemConn[4];
+//					// Between 0 and 1
+//					conn[4] = elemConn[8];
+//					conn[5] = elemConn[9];
+//					// Between 1 and 5
+//					conn[6] = elemConn[18];
+//					conn[7] = elemConn[19];
+//					// Between 5 and 4
+//					conn[8] = elemConn[25];
+//					conn[9] = elemConn[24];
+//					// Between 4 and 1
+//					conn[10] = elemConn[17];
+//					conn[11] = elemConn[16];
+//					// On face
+//					conn[12] = elemConn[36];
+//					conn[13] = elemConn[37];
+//					conn[14] = elemConn[38];
+//					conn[15] = elemConn[39];
+//				}
+//				else if (quad.getCorner(0) == elemConn[1]) {
+//					// Side: 1265
+//					assert(quad.getCorner(1) == elemConn[2]);
+//					assert(quad.getCorner(2) == elemConn[6]);
+//					assert(quad.getCorner(3) == elemConn[5]);
+//
+//					conn[0] = elemConn[1];
+//					conn[1] = elemConn[2];
+//					conn[2] = elemConn[6];
+//					conn[3] = elemConn[5];
+//					// Between 1 and 2
+//					conn[4] = elemConn[10];
+//					conn[5] = elemConn[11];
+//					// Between 2 and 6
+//					conn[6] = elemConn[20];
+//					conn[7] = elemConn[21];
+//					// Between 6 and 5
+//					conn[8] = elemConn[27];
+//					conn[9] = elemConn[26];
+//					// Between 5 and 1
+//					conn[10] = elemConn[19];
+//					conn[11] = elemConn[18];
+//					// On face
+//					conn[12] = elemConn[40];
+//					conn[13] = elemConn[41];
+//					conn[14] = elemConn[42];
+//					conn[15] = elemConn[43];
+//				}
+//				else if (quad.getCorner(0) == elemConn[2]) {
+//					// Side: 2376
+//					assert(quad.getCorner(1) == elemConn[3]);
+//					assert(quad.getCorner(2) == elemConn[7]);
+//					assert(quad.getCorner(3) == elemConn[6]);
+//
+//					conn[0] = elemConn[2];
+//					conn[1] = elemConn[3];
+//					conn[2] = elemConn[7];
+//					conn[3] = elemConn[6];
+//					// Between 2 and 3
+//					conn[4] = elemConn[12];
+//					conn[5] = elemConn[13];
+//					// Between 3 and 7
+//					conn[6] = elemConn[22];
+//					conn[7] = elemConn[23];
+//					// Between 7 and 6
+//					conn[8] = elemConn[29];
+//					conn[9] = elemConn[28];
+//					// Between 6 and 2
+//					conn[10] = elemConn[21];
+//					conn[11] = elemConn[20];
+//					// On face
+//					conn[12] = elemConn[44];
+//					conn[13] = elemConn[45];
+//					conn[14] = elemConn[46];
+//					conn[15] = elemConn[47];
+//				}
+//				else if (quad.getCorner(0) == elemConn[3]) {
+//					// Side: 3047
+//					assert(quad.getCorner(1) == elemConn[0]);
+//					assert(quad.getCorner(2) == elemConn[4]);
+//					assert(quad.getCorner(3) == elemConn[7]);
+//
+//					conn[0] = elemConn[3];
+//					conn[1] = elemConn[0];
+//					conn[2] = elemConn[4];
+//					conn[3] = elemConn[7];
+//					// Between 3 and 0
+//					conn[4] = elemConn[14];
+//					conn[5] = elemConn[15];
+//					// Between 0 and 4
+//					conn[6] = elemConn[16];
+//					conn[7] = elemConn[17];
+//					// Between 4 and 7
+//					conn[8] = elemConn[31];
+//					conn[9] = elemConn[30];
+//					// Between 7 and 3
+//					conn[10] = elemConn[23];
+//					conn[11] = elemConn[22];
+//					// On face
+//					conn[12] = elemConn[48];
+//					conn[13] = elemConn[49];
+//					conn[14] = elemConn[50];
+//					conn[15] = elemConn[51];
+//				}
+//				else {
+//					// Should never get here
+//					assert(0);
+//				}
+//
+//				break;
+//			}
+//			default:
+//				// Should never get here.
+//				assert(0);
+//		}
+//		emInt localConn[16];
+//		remapIndices(16, newIndices, conn, localConn);
+//		emInt global[4] = {quad.getCorner(0), quad.getCorner(1),
+//		  quad.getCorner(2), quad.getCorner(3)};
+//		QuadFaceVerts QF(numDivs, global, partID, -1, true);
+//		auto itr = quads.find(QF);
+//		if (itr != quads.end()) {
+//			assert(itr->getGlobalCorner(0) == global[0] &&
+//			       itr->getGlobalCorner(1) == global[1] &&
+//			       itr->getGlobalCorner(2) == global[2] &&
+//			       itr->getGlobalCorner(3) == global[3] &&
+//			       itr->getPartid() == partID);
+//			QuadFaceVerts QFV(numDivs, localConn, global, partID, itr->getRemoteId(),
+//					  0, EMINT_MAX, false);
+//			// need to be corrected, I could not generate with correct bool value unless
+//			// I pass all arguments
+//			extractedMesh->addPartQuadtoSet(QFV);
+//		}
+//		extractedMesh->addBdryQuad(localConn);
+//	}
+//	assert(extractedMesh->getSizePartQuads() == quads.size());
+//	CALLGRIND_TOGGLE_COLLECT;
+	return extractedMesh;
 }
 
 emInt CubicMesh::addVert(const double newCoords[3]) {
@@ -1327,7 +2197,7 @@ std::unique_ptr<UMesh> CubicMesh::createFineUMesh(const emInt numDivs, Part& P,
 		std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const {
 	// Create a coarse
 	double start = exaTime();
-	auto coarse = extractCoarseMesh(P, vecCPD, numDivs);
+	auto coarse = extractCoarseMeshPseudoParallel(P, vecCPD, numDivs);
 	double middle = exaTime();
 	RS.extractTime = middle - start;
 

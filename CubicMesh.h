@@ -207,11 +207,16 @@ public:
 		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
 		 std::vector<std::unordered_set<QuadFaceVerts>> &quads,size_t &totalTriSize, size_t &totalQuadSize )const;
 
-	std::unique_ptr<ExaMesh> extractCoarseMesh(Part& P,
+	std::unique_ptr<ExaMesh> extractCoarseMeshPseudoParallel(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs,			
 			const std::unordered_set<TriFaceVerts> &tris= std::unordered_set<TriFaceVerts>(), 
 			const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>(), 
 			const emInt partID=-1) const;
+
+	std::unique_ptr<UMesh>
+	extractCoarseMeshMPI(const emInt partID, const std::vector<emInt> &partcells , const int numDivs,
+	const std::unordered_set<TriFaceVerts> tris= std::unordered_set<TriFaceVerts>(),
+	const std::unordered_set<QuadFaceVerts> quads= std::unordered_set<QuadFaceVerts>()) const;
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;

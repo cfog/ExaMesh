@@ -2,9 +2,8 @@
 #include <metis.h>
 #include "exa-defs.h"
 #include "UMesh.h"
-std::vector<std::vector<emInt>> partitionMetis(const UMesh* const pEM, emInt iParts, std::vector<emInt> &vaicelltopart); 
-void extractPartitions(); 
-void mesh2MetisGraphs(const UMesh* const pEM,
+std::vector<std::vector<emInt>> partitionMetis(const ExaMesh* const pEM, emInt iParts, std::vector<emInt> &vaicelltopart);
+void mesh2MetisGraphs(const ExaMesh* const pEM,
 idx_t xadj[], idx_t adjncy[], idx_t adjwgt[]);
 
 void printPart2Cell (const std::vector<std::vector<idx_t>>& part2cell); 

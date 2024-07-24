@@ -174,12 +174,17 @@ public:
 	void refineForMPI( const int numDivs ,ParallelTester* tester,
 	const char MeshType, std::string mshName,FILE* fileAllTimes) const;		
 
-	virtual std::unique_ptr<ExaMesh> extractCoarseMesh(Part& P,	std::vector<CellPartData>& vecCPD, 
+	virtual std::unique_ptr<ExaMesh> extractCoarseMeshPseudoParallel(Part& P,	std::vector<CellPartData>& vecCPD, 
 	const int numDivs,
 			const std::unordered_set<TriFaceVerts> &tris= std::unordered_set<TriFaceVerts>(), 
 			const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>(), 
 			const emInt partID=-1) const=0;		
-			
+
+	virtual std::unique_ptr<UMesh>
+	extractCoarseMeshMPI(const emInt partID, const std::vector<emInt> &partcells , const int numDivs,
+			const std::unordered_set<TriFaceVerts> tris= std::unordered_set<TriFaceVerts>(),
+			const std::unordered_set<QuadFaceVerts> quads= std::unordered_set<QuadFaceVerts>()) const = 0;
+
 	void TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester, 
 	const char MeshType); 
 	virtual void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,

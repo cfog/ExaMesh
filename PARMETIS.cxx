@@ -36,6 +36,7 @@ void setMetisOptions(idx_t options[])
     METIS_OPTION_CONTIG, METIS_OPTION_SEED, METIS_OPTION_NUMBERING,
     METIS_OPTION_DBGLVL */
 }
+
 std::vector<std::vector<emInt>>
 buildPart2Cell (const idx_t* aicelltopart, emInt numCells,emInt numParts)
 {
@@ -48,7 +49,8 @@ buildPart2Cell (const idx_t* aicelltopart, emInt numCells,emInt numParts)
     }
     return part2cell; 
 }
-std::vector<std::vector<emInt>> partitionMetis(const UMesh* const pEM, 
+
+std::vector<std::vector<emInt>> partitionMetis(const ExaMesh* const pEM,
 emInt iParts, std::vector<emInt> &vaicelltopart)
 {
 //   int METIS PartGraphKway(idx t *nvtxs, idx t *ncon,    idx t *xadj,   idx t *adjncy,
@@ -99,8 +101,8 @@ emInt iParts, std::vector<emInt> &vaicelltopart)
     delete [] aicelltopart;
     return part2cell; 
 }; 
-void extractPartitions(){}; 
-void mesh2MetisGraphs(const UMesh* const pEM, idx_t xadj[], idx_t adjncy[], idx_t adjwgt[])
+
+void mesh2MetisGraphs(const ExaMesh* const pEM, idx_t xadj[], idx_t adjncy[], idx_t adjwgt[])
 {
     xadj [0] = 0 ;
 

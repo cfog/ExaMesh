@@ -294,7 +294,7 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
     // TODO: Currently UMesh-specific
 
     times.preProcessing=exaTime();
-	std::unique_ptr<UMesh> inimesh = 
+	std::unique_ptr<UMesh> inimesh =
     std::make_unique<UMesh>(baseFileName, type, ugridInfix);
     times.preProcessing=exaTime()-times.preProcessing;
    // inimesh->calcMemoryRequirements(*inimesh, numDivs);
@@ -339,7 +339,7 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
      //Extract
     times.extract=exaTime();
     std::unique_ptr<UMesh>  extractedMsh =
-    inimesh->Extract(world.rank(),partCells[world.rank()],
+    inimesh->extractCoarseMeshMPI(world.rank(),partCells[world.rank()],
     numDivs,hashTris,hashQuads);
     times.extract=exaTime()-times.extract;
 
