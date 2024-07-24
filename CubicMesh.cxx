@@ -275,6 +275,8 @@ void CubicMesh::readCGNSfile(const char CGNSfilename[]) {
 	delete[] isBdryVert;
 	fprintf(stderr, "%'u\n", m_nBdryVerts);
 
+	setupLengthScales();
+
 	assert(verifyTetValidity() && verifyPyramidValidity() &&
 			verifyPrismValidity() && verifyHexValidity());
 }
@@ -412,6 +414,58 @@ CubicMesh::~CubicMesh() {
 	delete[] m_Prism40Conn;
 	delete[] m_Hex64Conn;
 }
+
+std::unique_ptr<UMesh>
+CubicMesh::subdivideMesh(const emInt nDivs, const emInt partID) const
+{
+#ifndef NDEBUG
+	setlocale(LC_ALL, "");
+	size_t totalInputCells = size_t(numTets()) + numPyramids()
+			+ numPrisms() + numHexes();
+	fprintf(
+	stderr,
+			"Initial mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",
+			numVertsToCopy(), numBdryTris(), numBdryQuads(),
+			numTets(), numPyramids(), numPrisms(),
+			numHexes(), totalInputCells);
+#endif
+
+	MeshSize MSIn, MSOut;
+	MSIn.nBdryVerts = numBdryVerts();
+	MSIn.nVerts = numVertsToCopy();
+	MSIn.nBdryTris = numBdryTris();
+	MSIn.nBdryQuads = numBdryQuads();
+	MSIn.nTets = numTets();
+	MSIn.nPyrs = numPyramids();
+	MSIn.nPrisms = numPrisms();
+	MSIn.nHexes = numHexes();
+	bool sizesOK = ::computeMeshSize(MSIn, nDivs, MSOut);
+	if (!sizesOK)
+		exit(2);
+
+	auto outMesh = std::make_unique<UMesh> (MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
+			MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
+	// Copy length scale data from the other mesh.
+	auto wrappedData = outMesh.get();
+	for (emInt vv = 0; vv < numVerts(); vv++) {
+		wrappedData->setLengthScale(vv, m_lenScale[vv]);
+	}
+
+	subdividePartMesh(this, outMesh.get(), nDivs, partID);
+
+#ifndef NDEBUG
+	setlocale(LC_ALL, "");
+	fprintf(
+	stderr,
+			"Final mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15u cells total\n",
+			outMesh->numVerts(), outMesh->numBdryTris(),
+			outMesh->numBdryQuads(), outMesh->numTets(),
+			outMesh->numPyramids(), outMesh->numPrisms(),
+			outMesh->numHexes(), outMesh->numCells());
+#endif
+	return outMesh;
+}
+
 
 static void remapIndices(const emInt nPts, const std::vector<emInt>& newIndices,
 		const emInt* conn, emInt* newConn) {
@@ -2202,7 +2256,7 @@ std::unique_ptr<UMesh> CubicMesh::createFineUMesh(const emInt numDivs, Part& P,
 	RS.extractTime = middle - start;
 
 	// For some reason, I needed the helper variable to keep the compiler happy here.
-	auto UUM = std::make_unique<UMesh>(*(dynamic_cast<UMesh*>(coarse.release())), numDivs);
+	auto UUM = coarse->subdivideMesh(numDivs);
 	RS.cells = UUM->numCells();
 	RS.refineTime = exaTime() - middle;
 	return UUM;

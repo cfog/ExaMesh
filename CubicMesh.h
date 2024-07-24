@@ -72,11 +72,17 @@ public:
 #endif
 	virtual ~CubicMesh();
 
+	std::unique_ptr<UMesh>
+	subdivideMesh(const emInt nDivs, const emInt partID = 0) const;
+
 	// Will eventually want to create a fine CubicMesh from a coarse CubicMesh
 	// (for the mapping). Not urgent.
 
 	virtual emInt numVerts() const {
 		return m_nVerts;
+	}
+	emInt numVertsAllocated() const {
+		return numVerts();
 	}
 	virtual emInt numBdryVerts() const {
 		return m_nBdryVerts;
@@ -105,16 +111,6 @@ public:
 	}
 	virtual emInt numVertsToCopy() const {
 		return m_nVertNodes;
-	}
-	emInt numBdryTrisFromReader()  const
-	{
-		// return m_nTrisFromReader;
-		// it needs to be implemented 
-	} 
-	emInt numBdryQuadsFromReader() const
-	{
-		// return m_nQuadsFromReader;
-		// it needs to be implemented 
 	}
 
 	emInt addVert(const double newCoords[3]);

@@ -74,13 +74,15 @@ public:
 			const std::vector<std::vector<emInt>> &vPrismConn,
 			const std::vector<std::vector<emInt>> &vHexConn);		
 	UMesh(const char baseFileName[], const char type[], const char ugridInfix[]);
-	UMesh(const UMesh& UM_in, const int nDivs, const emInt partID=-1);
-	UMesh(const CubicMesh& CM, const int nDivs, const emInt partID=-1);
 
 	~UMesh();
 	emInt maxNVerts() const {
 		return m_nVerts;
 	}
+
+	std::unique_ptr<UMesh>
+	subdivideMesh(const emInt nDivs, const emInt partID = 0) const;
+
 	emInt maxNBdryTris() const {
 		return m_nTris;
 	}
@@ -102,6 +104,9 @@ public:
 	emInt numVerts() const {
 		return m_header[eVert];
 	}
+	emInt numVertsAllocated() const {
+		return m_nVerts;
+	}
 	emInt numBdryVerts() const {
 		return m_nBdryVerts;
 	}
@@ -122,14 +127,6 @@ public:
 	}
 	emInt numHexes() const {
 		return m_header[eHex];
-	}
-	emInt numBdryTrisFromReader()  const
-	{
-		return m_nTrisFromReader; 
-	} 
-	emInt numBdryQuadsFromReader() const
-	{
-		return m_nQuadsFromReader; 
 	}
 	emInt numCells() const {
 		return numTets() + numPyramids() + numPrisms() 

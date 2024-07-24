@@ -70,17 +70,20 @@ public:
 	virtual ~ExaMesh() {
 		if (m_lenScale) delete[] m_lenScale;
 	}
+
+	virtual std::unique_ptr<UMesh>
+	subdivideMesh(const emInt nDivs, const emInt partID = 0) const = 0;
+
 	virtual double getX(const emInt vert) const = 0;
 	virtual double getY(const emInt vert) const = 0;
 	virtual double getZ(const emInt vert) const =0;
 	virtual void getCoords(const emInt vert, double coords[3]) const = 0;
 
 	virtual emInt numVerts() const = 0;
+	virtual emInt numVertsAllocated() const = 0;
 	virtual emInt numBdryVerts() const = 0;
 	virtual emInt numBdryTris() const = 0;
 	virtual emInt numBdryQuads() const = 0;
-	virtual emInt numBdryTrisFromReader()  const= 0 ; 
-	virtual emInt numBdryQuadsFromReader() const= 0 ;
 	virtual emInt numTets() const = 0;
 	virtual emInt numPyramids() const = 0;
 	virtual emInt numPrisms() const = 0;
@@ -141,7 +144,7 @@ public:
 
 	void printMeshSizeStats();
 	double getLengthScale(const emInt vert) const {
-		assert(vert < numVerts());
+		assert(vert < numVertsAllocated());
 		// TODO Would be better to always associate a length scale with the mesh.
 		if (m_lenScale) {
 			return m_lenScale[vert];
@@ -150,12 +153,12 @@ public:
 			return 1;
 		}
 	}
-	const double* getAllLenghtScale() const
+	const double* getAllLengthScale() const
 	{
 		return m_lenScale; 
 	}
 	void setLengthScale(const emInt vert, const double len) const {
-		assert(vert < numVerts());
+		assert(vert < numVertsAllocated());
 		assert(len > 0);
 		// TODO Would be better to always associate a length scale with the mesh.
 		if (m_lenScale) {

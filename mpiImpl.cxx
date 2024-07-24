@@ -345,7 +345,7 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
 
     //Refine 
     times.refine=exaTime();
-    auto refinedMsh = std::make_unique<UMesh>(*((extractedMsh.get())),numDivs,world.rank());
+    auto refinedMsh = extractedMsh->subdivideMesh(numDivs,world.rank());
    
     times.refine=exaTime()-times.refine;
 

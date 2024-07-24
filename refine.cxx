@@ -130,9 +130,9 @@ int main(int argc, char* const argv[]) {
 			else 
 			{
 				double start = exaTime();
-				UMesh UMrefined(CMorig, nDivs);
+				auto refined = CMorig.subdivideMesh(nDivs);
 				double time = exaTime() - start;
-				size_t cells = UMrefined.numCells();
+				size_t cells = refined->numCells();
 				
 				fprintf(stderr, "\nDone serial refinement.\n");
 				fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
@@ -150,18 +150,18 @@ int main(int argc, char* const argv[]) {
 		}
 		else 
 		{
+			UMesh UMorig(inFileBaseName, type, infix);
+
 			if (isParallel)
 			{
-				UMesh UMorig(inFileBaseName, type, infix);
 				UMorig.refineForParallel(nDivs, maxCellsPerPart);
 			}
 			else 
 			{
-					UMesh UMorig(inFileBaseName, type, infix);
 					double start = exaTime();
-					UMesh UMrefined(UMorig, nDivs);
+					auto refined = UMorig.subdivideMesh(nDivs);
 					double time = exaTime() - start;
-					size_t cells = UMrefined.numCells();
+					size_t cells = refined->numCells();
 					
 					fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
 					fprintf(stderr,
