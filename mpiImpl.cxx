@@ -285,41 +285,10 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
     "-nCPUS-"+std::to_string(world.size())+ "TimesForAllRanks.xlsx";
     FILE *fTimeForEachRank = openFile(fileName); 
     
-    
-    vecVecReqs reqForPartCells(nParts);
-    vecVecReqs reqForCoarseFaces(nParts);
     vecVecReqs triReqs  (nParts); 
     vecVecReqs quadReqs (nParts);
 
     std::vector<std::vector<emInt>>   partCells; 
-
-   
-    hashTri  hashTris; 
-	hashQuad hashQuads;
-
-    vecVecTri  tris;
-    vecVecQuad quads;
-
-    vecVecTri   triV(nParts);
-	vecVecQuad  quadV(nParts);
-
-    intToVecTri  remoteTovecTris;
-	intToVecQuad remoteTovecQuads; 
-
-	std::set<int> triNeighbrs;  
-	std::set<int> quadNeighbrs; 
-
-    std::vector<vecTri>  trisTobeRcvd; 
-	std::vector<vecQuad> quadsTobeRcvd;
-
-    hashTri  recvdTris;
-	hashQuad recvdQuads; 
-
-	TableTri2TableIndex2Index   matchedTris; 
-	TableQuad2TableIndex2Index  matchedQuads; 
-
-    std::vector<std::size_t>  trisizes(nParts); 
-    std::vector<std::size_t>  quadsize(nParts);
 
     // All processors read the mesh 
     // TODO: Currently UMesh-specific
@@ -329,35 +298,43 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
     std::make_unique<UMesh>(baseFileName, type, ugridInfix);
     times.preProcessing=exaTime()-times.preProcessing;
    // inimesh->calcMemoryRequirements(*inimesh, numDivs);
-   
-    if(world.rank()==MASTER)
-    {
-        times.partition=exaTime();
-        std::vector<emInt> vaicelltopart;
-        // Paritions the mesh 
-        auto part2cell= partitionMetis(inimesh.get(),nParts,vaicelltopart); 
-        partCells = part2cell;
-        times.partition=exaTime()-times.partition;
-      
-        vecHashTri  hashtris; 
-	    vecHashQuad hashquads;
 
-        // Find coarse part boundary faces and update info of part ID and remote part ID 
-        times.InitialFaceMatching=exaTime();
-        sizeCellparts=inimesh->FastpartFaceMatching(nParts,partCells,vaicelltopart,tris,quads);
-        times.InitialFaceMatching=exaTime()-times.InitialFaceMatching;
+    hashTri  hashTris;
+	hashQuad hashQuads;
 
+	{
+    	vecVecTri  tris;
+    	vecVecQuad quads;
+
+
+    	if(world.rank()==MASTER)
+    	{
+    		times.partition=exaTime();
+    		std::vector<emInt> vaicelltopart;
+    		// Paritions the mesh
+    		auto part2cell= partitionMetis(inimesh.get(),nParts,vaicelltopart);
+    		partCells = part2cell;
+    		times.partition=exaTime()-times.partition;
+
+    		// Find coarse part boundary faces and update info of part ID and remote part ID
+    		times.InitialFaceMatching=exaTime();
+    		sizeCellparts=inimesh->FastpartFaceMatching(nParts,partCells,vaicelltopart,tris,quads);
+    		times.InitialFaceMatching=exaTime()-times.InitialFaceMatching;
+
+    	}
+
+    	times.broadcasting=exaTime();
+    	// Broadcasting all data
+    	boost::mpi::broadcast(world,partCells,MASTER);
+    	boost::mpi::broadcast(world,tris,MASTER);
+    	boost::mpi::broadcast(world,quads,MASTER);
+    	vectorToSet(tris[world.rank()],hashTris);
+    	vectorToSet(quads[world.rank()],hashQuads);
+    	times.broadcasting=exaTime()-times.broadcasting;
+    	times.serial=exaTime()-times.serial;
+
+    	// tris and quads can go out of scope now
     }
-
-    times.broadcasting=exaTime();
-    // Broadcasting all data 
-    boost::mpi::broadcast(world,partCells,MASTER);
-    boost::mpi::broadcast(world,tris,MASTER);
-    boost::mpi::broadcast(world,quads,MASTER);
-    vectorToSet(tris[world.rank()],hashTris);
-    vectorToSet(quads[world.rank()],hashQuads);
-    times.broadcasting=exaTime()-times.broadcasting;
-    times.serial=exaTime()-times.serial;
 
      //Extract
     times.extract=exaTime();
@@ -372,106 +349,136 @@ void refineForMPI ( const char  baseFileName[] , const  char type[],
    
     times.refine=exaTime()-times.refine;
 
+    // Beginning of face exchange
     times.faceExchange=exaTime();
-
-    auto refinedTris = refinedMsh->getRefinedPartTris();
-
-    // Establishing the list of neighbors whom processor share tris 
-    buildTrisMap (refinedTris ,remoteTovecTris ,triNeighbrs);
-
-    for(auto tri:remoteTovecTris)
-	{
-		Request req= world.isend(tri.first,6,tri.second);
-		triReqs[world.rank()].push_back(req);
-	}
     
-    auto refinedQuads= refinedMsh->getRefinedPartQuads();
+    // Send and post receives for tris
+	std::vector<vecTri>  trisTobeRcvd;
+	auto refinedTris = refinedMsh->getRefinedPartTris();
+   {
+    	std::set<int> triNeighbrs;
+        intToVecTri  remoteTovecTris;
 
+    	// Assemble and send tri data
+    	{
+    		// Establishing the list of neighbors whom processor share tris
+    		buildTrisMap (refinedTris ,remoteTovecTris ,triNeighbrs);
 
-    // Establishing the list of neighbors whom processor share quads
-    buildQuadsMap(refinedQuads,remoteTovecQuads,quadNeighbrs); 
-    for(auto quad:remoteTovecQuads)
+    		for(auto tri:remoteTovecTris)
+    		{
+    			Request req= world.isend(tri.first,6,tri.second);
+    			triReqs[world.rank()].push_back(req);
+    		}
+    	}
+    	trisTobeRcvd.resize(triNeighbrs.size());
+
+    	// Post receives for tris
+    	{
+    		int Trijj=0 ;
+    		for(auto isource:triNeighbrs)
+    		{
+    			auto findSource = remoteTovecTris.find(isource);
+    			trisTobeRcvd[Trijj].resize(findSource->second.size());
+    			Trijj++;
+    		}
+
+    		int Trikk=0 ;
+    		for(auto source: triNeighbrs)
+    		{
+    			Request req= world.irecv(source,6,trisTobeRcvd[Trikk]);
+    			triReqs[world.rank()].push_back(req);
+    			Trikk++;
+    		}
+    	}
+    }
+
+    // Assemble and send quad data
+	std::vector<vecQuad> quadsTobeRcvd;
+	auto refinedQuads= refinedMsh->getRefinedPartQuads();
 	{
-		Request req = world.isend(quad.first,7,quad.second);
-		quadReqs[world.rank()].push_back(req);  
-	}
-    
-	quadsTobeRcvd.resize(quadNeighbrs.size());
+		std::set<int> quadNeighbrs;
+		intToVecQuad remoteTovecQuads;
 
-    int Quadjj=0; 
+		{
 
-	for(auto isource:quadNeighbrs)
-	{
-		auto findSource = remoteTovecQuads.find(isource); 
-		quadsTobeRcvd[Quadjj].resize(findSource->second.size()); 
-		Quadjj++; 
-	}
-    int Quadkk=0 ; 
-	for(auto source: quadNeighbrs)
-	{
-		Request req = world.irecv(source,7,quadsTobeRcvd[Quadkk]);
-		quadReqs[world.rank()].push_back(req); 
-		Quadkk++; 
-	}
-    
-    trisTobeRcvd.resize (triNeighbrs.size()); 
+			// Establishing the list of neighbors whom processor share quads
+			buildQuadsMap(refinedQuads,remoteTovecQuads,quadNeighbrs);
+			for(auto quad:remoteTovecQuads)
+			{
+				Request req = world.isend(quad.first,7,quad.second);
+				quadReqs[world.rank()].push_back(req);
+			}
+		}
 
-    int Trijj=0 ; 
-	for(auto isource:triNeighbrs)
-	{
-		auto findSource = remoteTovecTris.find(isource); 
-		trisTobeRcvd[Trijj].resize(findSource->second.size()); 
-		Trijj++; 
+		// Post receives for quads
+		quadsTobeRcvd.resize(quadNeighbrs.size());
+		{
+			int Quadjj=0;
+
+			for(auto isource:quadNeighbrs)
+			{
+				auto findSource = remoteTovecQuads.find(isource);
+				quadsTobeRcvd[Quadjj].resize(findSource->second.size());
+				Quadjj++;
+			}
+			int Quadkk=0 ;
+			for(auto source: quadNeighbrs)
+			{
+				Request req = world.irecv(source,7,quadsTobeRcvd[Quadkk]);
+				quadReqs[world.rank()].push_back(req);
+				Quadkk++;
+			}
+		}
 	}
 
-    int Trikk=0 ; 
-	for(auto source: triNeighbrs)
-	{
-	    Request req= world.irecv(source,6,trisTobeRcvd[Trikk]);
-		triReqs[world.rank()].push_back(req);
-		Trikk++; 
-	}
 
     times.faceExchange=exaTime()-times.faceExchange;
 
-    times.waitTri=exaTime();
-    Wait(triReqs[world.rank()]); 
-    times.waitTri=exaTime()-times.waitTri;
+    // Wait for tri data to arrive, and store it
+    {
+    	times.waitTri=exaTime();
+    	Wait(triReqs[world.rank()]);
+    	times.waitTri=exaTime()-times.waitTri;
 
 
-    times.matchtris=exaTime();
+    	times.matchtris=exaTime();
+        hashTri  recvdTris;
 
-    for(const auto& tri: trisTobeRcvd)
-	{
-        recvdTris.insert(tri.begin(),tri.end()); 
-	}
+    	for(const auto& tri: trisTobeRcvd)
+    	{
+    		recvdTris.insert(tri.begin(),tri.end());
+    	}
 
-    for(auto it=refinedTris.begin(); it!=refinedTris.end(); it++)
-	{
-		std::unordered_map<emInt, emInt> localRemote;
-		findRotationAndMatchTris(*it,numDivs,recvdTris,localRemote); 
-	}
-    times.matchtris=exaTime()-times.matchtris;
-
-    times.waitQuad=exaTime();
-    
-    Wait(quadReqs[world.rank()]);
-
-    times.waitQuad=exaTime()-times.waitQuad;
-
-    times.matchquads=exaTime();
-
-    for(const auto& quad:quadsTobeRcvd)
-	{
-		recvdQuads.insert(quad.begin(),quad.end()); 
-	}
-    for(auto it=refinedQuads.begin(); it!=refinedQuads.end();it++)
-	{
-		std::unordered_map<emInt,emInt> localRemote; 
-		findRotationAndMatchQuads(*it,numDivs,recvdQuads,localRemote); 
+    	for(auto it=refinedTris.begin(); it!=refinedTris.end(); it++)
+    	{
+    		std::unordered_map<emInt, emInt> localRemote;
+    		findRotationAndMatchTris(*it,numDivs,recvdTris,localRemote);
+    	}
+    	times.matchtris=exaTime()-times.matchtris;
     }
-    times.matchquads=exaTime()-times.matchquads;
 
+    // Wait for quad data to arrive, and store it
+    {
+    	times.waitQuad=exaTime();
+
+    	Wait(quadReqs[world.rank()]);
+
+    	times.waitQuad=exaTime()-times.waitQuad;
+
+    	times.matchquads=exaTime();
+    	hashQuad recvdQuads;
+
+    	for(const auto& quad:quadsTobeRcvd)
+    	{
+    		recvdQuads.insert(quad.begin(),quad.end());
+    	}
+    	for(auto it=refinedQuads.begin(); it!=refinedQuads.end();it++)
+    	{
+    		std::unordered_map<emInt,emInt> localRemote;
+    		findRotationAndMatchQuads(*it,numDivs,recvdQuads,localRemote);
+    	}
+    	times.matchquads=exaTime()-times.matchquads;
+    }
     times.total=exaTime()-times.total;
 
    
