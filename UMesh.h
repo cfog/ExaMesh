@@ -33,7 +33,7 @@
 
 class UMesh: public ExaMesh {
 	emInt m_nVerts, m_nBdryVerts, m_nTris, m_nQuads, m_nTets, m_nPyrs, m_nPrisms,
-			m_nHexes, m_nTrisFromReader, m_nQuadsFromReader;
+			m_nHexes;
 	enum {
 		eVert = 0, eTri, eQuad, eTet, ePyr, ePrism, eHex
 	};
@@ -241,7 +241,7 @@ public:
 			const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>(), 
 			const emInt partID=-1) const;
 
-	std::unique_ptr<UMesh>
+	std::unique_ptr<ExaMesh>
 		extractCoarseMeshMPI(const emInt partID, const std::vector<emInt> &partcells , const int numDivs,
 		const std::unordered_set<TriFaceVerts> tris= std::unordered_set<TriFaceVerts>(),
 		const std::unordered_set<QuadFaceVerts> quads= std::unordered_set<QuadFaceVerts>()) const;

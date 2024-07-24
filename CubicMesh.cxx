@@ -1328,7 +1328,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMeshPseudoParallel(Part& P,
 	return extractedMesh;
 }
 
-std::unique_ptr<UMesh>
+std::unique_ptr<ExaMesh>
 CubicMesh::extractCoarseMeshMPI(const emInt partID, const std::vector<emInt> &partcells , const int numDivs,
 const std::unordered_set<TriFaceVerts> tris,
 const std::unordered_set<QuadFaceVerts> quads) const
@@ -1532,656 +1532,655 @@ const std::unordered_set<QuadFaceVerts> quads) const
 		if (isCornerNode[ii]) nVertNodes++;
 	}
 
-	// TODO: All of this needs to be uncommented and made to work.
-	auto extractedMesh = std::make_unique<UMesh>(4,4,4,0,1, 0, 0, 0);
-//	// Now set up the data structures for the new coarse UMesh
-//	auto extractedMesh = std::make_unique<CubicMesh>(nNodes, nBdryVerts,
-//																					nTris + nPartBdryTris,
-//																					nQuads + nPartBdryQuads, nTets, nPyrs,
-//																					nPrisms, nHexes);
-//	extractedMesh->setNVertNodes(nVertNodes);
-//
-//	// Store the vertices, while keeping a mapping from the full list of verts
-//	// to the restricted list so the connectivity can be copied properly.
-//	std::vector<emInt> newIndices(numVerts(), EMINT_MAX);
-//	for (emInt ii = 0; ii < nVerts; ii++) {
-//		if (isVertUsed[ii]) {
-//			double coords[3];
-//			getCoords(ii, coords);
-//			newIndices[ii] = extractedMesh->addVert(coords);
-//			// Copy length scale for vertices from the parent; otherwise, there will be
-//			// mismatches in the refined meshes.
-//			extractedMesh->setLengthScale(newIndices[ii], getLengthScale(ii));
-//		}
-//	}
-//
-//	// Now copy connectivity.
-//	emInt newConn[64];
-//	for (emInt ii = 0; ii < partcells.size(); ii++) {
-//		emInt globalInd = partcells[ii];
-//		emInt ind = (cellID2cellTypeLocalID[globalInd].second) - 1;
-//		emInt type = cellID2cellTypeLocalID[globalInd].first;
-//		switch (type) {
-//			default:
-//				// Panic! Should never get here.
-//				assert(0);
-//				break;
-//			case CGNS_ENUMV(TETRA_20): {
-//				conn = getTetConn(ind);
-//				remapIndices(20, newIndices, conn, newConn);
-//				extractedMesh->addTet(newConn);
-//				break;
-//			}
-//			case CGNS_ENUMV(PYRA_30): {
-//				conn = getPyrConn(ind);
-//				remapIndices(30, newIndices, conn, newConn);
-//				extractedMesh->addPyramid(newConn);
-//				break;
-//			}
-//			case CGNS_ENUMV(PENTA_40): {
-//				conn = getPrismConn(ind);
-//				remapIndices(40, newIndices, conn, newConn);
-//				extractedMesh->addPrism(newConn);
-//				break;
-//			}
-//			case CGNS_ENUMV(HEXA_64): {
-//				conn = getHexConn(ind);
-//				remapIndices(64, newIndices, conn, newConn);
-//				extractedMesh->addHex(newConn);
-//				break;
-//			}
-//		} // end switch
-//	} // end loop to copy most connectivity
-//
-//	for (std::size_t ii = 0; ii < realBdryTris.size(); ii++) {
-//		conn = getBdryTriConn(realBdryTris[ii]);
-//		remapIndices(10, newIndices, conn, newConn);
-//		extractedMesh->addBdryTri(newConn);
-//	}
-//	for (std::size_t ii = 0; ii < realBdryQuads.size(); ii++) {
-//		conn = getBdryQuadConn(realBdryQuads[ii]);
-//		remapIndices(16, newIndices, conn, newConn);
-//		extractedMesh->addBdryQuad(newConn);
-//	}
-//
-//	// Now, finally, the part bdry connectivity.
-//	// TODO: Currently, there's nothing in the data structure that marks which
-//	// are part bdry faces.
-//	assert(partBdryTris.size() == tris.size());
-//
-//	for (auto tri : partBdryTris) {
-//		emInt cellInd = tri.getVolElement();
-//		emInt conn[10] = {0};
-//		// This long switch with nested if's is required to get the full connectivity
-//		// for the part bdry tri, which originally has only corner nodes.
-//		switch (tri.getVolElementType()) {
-//			case CGNS_ENUMV(TETRA_20): {
-//				emInt *elemConn = m_Tet20Conn[cellInd];
-//				// Identify which face this is.  Has to be 012, 013, 123, or 203.
-//				if (tri.getCorner(2) == elemConn[2]) {
-//					// Has to be 012
-//					assert(tri.getCorner(0) == elemConn[0]);
-//					assert(tri.getCorner(1) == elemConn[1]);
-//					conn[0] = elemConn[0];
-//					conn[1] = elemConn[1];
-//					conn[2] = elemConn[2];
-//					conn[3] = elemConn[4];
-//					conn[4] = elemConn[5];
-//					conn[5] = elemConn[6];
-//					conn[6] = elemConn[7];
-//					conn[7] = elemConn[8];
-//					conn[8] = elemConn[9];
-//					conn[9] = elemConn[16];
-//				}
-//				else if (tri.getCorner(0) == elemConn[0]) {
-//					// Has to be 013
-//					assert(tri.getCorner(1) == elemConn[1]);
-//					assert(tri.getCorner(2) == elemConn[3]);
-//					conn[0] = elemConn[0];
-//					conn[1] = elemConn[1];
-//					conn[2] = elemConn[3];
-//					// Between 0 and 1
-//					conn[3] = elemConn[4];
-//					conn[4] = elemConn[5];
-//					// Between 1 and 3
-//					conn[5] = elemConn[12];
-//					conn[6] = elemConn[13];
-//					// Between 3 and 0
-//					conn[7] = elemConn[11];
-//					conn[8] = elemConn[10];
-//					// On face
-//					conn[9] = elemConn[17];
-//				}
-//				else if (tri.getCorner(0) == elemConn[1]) {
-//					// Has to be 123
-//					assert(tri.getCorner(1) == elemConn[2]);
-//					assert(tri.getCorner(2) == elemConn[3]);
-//					conn[0] = elemConn[1];
-//					conn[1] = elemConn[2];
-//					conn[2] = elemConn[3];
-//					// Between 1 and 2
-//					conn[3] = elemConn[6];
-//					conn[4] = elemConn[7];
-//					// Between 2 and 3
-//					conn[5] = elemConn[14];
-//					conn[6] = elemConn[15];
-//					// Between 3 and 1
-//					conn[7] = elemConn[13];
-//					conn[8] = elemConn[12];
-//					// On face
-//					conn[9] = elemConn[18];
-//				}
-//				else if (tri.getCorner(0) == elemConn[2]) {
-//					// Has to be 203
-//					assert(tri.getCorner(1) == elemConn[0]);
-//					assert(tri.getCorner(2) == elemConn[3]);
-//					conn[0] = elemConn[2];
-//					conn[1] = elemConn[0];
-//					conn[2] = elemConn[3];
-//					// Between 2 and 0
-//					conn[3] = elemConn[8];
-//					conn[4] = elemConn[9];
-//					// Between 0 and 3
-//					conn[5] = elemConn[10];
-//					conn[6] = elemConn[11];
-//					// Between 3 and 2
-//					conn[7] = elemConn[15];
-//					conn[8] = elemConn[14];
-//					// On face
-//					conn[9] = elemConn[19];
-//				}
-//				else {
-//					// Should never get here
-//					assert(0);
-//				}
-//				break;
-//			}
-//			case CGNS_ENUMV(PYRA_30): {
-//				emInt *elemConn = m_Pyr30Conn[cellInd];
-//				if (tri.getCorner(0) == elemConn[0]) {
-//					assert(tri.getCorner(1) == elemConn[1]);
-//					assert(tri.getCorner(2) == elemConn[4]);
-//					conn[0] = elemConn[0];
-//					conn[1] = elemConn[1];
-//					conn[2] = elemConn[4];
-//					// Between 0 and 1
-//					conn[3] = elemConn[5];
-//					conn[4] = elemConn[6];
-//					// Between 1 and 4
-//					conn[5] = elemConn[15];
-//					conn[6] = elemConn[16];
-//					// Between 4 and 0
-//					conn[7] = elemConn[14];
-//					conn[8] = elemConn[13];
-//					// On face
-//					conn[9] = elemConn[25];
-//				}
-//				else if (tri.getCorner(0) == elemConn[1]) {
-//					assert(tri.getCorner(1) == elemConn[2]);
-//					assert(tri.getCorner(2) == elemConn[4]);
-//					conn[0] = elemConn[1];
-//					conn[1] = elemConn[2];
-//					conn[2] = elemConn[4];
-//					// Between 1 and 2
-//					conn[3] = elemConn[7];
-//					conn[4] = elemConn[8];
-//					// Between 2 and 4
-//					conn[5] = elemConn[17];
-//					conn[6] = elemConn[18];
-//					// Between 4 and 1
-//					conn[7] = elemConn[16];
-//					conn[8] = elemConn[15];
-//					// On face
-//					conn[9] = elemConn[26];
-//				}
-//				else if (tri.getCorner(0) == elemConn[2]) {
-//					assert(tri.getCorner(1) == elemConn[3]);
-//					assert(tri.getCorner(2) == elemConn[4]);
-//					conn[0] = elemConn[2];
-//					conn[1] = elemConn[3];
-//					conn[2] = elemConn[4];
-//					// Between 2 and 3
-//					conn[3] = elemConn[9];
-//					conn[4] = elemConn[10];
-//					// Between 3 and 4
-//					conn[5] = elemConn[19];
-//					conn[6] = elemConn[20];
-//					// Between 4 and 1
-//					conn[7] = elemConn[18];
-//					conn[8] = elemConn[17];
-//					// On face
-//					conn[9] = elemConn[27];
-//				}
-//				else if (tri.getCorner(0) == elemConn[3]) {
-//					assert(tri.getCorner(1) == elemConn[0]);
-//					assert(tri.getCorner(2) == elemConn[4]);
-//					conn[0] = elemConn[3];
-//					conn[1] = elemConn[0];
-//					conn[2] = elemConn[4];
-//					// Between 3 and 0
-//					conn[3] = elemConn[13];
-//					conn[4] = elemConn[14];
-//					// Between 0 and 4
-//					conn[5] = elemConn[17];
-//					conn[6] = elemConn[18];
-//					// Between 4 and 3
-//					conn[7] = elemConn[20];
-//					conn[8] = elemConn[19];
-//					// On face
-//					conn[9] = elemConn[28];
-//				}
-//				else {
-//					// Should never get here
-//					assert(0);
-//				}
-//				break;
-//			}
-//			case CGNS_ENUMV(PENTA_40): {
-//				emInt *elemConn = m_Prism40Conn[cellInd];
-//				if (tri.getCorner(0)  == elemConn[0]) {
-//					assert(tri.getCorner(1) == elemConn[1]);
-//					assert(tri.getCorner(2) == elemConn[2]);
-//					conn[0] = elemConn[0];
-//					conn[1] = elemConn[1];
-//					conn[2] = elemConn[2];
-//					// Between 0 and 1
-//					conn[3] = elemConn[6];
-//					conn[4] = elemConn[7];
-//					// Between 1 and 2
-//					conn[5] = elemConn[8];
-//					conn[6] = elemConn[9];
-//					// Between 2 and 0
-//					conn[7] = elemConn[10];
-//					conn[8] = elemConn[11];
-//					// On face
-//					conn[9] = elemConn[24];
-//				}
-//				else if (tri.getCorner(0) == elemConn[3]) {
-//					assert(tri.getCorner(1) == elemConn[4]);
-//					assert(tri.getCorner(2) == elemConn[5]);
-//					conn[0] = elemConn[3];
-//					conn[1] = elemConn[4];
-//					conn[2] = elemConn[5];
-//					// Between 3 and 4
-//					conn[3] = elemConn[18];
-//					conn[4] = elemConn[19];
-//					// Between 4 and 5
-//					conn[5] = elemConn[20];
-//					conn[6] = elemConn[21];
-//					// Between 5 and 3
-//					conn[7] = elemConn[22];
-//					conn[8] = elemConn[23];
-//					// On face
-//					conn[9] = elemConn[37];
-//				}
-//				else {
-//					// Should never get here
-//					assert(0);
-//				}
-//				break;
-//			}
-//			default: {
-//				// Should never get here.
-//				assert(0);
-//			}
-//		}
-//		emInt localConn[10];
-//		remapIndices(10, newIndices, conn, localConn);
-//		emInt global[3] = {tri.getCorner(0), tri.getCorner(1), tri.getCorner(2)};
-//		TriFaceVerts TF(numDivs, global, partID, -1, true);
-//		auto itr = tris.find(TF);
-//		if (itr != tris.end()) {
-//			assert(itr->getGlobalCorner(0) == global[0] &&
-//			       itr->getGlobalCorner(1) == global[1] &&
-//			       itr->getGlobalCorner(2) == global[2] &&
-//			       itr->getPartid() == partID);
-//			TriFaceVerts TFV(numDivs, localConn, global, partID, itr->getRemoteId(),
-//					 0, EMINT_MAX, false);
-//			// need to be corrected, I could not generate with correct bool value unless
-//			// I pass all arguments
-//
-//			extractedMesh->addPartTritoSet(TFV);
-//		}
-//		extractedMesh->addBdryTri(localConn);
-//	}
-//	assert(extractedMesh->getSizePartTris() == tris.size());
-//
-//	assert(partBdryQuads.size() == quads.size());
-//	for (auto quad : partBdryQuads) {
-//		emInt cellInd = quad.getVolElement();
-//		emInt conn[16] = {0};
-//		// Just as for tris, we need the full high order connectivity here.
-//		switch (quad.getVolElementType()) {
-//			case CGNS_ENUMV (PYRA_30): {
-//				// Only one quad here, so it had better be the right one.
-//				emInt *elemConn = m_Pyr30Conn[cellInd];
-//				assert(quad.getCorner(0) == elemConn[0]);
-//				assert(quad.getCorner(1) == elemConn[1]);
-//				assert(quad.getCorner(2) == elemConn[2]);
-//				assert(quad.getCorner(3) == elemConn[3]);
-//
-//				conn[0] = elemConn[0];
-//				conn[1] = elemConn[1];
-//				conn[2] = elemConn[2];
-//				conn[3] = elemConn[3];
-//				// Between 0 and 1
-//				conn[4] = elemConn[5];
-//				conn[5] = elemConn[6];
-//				// Between 1 and 2
-//				conn[6] = elemConn[7];
-//				conn[7] = elemConn[8];
-//				// Between 2 and 3
-//				conn[8] = elemConn[9];
-//				conn[9] = elemConn[10];
-//				// Between 3 and 0
-//				conn[10] = elemConn[11];
-//				conn[11] = elemConn[12];
-//				// On face
-//				conn[12] = elemConn[21];
-//				conn[13] = elemConn[22];
-//				conn[14] = elemConn[23];
-//				conn[15] = elemConn[24];
-//				break;
-//			}
-//			case CGNS_ENUMV( PENTA_40): {
-//				emInt *elemConn = m_Prism40Conn[cellInd];
-//
-//				// Three possible quads: 0143 1254 2035
-//				if (quad.getCorner(0) == elemConn[0]) {
-//					// 0143
-//					assert(quad.getCorner(1) == elemConn[1]);
-//					assert(quad.getCorner(2) == elemConn[4]);
-//					assert(quad.getCorner(3) == elemConn[3]);
-//
-//					conn[0] = elemConn[0];
-//					conn[1] = elemConn[1];
-//					conn[2] = elemConn[4];
-//					conn[3] = elemConn[3];
-//					// Between 0 and 1
-//					conn[4] = elemConn[6];
-//					conn[5] = elemConn[7];
-//					// Between 1 and 4
-//					conn[6] = elemConn[14];
-//					conn[7] = elemConn[15];
-//					// Between 4 and 3
-//					conn[8] = elemConn[19];
-//					conn[9] = elemConn[18];
-//					// Between 3 and 0
-//					conn[10] = elemConn[13];
-//					conn[11] = elemConn[12];
-//					// On face
-//					conn[12] = elemConn[25];
-//					conn[13] = elemConn[26];
-//					conn[14] = elemConn[27];
-//					conn[15] = elemConn[28];
-//				}
-//				else if (quad.getCorner(0) == elemConn[1]) {
-//					// 1254
-//					assert(quad.getCorner(1) == elemConn[2]);
-//					assert(quad.getCorner(2) == elemConn[5]);
-//					assert(quad.getCorner(3) == elemConn[4]);
-//
-//					conn[0] = elemConn[1];
-//					conn[1] = elemConn[2];
-//					conn[2] = elemConn[5];
-//					conn[3] = elemConn[4];
-//					// Between 1 and 2
-//					conn[4] = elemConn[8];
-//					conn[5] = elemConn[9];
-//					// Between 2 and 5
-//					conn[6] = elemConn[16];
-//					conn[7] = elemConn[17];
-//					// Between 5 and 4
-//					conn[8] = elemConn[21];
-//					conn[9] = elemConn[20];
-//					// Between 4 and 1
-//					conn[10] = elemConn[15];
-//					conn[11] = elemConn[14];
-//					// On face
-//					conn[12] = elemConn[29];
-//					conn[13] = elemConn[30];
-//					conn[14] = elemConn[31];
-//					conn[15] = elemConn[32];
-//				}
-//				else if (quad.getCorner(0) == elemConn[2]) {
-//					// 2035
-//					assert(quad.getCorner(1) == elemConn[0]);
-//					assert(quad.getCorner(2) == elemConn[3]);
-//					assert(quad.getCorner(3) == elemConn[5]);
-//
-//					conn[0] = elemConn[2];
-//					conn[1] = elemConn[0];
-//					conn[2] = elemConn[3];
-//					conn[3] = elemConn[5];
-//					// Between 2 and 0
-//					conn[4] = elemConn[10];
-//					conn[5] = elemConn[11];
-//					// Between 0 and 3
-//					conn[6] = elemConn[12];
-//					conn[7] = elemConn[13];
-//					// Between 3 and 5
-//					conn[8] = elemConn[23];
-//					conn[9] = elemConn[22];
-//					// Between 5 and 0
-//					conn[10] = elemConn[17];
-//					conn[11] = elemConn[16];
-//					// On face
-//					conn[12] = elemConn[33];
-//					conn[13] = elemConn[34];
-//					conn[14] = elemConn[35];
-//					conn[15] = elemConn[36];
-//				}
-//				else {
-//					// Should never get here
-//					assert(0);
-//				}
-//				break;
-//			}
-//			case CGNS_ENUMV(HEXA_64): {
-//				emInt *elemConn = m_Hex64Conn[cellInd];
-//
-//				// Six quads: 0154 1265 2376 3047 0123 4567
-//				if (quad.getCorner(2) == elemConn[2]) {
-//					// Bottom: 0123
-//					assert(quad.getCorner(0) == elemConn[0]);
-//					assert(quad.getCorner(1) == elemConn[1]);
-//					assert(quad.getCorner(3) == elemConn[3]);
-//
-//					conn[0] = elemConn[0];
-//					conn[1] = elemConn[1];
-//					conn[2] = elemConn[2];
-//					conn[3] = elemConn[3];
-//					// Between 0 and 1
-//					conn[4] = elemConn[8];
-//					conn[5] = elemConn[9];
-//					// Between 1 and 2
-//					conn[6] = elemConn[10];
-//					conn[7] = elemConn[11];
-//					// Between 2 and 3
-//					conn[8] = elemConn[12];
-//					conn[9] = elemConn[13];
-//					// Between 3 and 0
-//					conn[10] = elemConn[14];
-//					conn[11] = elemConn[15];
-//					// On face
-//					conn[12] = elemConn[32];
-//					conn[13] = elemConn[33];
-//					conn[14] = elemConn[34];
-//					conn[15] = elemConn[35];
-//				}
-//				else if (quad.getCorner(0) == elemConn[4]) {
-//					// Top: 4567
-//					assert(quad.getCorner(1) == elemConn[5]);
-//					assert(quad.getCorner(2) == elemConn[6]);
-//					assert(quad.getCorner(3) == elemConn[7]);
-//
-//					conn[0] = elemConn[4];
-//					conn[1] = elemConn[5];
-//					conn[2] = elemConn[6];
-//					conn[3] = elemConn[7];
-//					// Between 4 and 5
-//					conn[4] = elemConn[24];
-//					conn[5] = elemConn[25];
-//					// Between 5 and 6
-//					conn[6] = elemConn[26];
-//					conn[7] = elemConn[27];
-//					// Between 6 and 7
-//					conn[8] = elemConn[28];
-//					conn[9] = elemConn[29];
-//					// Between 7 and 4
-//					conn[10] = elemConn[30];
-//					conn[11] = elemConn[31];
-//					// On face
-//					conn[12] = elemConn[52];
-//					conn[13] = elemConn[53];
-//					conn[14] = elemConn[54];
-//					conn[15] = elemConn[55];
-//				}
-//				else if (quad.getCorner(0) == elemConn[0]) {
-//					// Side: 0154
-//					assert(quad.getCorner(1) == elemConn[1]);
-//					assert(quad.getCorner(2) == elemConn[5]);
-//					assert(quad.getCorner(3) == elemConn[4]);
-//
-//					conn[0] = elemConn[0];
-//					conn[1] = elemConn[1];
-//					conn[2] = elemConn[5];
-//					conn[3] = elemConn[4];
-//					// Between 0 and 1
-//					conn[4] = elemConn[8];
-//					conn[5] = elemConn[9];
-//					// Between 1 and 5
-//					conn[6] = elemConn[18];
-//					conn[7] = elemConn[19];
-//					// Between 5 and 4
-//					conn[8] = elemConn[25];
-//					conn[9] = elemConn[24];
-//					// Between 4 and 1
-//					conn[10] = elemConn[17];
-//					conn[11] = elemConn[16];
-//					// On face
-//					conn[12] = elemConn[36];
-//					conn[13] = elemConn[37];
-//					conn[14] = elemConn[38];
-//					conn[15] = elemConn[39];
-//				}
-//				else if (quad.getCorner(0) == elemConn[1]) {
-//					// Side: 1265
-//					assert(quad.getCorner(1) == elemConn[2]);
-//					assert(quad.getCorner(2) == elemConn[6]);
-//					assert(quad.getCorner(3) == elemConn[5]);
-//
-//					conn[0] = elemConn[1];
-//					conn[1] = elemConn[2];
-//					conn[2] = elemConn[6];
-//					conn[3] = elemConn[5];
-//					// Between 1 and 2
-//					conn[4] = elemConn[10];
-//					conn[5] = elemConn[11];
-//					// Between 2 and 6
-//					conn[6] = elemConn[20];
-//					conn[7] = elemConn[21];
-//					// Between 6 and 5
-//					conn[8] = elemConn[27];
-//					conn[9] = elemConn[26];
-//					// Between 5 and 1
-//					conn[10] = elemConn[19];
-//					conn[11] = elemConn[18];
-//					// On face
-//					conn[12] = elemConn[40];
-//					conn[13] = elemConn[41];
-//					conn[14] = elemConn[42];
-//					conn[15] = elemConn[43];
-//				}
-//				else if (quad.getCorner(0) == elemConn[2]) {
-//					// Side: 2376
-//					assert(quad.getCorner(1) == elemConn[3]);
-//					assert(quad.getCorner(2) == elemConn[7]);
-//					assert(quad.getCorner(3) == elemConn[6]);
-//
-//					conn[0] = elemConn[2];
-//					conn[1] = elemConn[3];
-//					conn[2] = elemConn[7];
-//					conn[3] = elemConn[6];
-//					// Between 2 and 3
-//					conn[4] = elemConn[12];
-//					conn[5] = elemConn[13];
-//					// Between 3 and 7
-//					conn[6] = elemConn[22];
-//					conn[7] = elemConn[23];
-//					// Between 7 and 6
-//					conn[8] = elemConn[29];
-//					conn[9] = elemConn[28];
-//					// Between 6 and 2
-//					conn[10] = elemConn[21];
-//					conn[11] = elemConn[20];
-//					// On face
-//					conn[12] = elemConn[44];
-//					conn[13] = elemConn[45];
-//					conn[14] = elemConn[46];
-//					conn[15] = elemConn[47];
-//				}
-//				else if (quad.getCorner(0) == elemConn[3]) {
-//					// Side: 3047
-//					assert(quad.getCorner(1) == elemConn[0]);
-//					assert(quad.getCorner(2) == elemConn[4]);
-//					assert(quad.getCorner(3) == elemConn[7]);
-//
-//					conn[0] = elemConn[3];
-//					conn[1] = elemConn[0];
-//					conn[2] = elemConn[4];
-//					conn[3] = elemConn[7];
-//					// Between 3 and 0
-//					conn[4] = elemConn[14];
-//					conn[5] = elemConn[15];
-//					// Between 0 and 4
-//					conn[6] = elemConn[16];
-//					conn[7] = elemConn[17];
-//					// Between 4 and 7
-//					conn[8] = elemConn[31];
-//					conn[9] = elemConn[30];
-//					// Between 7 and 3
-//					conn[10] = elemConn[23];
-//					conn[11] = elemConn[22];
-//					// On face
-//					conn[12] = elemConn[48];
-//					conn[13] = elemConn[49];
-//					conn[14] = elemConn[50];
-//					conn[15] = elemConn[51];
-//				}
-//				else {
-//					// Should never get here
-//					assert(0);
-//				}
-//
-//				break;
-//			}
-//			default:
-//				// Should never get here.
-//				assert(0);
-//		}
-//		emInt localConn[16];
-//		remapIndices(16, newIndices, conn, localConn);
-//		emInt global[4] = {quad.getCorner(0), quad.getCorner(1),
-//		  quad.getCorner(2), quad.getCorner(3)};
-//		QuadFaceVerts QF(numDivs, global, partID, -1, true);
-//		auto itr = quads.find(QF);
-//		if (itr != quads.end()) {
-//			assert(itr->getGlobalCorner(0) == global[0] &&
-//			       itr->getGlobalCorner(1) == global[1] &&
-//			       itr->getGlobalCorner(2) == global[2] &&
-//			       itr->getGlobalCorner(3) == global[3] &&
-//			       itr->getPartid() == partID);
-//			QuadFaceVerts QFV(numDivs, localConn, global, partID, itr->getRemoteId(),
-//					  0, EMINT_MAX, false);
-//			// need to be corrected, I could not generate with correct bool value unless
-//			// I pass all arguments
-//			extractedMesh->addPartQuadtoSet(QFV);
-//		}
-//		extractedMesh->addBdryQuad(localConn);
-//	}
-//	assert(extractedMesh->getSizePartQuads() == quads.size());
-//	CALLGRIND_TOGGLE_COLLECT;
+	// Now set up the data structures for the new coarse UMesh
+	auto extractedMesh = std::make_unique<CubicMesh>(nNodes, nBdryVerts,
+																					nTris + nPartBdryTris,
+																					nQuads + nPartBdryQuads, nTets, nPyrs,
+																					nPrisms, nHexes);
+	extractedMesh->setNVertNodes(nVertNodes);
+
+	// Store the vertices, while keeping a mapping from the full list of verts
+	// to the restricted list so the connectivity can be copied properly.
+	std::vector<emInt> newIndices(numVerts(), EMINT_MAX);
+	for (emInt ii = 0; ii < nVerts; ii++) {
+		if (isVertUsed[ii]) {
+			double coords[3];
+			getCoords(ii, coords);
+			newIndices[ii] = extractedMesh->addVert(coords);
+			// Copy length scale for vertices from the parent; otherwise, there will be
+			// mismatches in the refined meshes.
+			extractedMesh->setLengthScale(newIndices[ii], getLengthScale(ii));
+		}
+	}
+
+	// Now copy connectivity.
+	emInt newConn[64];
+	for (emInt ii = 0; ii < partcells.size(); ii++) {
+		emInt globalInd = partcells[ii];
+		emInt ind = (cellID2cellTypeLocalID[globalInd].second) - 1;
+		emInt type = cellID2cellTypeLocalID[globalInd].first;
+		switch (type) {
+			default:
+				// Panic! Should never get here.
+				assert(0);
+				break;
+			case CGNS_ENUMV(TETRA_20): {
+				conn = getTetConn(ind);
+				remapIndices(20, newIndices, conn, newConn);
+				extractedMesh->addTet(newConn);
+				break;
+			}
+			case CGNS_ENUMV(PYRA_30): {
+				conn = getPyrConn(ind);
+				remapIndices(30, newIndices, conn, newConn);
+				extractedMesh->addPyramid(newConn);
+				break;
+			}
+			case CGNS_ENUMV(PENTA_40): {
+				conn = getPrismConn(ind);
+				remapIndices(40, newIndices, conn, newConn);
+				extractedMesh->addPrism(newConn);
+				break;
+			}
+			case CGNS_ENUMV(HEXA_64): {
+				conn = getHexConn(ind);
+				remapIndices(64, newIndices, conn, newConn);
+				extractedMesh->addHex(newConn);
+				break;
+			}
+		} // end switch
+	} // end loop to copy most connectivity
+
+	for (std::size_t ii = 0; ii < realBdryTris.size(); ii++) {
+		conn = getBdryTriConn(realBdryTris[ii]);
+		remapIndices(10, newIndices, conn, newConn);
+		extractedMesh->addBdryTri(newConn);
+	}
+	for (std::size_t ii = 0; ii < realBdryQuads.size(); ii++) {
+		conn = getBdryQuadConn(realBdryQuads[ii]);
+		remapIndices(16, newIndices, conn, newConn);
+		extractedMesh->addBdryQuad(newConn);
+	}
+
+	// Now, finally, the part bdry connectivity.
+	// TODO: Currently, there's nothing in the data structure that marks which
+	// are part bdry faces.
+	assert(partBdryTris.size() == tris.size());
+
+	for (auto tri : partBdryTris) {
+		emInt cellInd = tri.getVolElement();
+		emInt conn[10] = {0};
+		// This long switch with nested if's is required to get the full connectivity
+		// for the part bdry tri, which originally has only corner nodes.
+		switch (tri.getVolElementType()) {
+			case CGNS_ENUMV(TETRA_20): {
+				emInt *elemConn = m_Tet20Conn[cellInd];
+				// Identify which face this is.  Has to be 012, 013, 123, or 203.
+				if (tri.getCorner(2) == elemConn[2]) {
+					// Has to be 012
+					assert(tri.getCorner(0) == elemConn[0]);
+					assert(tri.getCorner(1) == elemConn[1]);
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[2];
+					conn[3] = elemConn[4];
+					conn[4] = elemConn[5];
+					conn[5] = elemConn[6];
+					conn[6] = elemConn[7];
+					conn[7] = elemConn[8];
+					conn[8] = elemConn[9];
+					conn[9] = elemConn[16];
+				}
+				else if (tri.getCorner(0) == elemConn[0]) {
+					// Has to be 013
+					assert(tri.getCorner(1) == elemConn[1]);
+					assert(tri.getCorner(2) == elemConn[3]);
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[3];
+					// Between 0 and 1
+					conn[3] = elemConn[4];
+					conn[4] = elemConn[5];
+					// Between 1 and 3
+					conn[5] = elemConn[12];
+					conn[6] = elemConn[13];
+					// Between 3 and 0
+					conn[7] = elemConn[11];
+					conn[8] = elemConn[10];
+					// On face
+					conn[9] = elemConn[17];
+				}
+				else if (tri.getCorner(0) == elemConn[1]) {
+					// Has to be 123
+					assert(tri.getCorner(1) == elemConn[2]);
+					assert(tri.getCorner(2) == elemConn[3]);
+					conn[0] = elemConn[1];
+					conn[1] = elemConn[2];
+					conn[2] = elemConn[3];
+					// Between 1 and 2
+					conn[3] = elemConn[6];
+					conn[4] = elemConn[7];
+					// Between 2 and 3
+					conn[5] = elemConn[14];
+					conn[6] = elemConn[15];
+					// Between 3 and 1
+					conn[7] = elemConn[13];
+					conn[8] = elemConn[12];
+					// On face
+					conn[9] = elemConn[18];
+				}
+				else if (tri.getCorner(0) == elemConn[2]) {
+					// Has to be 203
+					assert(tri.getCorner(1) == elemConn[0]);
+					assert(tri.getCorner(2) == elemConn[3]);
+					conn[0] = elemConn[2];
+					conn[1] = elemConn[0];
+					conn[2] = elemConn[3];
+					// Between 2 and 0
+					conn[3] = elemConn[8];
+					conn[4] = elemConn[9];
+					// Between 0 and 3
+					conn[5] = elemConn[10];
+					conn[6] = elemConn[11];
+					// Between 3 and 2
+					conn[7] = elemConn[15];
+					conn[8] = elemConn[14];
+					// On face
+					conn[9] = elemConn[19];
+				}
+				else {
+					// Should never get here
+					assert(0);
+				}
+				break;
+			}
+			case CGNS_ENUMV(PYRA_30): {
+				emInt *elemConn = m_Pyr30Conn[cellInd];
+				if (tri.getCorner(0) == elemConn[0]) {
+					assert(tri.getCorner(1) == elemConn[1]);
+					assert(tri.getCorner(2) == elemConn[4]);
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[4];
+					// Between 0 and 1
+					conn[3] = elemConn[5];
+					conn[4] = elemConn[6];
+					// Between 1 and 4
+					conn[5] = elemConn[15];
+					conn[6] = elemConn[16];
+					// Between 4 and 0
+					conn[7] = elemConn[14];
+					conn[8] = elemConn[13];
+					// On face
+					conn[9] = elemConn[25];
+				}
+				else if (tri.getCorner(0) == elemConn[1]) {
+					assert(tri.getCorner(1) == elemConn[2]);
+					assert(tri.getCorner(2) == elemConn[4]);
+					conn[0] = elemConn[1];
+					conn[1] = elemConn[2];
+					conn[2] = elemConn[4];
+					// Between 1 and 2
+					conn[3] = elemConn[7];
+					conn[4] = elemConn[8];
+					// Between 2 and 4
+					conn[5] = elemConn[17];
+					conn[6] = elemConn[18];
+					// Between 4 and 1
+					conn[7] = elemConn[16];
+					conn[8] = elemConn[15];
+					// On face
+					conn[9] = elemConn[26];
+				}
+				else if (tri.getCorner(0) == elemConn[2]) {
+					assert(tri.getCorner(1) == elemConn[3]);
+					assert(tri.getCorner(2) == elemConn[4]);
+					conn[0] = elemConn[2];
+					conn[1] = elemConn[3];
+					conn[2] = elemConn[4];
+					// Between 2 and 3
+					conn[3] = elemConn[9];
+					conn[4] = elemConn[10];
+					// Between 3 and 4
+					conn[5] = elemConn[19];
+					conn[6] = elemConn[20];
+					// Between 4 and 1
+					conn[7] = elemConn[18];
+					conn[8] = elemConn[17];
+					// On face
+					conn[9] = elemConn[27];
+				}
+				else if (tri.getCorner(0) == elemConn[3]) {
+					assert(tri.getCorner(1) == elemConn[0]);
+					assert(tri.getCorner(2) == elemConn[4]);
+					conn[0] = elemConn[3];
+					conn[1] = elemConn[0];
+					conn[2] = elemConn[4];
+					// Between 3 and 0
+					conn[3] = elemConn[13];
+					conn[4] = elemConn[14];
+					// Between 0 and 4
+					conn[5] = elemConn[17];
+					conn[6] = elemConn[18];
+					// Between 4 and 3
+					conn[7] = elemConn[20];
+					conn[8] = elemConn[19];
+					// On face
+					conn[9] = elemConn[28];
+				}
+				else {
+					// Should never get here
+					assert(0);
+				}
+				break;
+			}
+			case CGNS_ENUMV(PENTA_40): {
+				emInt *elemConn = m_Prism40Conn[cellInd];
+				if (tri.getCorner(0)  == elemConn[0]) {
+					assert(tri.getCorner(1) == elemConn[1]);
+					assert(tri.getCorner(2) == elemConn[2]);
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[2];
+					// Between 0 and 1
+					conn[3] = elemConn[6];
+					conn[4] = elemConn[7];
+					// Between 1 and 2
+					conn[5] = elemConn[8];
+					conn[6] = elemConn[9];
+					// Between 2 and 0
+					conn[7] = elemConn[10];
+					conn[8] = elemConn[11];
+					// On face
+					conn[9] = elemConn[24];
+				}
+				else if (tri.getCorner(0) == elemConn[3]) {
+					assert(tri.getCorner(1) == elemConn[4]);
+					assert(tri.getCorner(2) == elemConn[5]);
+					conn[0] = elemConn[3];
+					conn[1] = elemConn[4];
+					conn[2] = elemConn[5];
+					// Between 3 and 4
+					conn[3] = elemConn[18];
+					conn[4] = elemConn[19];
+					// Between 4 and 5
+					conn[5] = elemConn[20];
+					conn[6] = elemConn[21];
+					// Between 5 and 3
+					conn[7] = elemConn[22];
+					conn[8] = elemConn[23];
+					// On face
+					conn[9] = elemConn[37];
+				}
+				else {
+					// Should never get here
+					assert(0);
+				}
+				break;
+			}
+			default: {
+				// Should never get here.
+				assert(0);
+			}
+		}
+		emInt localConn[10];
+		remapIndices(10, newIndices, conn, localConn);
+		emInt global[3] = {tri.getCorner(0), tri.getCorner(1), tri.getCorner(2)};
+		TriFaceVerts TF(numDivs, global, partID, -1, true);
+		auto itr = tris.find(TF);
+		if (itr != tris.end()) {
+			assert(itr->getGlobalCorner(0) == global[0] &&
+			       itr->getGlobalCorner(1) == global[1] &&
+			       itr->getGlobalCorner(2) == global[2] &&
+			       itr->getPartid() == partID);
+			TriFaceVerts TFV(numDivs, localConn, global, partID, itr->getRemoteId(),
+					 0, EMINT_MAX, false);
+			// need to be corrected, I could not generate with correct bool value unless
+			// I pass all arguments
+
+			extractedMesh->addPartTritoSet(TFV);
+		}
+		extractedMesh->addBdryTri(localConn);
+	}
+	assert(extractedMesh->getSizePartTris() == tris.size());
+
+	assert(partBdryQuads.size() == quads.size());
+	for (auto quad : partBdryQuads) {
+		emInt cellInd = quad.getVolElement();
+		emInt conn[16] = {0};
+		// Just as for tris, we need the full high order connectivity here.
+		switch (quad.getVolElementType()) {
+			case CGNS_ENUMV (PYRA_30): {
+				// Only one quad here, so it had better be the right one.
+				emInt *elemConn = m_Pyr30Conn[cellInd];
+				assert(quad.getCorner(0) == elemConn[0]);
+				assert(quad.getCorner(1) == elemConn[1]);
+				assert(quad.getCorner(2) == elemConn[2]);
+				assert(quad.getCorner(3) == elemConn[3]);
+
+				conn[0] = elemConn[0];
+				conn[1] = elemConn[1];
+				conn[2] = elemConn[2];
+				conn[3] = elemConn[3];
+				// Between 0 and 1
+				conn[4] = elemConn[5];
+				conn[5] = elemConn[6];
+				// Between 1 and 2
+				conn[6] = elemConn[7];
+				conn[7] = elemConn[8];
+				// Between 2 and 3
+				conn[8] = elemConn[9];
+				conn[9] = elemConn[10];
+				// Between 3 and 0
+				conn[10] = elemConn[11];
+				conn[11] = elemConn[12];
+				// On face
+				conn[12] = elemConn[21];
+				conn[13] = elemConn[22];
+				conn[14] = elemConn[23];
+				conn[15] = elemConn[24];
+				break;
+			}
+			case CGNS_ENUMV( PENTA_40): {
+				emInt *elemConn = m_Prism40Conn[cellInd];
+
+				// Three possible quads: 0143 1254 2035
+				if (quad.getCorner(0) == elemConn[0]) {
+					// 0143
+					assert(quad.getCorner(1) == elemConn[1]);
+					assert(quad.getCorner(2) == elemConn[4]);
+					assert(quad.getCorner(3) == elemConn[3]);
+
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[4];
+					conn[3] = elemConn[3];
+					// Between 0 and 1
+					conn[4] = elemConn[6];
+					conn[5] = elemConn[7];
+					// Between 1 and 4
+					conn[6] = elemConn[14];
+					conn[7] = elemConn[15];
+					// Between 4 and 3
+					conn[8] = elemConn[19];
+					conn[9] = elemConn[18];
+					// Between 3 and 0
+					conn[10] = elemConn[13];
+					conn[11] = elemConn[12];
+					// On face
+					conn[12] = elemConn[25];
+					conn[13] = elemConn[26];
+					conn[14] = elemConn[27];
+					conn[15] = elemConn[28];
+				}
+				else if (quad.getCorner(0) == elemConn[1]) {
+					// 1254
+					assert(quad.getCorner(1) == elemConn[2]);
+					assert(quad.getCorner(2) == elemConn[5]);
+					assert(quad.getCorner(3) == elemConn[4]);
+
+					conn[0] = elemConn[1];
+					conn[1] = elemConn[2];
+					conn[2] = elemConn[5];
+					conn[3] = elemConn[4];
+					// Between 1 and 2
+					conn[4] = elemConn[8];
+					conn[5] = elemConn[9];
+					// Between 2 and 5
+					conn[6] = elemConn[16];
+					conn[7] = elemConn[17];
+					// Between 5 and 4
+					conn[8] = elemConn[21];
+					conn[9] = elemConn[20];
+					// Between 4 and 1
+					conn[10] = elemConn[15];
+					conn[11] = elemConn[14];
+					// On face
+					conn[12] = elemConn[29];
+					conn[13] = elemConn[30];
+					conn[14] = elemConn[31];
+					conn[15] = elemConn[32];
+				}
+				else if (quad.getCorner(0) == elemConn[2]) {
+					// 2035
+					assert(quad.getCorner(1) == elemConn[0]);
+					assert(quad.getCorner(2) == elemConn[3]);
+					assert(quad.getCorner(3) == elemConn[5]);
+
+					conn[0] = elemConn[2];
+					conn[1] = elemConn[0];
+					conn[2] = elemConn[3];
+					conn[3] = elemConn[5];
+					// Between 2 and 0
+					conn[4] = elemConn[10];
+					conn[5] = elemConn[11];
+					// Between 0 and 3
+					conn[6] = elemConn[12];
+					conn[7] = elemConn[13];
+					// Between 3 and 5
+					conn[8] = elemConn[23];
+					conn[9] = elemConn[22];
+					// Between 5 and 0
+					conn[10] = elemConn[17];
+					conn[11] = elemConn[16];
+					// On face
+					conn[12] = elemConn[33];
+					conn[13] = elemConn[34];
+					conn[14] = elemConn[35];
+					conn[15] = elemConn[36];
+				}
+				else {
+					// Should never get here
+					assert(0);
+				}
+				break;
+			}
+			case CGNS_ENUMV(HEXA_64): {
+				emInt *elemConn = m_Hex64Conn[cellInd];
+
+				// Six quads: 0154 1265 2376 3047 0123 4567
+				if (quad.getCorner(2) == elemConn[2]) {
+					// Bottom: 0123
+					assert(quad.getCorner(0) == elemConn[0]);
+					assert(quad.getCorner(1) == elemConn[1]);
+					assert(quad.getCorner(3) == elemConn[3]);
+
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[2];
+					conn[3] = elemConn[3];
+					// Between 0 and 1
+					conn[4] = elemConn[8];
+					conn[5] = elemConn[9];
+					// Between 1 and 2
+					conn[6] = elemConn[10];
+					conn[7] = elemConn[11];
+					// Between 2 and 3
+					conn[8] = elemConn[12];
+					conn[9] = elemConn[13];
+					// Between 3 and 0
+					conn[10] = elemConn[14];
+					conn[11] = elemConn[15];
+					// On face
+					conn[12] = elemConn[32];
+					conn[13] = elemConn[33];
+					conn[14] = elemConn[34];
+					conn[15] = elemConn[35];
+				}
+				else if (quad.getCorner(0) == elemConn[4]) {
+					// Top: 4567
+					assert(quad.getCorner(1) == elemConn[5]);
+					assert(quad.getCorner(2) == elemConn[6]);
+					assert(quad.getCorner(3) == elemConn[7]);
+
+					conn[0] = elemConn[4];
+					conn[1] = elemConn[5];
+					conn[2] = elemConn[6];
+					conn[3] = elemConn[7];
+					// Between 4 and 5
+					conn[4] = elemConn[24];
+					conn[5] = elemConn[25];
+					// Between 5 and 6
+					conn[6] = elemConn[26];
+					conn[7] = elemConn[27];
+					// Between 6 and 7
+					conn[8] = elemConn[28];
+					conn[9] = elemConn[29];
+					// Between 7 and 4
+					conn[10] = elemConn[30];
+					conn[11] = elemConn[31];
+					// On face
+					conn[12] = elemConn[52];
+					conn[13] = elemConn[53];
+					conn[14] = elemConn[54];
+					conn[15] = elemConn[55];
+				}
+				else if (quad.getCorner(0) == elemConn[0]) {
+					// Side: 0154
+					assert(quad.getCorner(1) == elemConn[1]);
+					assert(quad.getCorner(2) == elemConn[5]);
+					assert(quad.getCorner(3) == elemConn[4]);
+
+					conn[0] = elemConn[0];
+					conn[1] = elemConn[1];
+					conn[2] = elemConn[5];
+					conn[3] = elemConn[4];
+					// Between 0 and 1
+					conn[4] = elemConn[8];
+					conn[5] = elemConn[9];
+					// Between 1 and 5
+					conn[6] = elemConn[18];
+					conn[7] = elemConn[19];
+					// Between 5 and 4
+					conn[8] = elemConn[25];
+					conn[9] = elemConn[24];
+					// Between 4 and 1
+					conn[10] = elemConn[17];
+					conn[11] = elemConn[16];
+					// On face
+					conn[12] = elemConn[36];
+					conn[13] = elemConn[37];
+					conn[14] = elemConn[38];
+					conn[15] = elemConn[39];
+				}
+				else if (quad.getCorner(0) == elemConn[1]) {
+					// Side: 1265
+					assert(quad.getCorner(1) == elemConn[2]);
+					assert(quad.getCorner(2) == elemConn[6]);
+					assert(quad.getCorner(3) == elemConn[5]);
+
+					conn[0] = elemConn[1];
+					conn[1] = elemConn[2];
+					conn[2] = elemConn[6];
+					conn[3] = elemConn[5];
+					// Between 1 and 2
+					conn[4] = elemConn[10];
+					conn[5] = elemConn[11];
+					// Between 2 and 6
+					conn[6] = elemConn[20];
+					conn[7] = elemConn[21];
+					// Between 6 and 5
+					conn[8] = elemConn[27];
+					conn[9] = elemConn[26];
+					// Between 5 and 1
+					conn[10] = elemConn[19];
+					conn[11] = elemConn[18];
+					// On face
+					conn[12] = elemConn[40];
+					conn[13] = elemConn[41];
+					conn[14] = elemConn[42];
+					conn[15] = elemConn[43];
+				}
+				else if (quad.getCorner(0) == elemConn[2]) {
+					// Side: 2376
+					assert(quad.getCorner(1) == elemConn[3]);
+					assert(quad.getCorner(2) == elemConn[7]);
+					assert(quad.getCorner(3) == elemConn[6]);
+
+					conn[0] = elemConn[2];
+					conn[1] = elemConn[3];
+					conn[2] = elemConn[7];
+					conn[3] = elemConn[6];
+					// Between 2 and 3
+					conn[4] = elemConn[12];
+					conn[5] = elemConn[13];
+					// Between 3 and 7
+					conn[6] = elemConn[22];
+					conn[7] = elemConn[23];
+					// Between 7 and 6
+					conn[8] = elemConn[29];
+					conn[9] = elemConn[28];
+					// Between 6 and 2
+					conn[10] = elemConn[21];
+					conn[11] = elemConn[20];
+					// On face
+					conn[12] = elemConn[44];
+					conn[13] = elemConn[45];
+					conn[14] = elemConn[46];
+					conn[15] = elemConn[47];
+				}
+				else if (quad.getCorner(0) == elemConn[3]) {
+					// Side: 3047
+					assert(quad.getCorner(1) == elemConn[0]);
+					assert(quad.getCorner(2) == elemConn[4]);
+					assert(quad.getCorner(3) == elemConn[7]);
+
+					conn[0] = elemConn[3];
+					conn[1] = elemConn[0];
+					conn[2] = elemConn[4];
+					conn[3] = elemConn[7];
+					// Between 3 and 0
+					conn[4] = elemConn[14];
+					conn[5] = elemConn[15];
+					// Between 0 and 4
+					conn[6] = elemConn[16];
+					conn[7] = elemConn[17];
+					// Between 4 and 7
+					conn[8] = elemConn[31];
+					conn[9] = elemConn[30];
+					// Between 7 and 3
+					conn[10] = elemConn[23];
+					conn[11] = elemConn[22];
+					// On face
+					conn[12] = elemConn[48];
+					conn[13] = elemConn[49];
+					conn[14] = elemConn[50];
+					conn[15] = elemConn[51];
+				}
+				else {
+					// Should never get here
+					assert(0);
+				}
+
+				break;
+			}
+			default:
+				// Should never get here.
+				assert(0);
+		}
+		emInt localConn[16];
+		remapIndices(16, newIndices, conn, localConn);
+		emInt global[4] = {quad.getCorner(0), quad.getCorner(1),
+		  quad.getCorner(2), quad.getCorner(3)};
+		QuadFaceVerts QF(numDivs, global, partID, -1, true);
+		auto itr = quads.find(QF);
+		if (itr != quads.end()) {
+			assert(itr->getGlobalCorner(0) == global[0] &&
+			       itr->getGlobalCorner(1) == global[1] &&
+			       itr->getGlobalCorner(2) == global[2] &&
+			       itr->getGlobalCorner(3) == global[3] &&
+			       itr->getPartid() == partID);
+			QuadFaceVerts QFV(numDivs, localConn, global, partID, itr->getRemoteId(),
+					  0, EMINT_MAX, false);
+			// need to be corrected, I could not generate with correct bool value unless
+			// I pass all arguments
+			extractedMesh->addPartQuadtoSet(QFV);
+		}
+		extractedMesh->addBdryQuad(localConn);
+	}
+	assert(extractedMesh->getSizePartQuads() == quads.size());
+	CALLGRIND_TOGGLE_COLLECT;
+
 	return extractedMesh;
 }
 

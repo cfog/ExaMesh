@@ -183,7 +183,7 @@ public:
 			const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>(), 
 			const emInt partID=-1) const=0;		
 
-	virtual std::unique_ptr<UMesh>
+	virtual std::unique_ptr<ExaMesh>
 	extractCoarseMeshMPI(const emInt partID, const std::vector<emInt> &partcells , const int numDivs,
 			const std::unordered_set<TriFaceVerts> tris= std::unordered_set<TriFaceVerts>(),
 			const std::unordered_set<QuadFaceVerts> quads= std::unordered_set<QuadFaceVerts>()) const = 0;

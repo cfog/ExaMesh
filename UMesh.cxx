@@ -479,9 +479,6 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	emInt numBdryTris = reader->getNumBdryTris();
 	emInt numBdryQuads = reader->getNumBdryQuads();
 
-	m_nTrisFromReader = reader->getNumBdryTris();
-	m_nQuadsFromReader = reader->getNumBdryQuads();
-
 	std::set<vertTriple> setTris;
 	std::set<vertQuadruple> setQuads;
 
@@ -1743,7 +1740,7 @@ void UMesh::testCell2FaceConn(emInt nCells) {
 
 }
 
-std::unique_ptr<UMesh> UMesh::extractCoarseMeshMPI(const emInt partID,
+std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshMPI(const emInt partID,
 		const std::vector<emInt> &partcells, const int numDivs,
 		const std::unordered_set<TriFaceVerts> tris,
 		const std::unordered_set<QuadFaceVerts> quads) const {
