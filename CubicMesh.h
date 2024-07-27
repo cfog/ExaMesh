@@ -198,10 +198,6 @@ public:
 	// exa_set<TriFaceVerts> getRefinedPartTris() const{
 	// 	return refinedPartTris; 
 	// }
-	void partFaceMatching(
-		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
-		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-		 std::vector<std::unordered_set<QuadFaceVerts>> &quads,size_t &totalTriSize, size_t &totalQuadSize )const;
 
 	std::unique_ptr<ExaMesh> extractCoarseMeshPseudoParallel(Part& P,
 			std::vector<CellPartData>& vecCPD, const int numDivs,			

@@ -175,6 +175,14 @@ public:
 	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2, emInt v3);
 	void testCell2CellConn(emInt nCells);
 	void testCell2FaceConn(emInt nCells);
+	std::vector<std::pair<emInt,emInt>> getCellID2CellType () const
+	{
+		return cellID2cellTypeLocalID;
+	}
+	void setCellId2CellTypeLocal (const std::vector<std::pair<emInt,emInt>>& cellIDs )
+	{
+		cellID2cellTypeLocalID=cellIDs;
+	}
 
 	virtual void refineForParallel(const emInt numDivs,
 			const emInt maxCellsPerPart) const;
@@ -271,10 +279,6 @@ public:
 	{
 		return m_refinedPartQuads; 
 	}
-	virtual void partFaceMatching(
-		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
-		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize )const=0;	
 	//void refineMPI();
 	//virtual void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>> & face2cell, const emInt nCells)=0; 	 
 

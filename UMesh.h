@@ -54,10 +54,10 @@ class UMesh: public ExaMesh {
 	UMesh& operator=(const UMesh& inPut);
 
 public:
-	void partFaceMatching(
-		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,	
-		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize)const;		 
+//	void partFaceMatching(
+//		 std::vector<Part>& parts, const std::vector<CellPartData>& vecCPD,
+//		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
+//		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize)const;
 	UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
@@ -257,20 +257,11 @@ public:
 
 	void incrementVertIndices(emInt* conn, emInt size, int inc);
 	void calcMemoryRequirements (const UMesh &UMIn, const int nDivs); 
-	std::vector<std::pair<emInt,emInt>> getCellID2CellType () const 
-	{
-		return cellID2cellTypeLocalID; 
-	}
-	void setCellId2CellTypeLocal (const std::vector<std::pair<emInt,emInt>>& cellIDs )
-	{
-		cellID2cellTypeLocalID=cellIDs; 
-	}
-
-		void convertToUmeshFormat();
-	void 
-	partFaceMatching(const std::vector<std::vector<emInt>> &part2cells,	
-		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize) const;
+//
+//	void
+//	partFaceMatching(const std::vector<std::vector<emInt>> &part2cells,
+//		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
+//		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize) const;
 
 
 
