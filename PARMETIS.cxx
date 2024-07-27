@@ -1,3 +1,4 @@
+#include <boost/mpi/communicator.hpp>
 #include "PARMETIS.h"
 #include <fstream>
 void setMetisOptions(idx_t options[])
@@ -64,14 +65,13 @@ emInt iParts, std::vector<emInt> &vaicelltopart)
     idx_t *xadj   = nullptr;
     idx_t *adjncy = nullptr;
     idx_t *adjwgt = nullptr;
-    idx_t *aicelltopart = new idx_t[pEM->numVolCells()];
+    idx_t *aicelltopart = new idx_t[pEM->numCells()];
 
     idx_t ncon=1; 
     idx_t objval; 
     idx_t npart  = iParts; 
 
-    
-    idx_t nCells = pEM->numVolCells();
+    idx_t nCells = pEM->numCells();
 
     xadj    = (idx_t*)calloc((size_t)(nCells+1), sizeof(idx_t));
     adjncy  = (idx_t*)calloc((size_t)(nCells*MAXADJ), sizeof(idx_t));
@@ -92,7 +92,7 @@ emInt iParts, std::vector<emInt> &vaicelltopart)
         vaicelltopart[icel] = aicelltopart[icel]; 
     }
 
-    //printPart2Cell(part2cell); 
+//    printPart2Cell(part2cell);
 
     free(xadj) ; 
     free(adjncy); 
@@ -106,7 +106,7 @@ void mesh2MetisGraphs(const ExaMesh* const pEM, idx_t xadj[], idx_t adjncy[], id
 {
     xadj [0] = 0 ;
 
-    for (emInt icell=0 ; icell< pEM->numVolCells(); icell++)
+    for (emInt icell=0 ; icell< pEM->numCells(); icell++)
     {
         xadj[icell+1] = xadj[icell]; 
 
@@ -116,12 +116,7 @@ void mesh2MetisGraphs(const ExaMesh* const pEM, idx_t xadj[], idx_t adjncy[], id
             adjwgt[ xadj[icell+1] ] = 1;	
             xadj[icell+1]++;
         } 
-
     }
-
-
-
-
 }; 
 
 
@@ -132,20 +127,20 @@ void calcMetisWeights()
 
 
 
-void printPart2Cell (const std::vector<std::vector<idx_t>>& part2cell) 
+void printPart2Cell (const std::vector<std::vector<emInt>>& part2cell)
 {
-
+	boost::mpi::communicator world;
+	if (world.rank()) return;
     std::ofstream outFile("partition.txt");
-  //  for (int partID = 0; partID < part2cell.size(); partID++) 
-  //  {
-    auto partID=0; 
+    for (size_t partID = 0; partID < part2cell.size(); partID++)
+    {
         outFile << "Part " <<partID<< ": ";
         for (const auto& cell : part2cell[partID]) 
         {
             outFile << cell << " ";
         }
         outFile << std::endl;
- //   }
+    }
 
 }
 

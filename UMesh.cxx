@@ -476,15 +476,14 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 
 	// Identify any bdry tris and quads that aren't in the file
 
-	emInt numBdryTris = reader->getNumBdryTris();
-	emInt numBdryQuads = reader->getNumBdryQuads();
+	emInt nBdryTris = reader->getNumBdryTris();
+	emInt nBdryQuads = reader->getNumBdryQuads();
 
 	std::set<vertTriple> setTris;
 	std::set<vertQuadruple> setQuads;
 
 	reader->seekStartOfConnectivity();
 
-	multimpFace2Cell face2cell;
 
 	vcellID2type.resize(reader->getNumCells());
 
@@ -495,47 +494,21 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 		reader->getNextCellConnectivity(nConn, connect);
 		checkConnectivitySize(cellType, nConn);
 
-		std::vector<emInt> faceVerts;
-		std::vector<emInt> sortedTriVerts(3);
-		std::vector<emInt> sortedQuadVerts(4);
 		switch (cellType) {
 		case CGNS_ENUMV(TRI_3):
 			updateTriSet(setTris, connect[0], connect[1], connect[2]);
 
-			faceVerts = { connect[0], connect[1], connect[2] };
-			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii, CGNS_ENUMV(TRI_3)));
 			break;
 		case CGNS_ENUMV(QUAD_4):
 			updateQuadSet(setQuads, connect[0], connect[1], connect[2],
 					connect[3]);
 
-			faceVerts = { connect[0], connect[1], connect[2], connect[3] };
-			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii, CGNS_ENUMV(QUAD_4)));
 			break;
 		case CGNS_ENUMV(TETRA_4):
 			updateTriSet(setTris, connect[0], connect[1], connect[2]);
 			updateTriSet(setTris, connect[0], connect[1], connect[3]);
 			updateTriSet(setTris, connect[1], connect[2], connect[3]);
 			updateTriSet(setTris, connect[2], connect[0], connect[3]);
-
-			faceVerts = { connect[0], connect[1], connect[2] };
-			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii, CGNS_ENUMV(TETRA_4)));
-
-			faceVerts = { connect[0], connect[1], connect[3] };
-			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii, CGNS_ENUMV(TETRA_4)));
-
-			faceVerts = { connect[1], connect[2], connect[3] };
-			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii, CGNS_ENUMV(TETRA_4)));
-
-			faceVerts = { connect[2], connect[0], connect[3] };
-			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii, CGNS_ENUMV(TETRA_4)));
-
 			break;
 		case CGNS_ENUMV(PYRA_5):
 			updateTriSet(setTris, connect[0], connect[1], connect[4]);
@@ -544,27 +517,6 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 			updateTriSet(setTris, connect[3], connect[0], connect[4]);
 			updateQuadSet(setQuads, connect[0], connect[1], connect[2],
 					connect[3]);
-
-			faceVerts = { connect[0], connect[1], connect[4] };
-			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii, CGNS_ENUMV(PYRA_5)));
-
-			faceVerts = { connect[1], connect[2], connect[4] };
-			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii, CGNS_ENUMV(PYRA_5)));
-
-			faceVerts = { connect[2], connect[3], connect[4] };
-			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii, CGNS_ENUMV(PYRA_5)));
-
-			faceVerts = { connect[3], connect[0], connect[4] };
-			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii, CGNS_ENUMV(PYRA_5)));
-
-			faceVerts = { connect[0], connect[1], connect[2], connect[3] };
-			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii, CGNS_ENUMV(PYRA_5)));
-
 			break;
 		case CGNS_ENUMV(PENTA_6):
 			updateTriSet(setTris, connect[0], connect[1], connect[2]);
@@ -575,27 +527,6 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 					connect[4]);
 			updateQuadSet(setQuads, connect[2], connect[0], connect[3],
 					connect[5]);
-
-			faceVerts = { connect[0], connect[1], connect[2] };
-			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii, CGNS_ENUMV(PENTA_6)));
-
-			faceVerts = { connect[3], connect[4], connect[5] };
-			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii, CGNS_ENUMV(PENTA_6)));
-
-			faceVerts = { connect[0], connect[1], connect[4], connect[3] };
-			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii, CGNS_ENUMV(PENTA_6)));
-
-			faceVerts = { connect[1], connect[2], connect[5], connect[4] };
-			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii, CGNS_ENUMV(PENTA_6)));
-
-			faceVerts = { connect[2], connect[0], connect[3], connect[5] };
-			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii, CGNS_ENUMV(PENTA_6)));
-
 			break;
 		case CGNS_ENUMV(HEXA_8):
 			updateQuadSet(setQuads, connect[0], connect[1], connect[2],
@@ -610,31 +541,6 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 					connect[6]);
 			updateQuadSet(setQuads, connect[3], connect[0], connect[4],
 					connect[7]);
-
-			faceVerts = { connect[0], connect[1], connect[2], connect[3] };
-			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii, CGNS_ENUMV(HEXA_8)));
-
-			faceVerts = { connect[4], connect[5], connect[6], connect[7] };
-			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii, CGNS_ENUMV(HEXA_8)));
-
-			faceVerts = { connect[0], connect[1], connect[5], connect[4] };
-			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii, CGNS_ENUMV(HEXA_8)));
-
-			faceVerts = { connect[1], connect[2], connect[6], connect[5] };
-			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii, CGNS_ENUMV(HEXA_8)));
-
-			faceVerts = { connect[2], connect[3], connect[7], connect[6] };
-			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii, CGNS_ENUMV(HEXA_8)));
-
-			faceVerts = { connect[3], connect[0], connect[4], connect[7] };
-			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii, CGNS_ENUMV(HEXA_8)));
-
 			break;
 		default:
 			assert(0);
@@ -644,21 +550,20 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	//testCell2FaceConn(reader->getNumCells()); 
 #endif
 	//double start = exaTime(); 
-	buildCell2CellConn(face2cell, reader->getNumCells());
 	//double time  = exaTime()-start; 
 
 	//std::cout<<"Building cell2cell connectivity took: "<<time<<std::endl; 
 
-	numBdryTris += setTris.size();
-	numBdryQuads += setQuads.size();
+	nBdryTris += setTris.size();
+	nBdryQuads += setQuads.size();
 
 
 	//BdryVertsTrisQuads.push_back(reader->getNumBdryVerts());
 	//BdryVertsTrisQuads.push_back(numBdryTris); 
 	//BdryVertsTrisQuads.push_back(numBdryQuads); 
 
-	init(reader->getNumVerts(), reader->getNumBdryVerts(), numBdryTris,
-			numBdryQuads, reader->getNumTets(), reader->getNumPyramids(),
+	init(reader->getNumVerts(), reader->getNumBdryVerts(), nBdryTris,
+			nBdryQuads, reader->getNumTets(), reader->getNumPyramids(),
 			reader->getNumPrisms(), reader->getNumHexes());
 
 	reader->seekStartOfCoords();
@@ -672,55 +577,34 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 
 	// Initializing counters to be zero 
 	// Transforming enum 
-	emInt bdryTriCounter = 0, bdryQuadCounter = 0, tetCounter = 0, pyrmCounter =
-			0, prismCounter = 0, hexCounter = 0;
-	cellID2cellTypeLocalID.resize(reader->getNumCells());
 	for (emInt ii = 0; ii < reader->getNumCells(); ii++) {
+
 		char cellType = reader->getCellType(ii);
 		emInt nConn, connect[8];
 		reader->getNextCellConnectivity(nConn, connect);
 		checkConnectivitySize(cellType, nConn);
 		switch (cellType) {
 		case CGNS_ENUMV(TRI_3):
-			bdryTriCounter++;
-			cellID2cellTypeLocalID[ii] = std::make_pair(cellType,
-					bdryTriCounter);
 			addBdryTri(connect);
 			break;
 		case CGNS_ENUMV(QUAD_4):
-			bdryQuadCounter++;
-			cellID2cellTypeLocalID[ii] = std::make_pair(cellType,
-					bdryQuadCounter);
 			addBdryQuad(connect);
 			break;
 		case CGNS_ENUMV(TETRA_4):
-			tetCounter++;
-			cellID2cellTypeLocalID[ii] = std::make_pair(CGNS_ENUMV(TETRA_4),
-					tetCounter);
 			addTet(connect);
 			break;
 		case CGNS_ENUMV(PYRA_5):
-			pyrmCounter++;
-			cellID2cellTypeLocalID[ii] = std::make_pair(CGNS_ENUMV(PYRA_5),
-					pyrmCounter);
 			addPyramid(connect);
 			break;
 		case CGNS_ENUMV(PENTA_6):
-			prismCounter++;
-			cellID2cellTypeLocalID[ii] = std::make_pair(CGNS_ENUMV(PENTA_6),
-					prismCounter);
 			addPrism(connect);
 			break;
 		case CGNS_ENUMV(HEXA_8):
-			hexCounter++;
-			cellID2cellTypeLocalID[ii] = std::make_pair(CGNS_ENUMV(HEXA_8),
-					hexCounter);
 			addHex(connect);
 			break;
 		default:
 			assert(0);
 		}
-		//cellID2cellTypeLocalID[ii]= std::make_pair(type,) ; 
 	}
 
 	for (auto VT : setTris) {
@@ -755,6 +639,161 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 		}
 	}
 	delete[] isBdryVert;
+
+	// Now go through the cell-vert connectivity to set up
+	// face-cell connectivity
+	{
+		multimpFace2Cell face2cell;
+		std::vector<emInt> faceVerts;
+		std::vector<emInt> sortedTriVerts(3);
+		std::vector<emInt> sortedQuadVerts(4);
+
+		cellID2cellTypeLocalID.resize(numCells());
+
+		emInt offset = 0;
+
+		const emInt (*allTris)[3] = getAllTriConn();
+		for (emInt ii = 0; ii < numBdryTris(); ii++) {
+			faceVerts = { allTris[ii][0], allTris[ii][1], allTris[ii][2] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TRI_3)));
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(TRI_3),
+					ii);
+		}
+		offset += numBdryTris();
+
+		const emInt (*allQuads)[4] = getAllQuadConn();
+		for (emInt ii = 0; ii < numBdryQuads(); ii++) {
+			faceVerts = { allQuads[ii][0], allQuads[ii][1], allQuads[ii][2], allQuads[ii][3] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii+offset, CGNS_ENUMV(QUAD_4)));
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(QUAD_4),
+					ii);
+		}
+		offset += numBdryQuads();
+
+		const emInt (*allTets)[4] = getAllTetConn();
+		for (emInt ii = 0; ii < numTets(); ii++) {
+			faceVerts = { allTets[ii][0], allTets[ii][1], allTets[ii][2] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TETRA_4)));
+
+			faceVerts = { allTets[ii][0], allTets[ii][1], allTets[ii][3] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TETRA_4)));
+
+			faceVerts = { allTets[ii][1], allTets[ii][2], allTets[ii][3] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TETRA_4)));
+
+			faceVerts = { allTets[ii][2], allTets[ii][0], allTets[ii][3] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TETRA_4)));
+
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(TETRA_4),
+					ii);
+		}
+		offset += numTets();
+
+		const emInt (*allPyrs)[5] = getAllPyrConn();
+		for (emInt ii = 0; ii < numPyramids(); ii++) {
+			faceVerts = { allPyrs[ii][0], allPyrs[ii][1], allPyrs[ii][4] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+
+			faceVerts = { allPyrs[ii][1], allPyrs[ii][2], allPyrs[ii][4] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+
+			faceVerts = { allPyrs[ii][2], allPyrs[ii][3], allPyrs[ii][4] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+
+			faceVerts = { allPyrs[ii][3], allPyrs[ii][0], allPyrs[ii][4] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+
+			faceVerts = { allPyrs[ii][0], allPyrs[ii][1], allPyrs[ii][2], allPyrs[ii][3] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(PYRA_5),
+					ii);
+		}
+		offset += numPyramids();
+
+		const emInt (*allPrisms)[6] = getAllPrismConn();
+		for (emInt ii = 0; ii < numPrisms(); ii++) {
+			faceVerts = { allPrisms[ii][0], allPrisms[ii][1], allPrisms[ii][2] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+
+			faceVerts = { allPrisms[ii][3], allPrisms[ii][4], allPrisms[ii][5] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+
+			faceVerts = { allPrisms[ii][0], allPrisms[ii][1], allPrisms[ii][4], allPrisms[ii][3] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+
+			faceVerts = { allPrisms[ii][1], allPrisms[ii][2], allPrisms[ii][5], allPrisms[ii][4] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+
+			faceVerts = { allPrisms[ii][2], allPrisms[ii][0], allPrisms[ii][3], allPrisms[ii][5] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(PENTA_6),
+					ii);
+		}
+		offset += numPrisms();
+
+		const emInt (*allHexes)[8] = getAllHexConn();
+		for (emInt ii = 0; ii < numHexes(); ii++) {
+			faceVerts = { allHexes[ii][0], allHexes[ii][1], allHexes[ii][2], allHexes[ii][3] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+
+			faceVerts = { allHexes[ii][4], allHexes[ii][5], allHexes[ii][6], allHexes[ii][7] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+
+			faceVerts = { allHexes[ii][0], allHexes[ii][1], allHexes[ii][5], allHexes[ii][4] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+
+			faceVerts = { allHexes[ii][1], allHexes[ii][2], allHexes[ii][6], allHexes[ii][5] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+
+			faceVerts = { allHexes[ii][2], allHexes[ii][3], allHexes[ii][7], allHexes[ii][6] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+
+			faceVerts = { allHexes[ii][3], allHexes[ii][0], allHexes[ii][4], allHexes[ii][7] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(HEXA_8),
+					ii);
+		}
+
+		// Debugging diagnostics
+//		for (auto cellPair : cellID2cellTypeLocalID) {
+//			printf("ID pairs: %5u %5u\n",
+//					cellPair.first, cellPair.second);
+//		}
+//
+//		for (auto faceEntry : face2cell) {
+//			printf("Num verts: %lu (%2u %2u %2u %2u)  Cell: %3u  Type: %2u\n",
+//					faceEntry.first.size(), faceEntry.first[0],
+//					faceEntry.first[1], faceEntry.first[2], faceEntry.first[3],
+//					faceEntry.second.first, faceEntry.second.second);
+//		}
+		printf("Number of face-cell entries: %lu\n", face2cell.size());
+		buildCell2CellConn(face2cell, numCells());
+	}
 
 	// If any of these fail, your file was invalid.
 	assert(m_nVerts == m_header[eVert]);
@@ -1641,105 +1680,6 @@ void UMesh::calcMemoryRequirements(const UMesh &UMIn, const int nDivs) {
 			nVerts, nBdryTris, nBdryQuads, nTets, nPyramids, nPrisms, nHexes,
 			numCells);
 }
-void UMesh::buildCell2CellConn(multimpFace2Cell &face2cell,
-		const emInt nCells) {
-
-	auto it = face2cell.begin();
-	vcell2cell.resize(nCells);
-	while (it != face2cell.end()) {
-		auto current = it;
-		auto next = std::next(it);
-		if (next != face2cell.end() && current->first == next->first) {
-			emInt currentCellID = current->second.first;
-			//emInt currentCellType   = current->second.second; 
-
-			emInt nextCellID = next->second.first;
-			//emInt nextCellType      = next->second.second; 
-
-			auto &currentCellVector = vcell2cell[currentCellID];
-			auto &nextCellVector = vcell2cell[nextCellID];
-
-			currentCellVector.emplace_back(nextCellID);
-			nextCellVector.emplace_back(currentCellID);
-		}
-
-		it++;
-	}
-}
-
-void UMesh::testCell2CellConn(emInt nCells) {
-
-	// for(auto icell= cell2cell.begin(); icell!=cell2cell.end();icell++)
-	// {
-	// 	const int nNeigbrs = icell->second.size(); 
-	// 	assert(nNeigbrs!=0); // number of neighbours can't be zero 
-	// 	const auto cellType = icell->first.second;
-	// 	auto Itrcell = 
-	// 	cell2faces.find(std::make_pair(icell->first.first,icell->first.second));
-	// 	auto const& faces = Itrcell->second; 
-
-	// }
-	// for (const auto& entry : cell2cell) {
-	//     const auto& key = entry.first;
-	//     const auto& values = entry.second;
-
-	//     std::cout << "Cell ID: {" << key.first << ", " << key.second << "} Neighbors: {";
-	//     for (const auto& value : values) {
-	//         std::cout << value << " ";
-	//     }
-	//     std::cout << "}\n";
-	// }
-
-}
-void UMesh::buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0,
-		emInt v1, emInt v2) {
-	std::set<emInt> faceVerts = { v0, v1, v2 };
-	emInt cellID = cellInfo.first;
-	emInt cellType = cellInfo.second;
-	cell2faces[std::make_pair(cellID, cellType)].insert(faceVerts);
-}
-void UMesh::buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0,
-		emInt v1, emInt v2, emInt v3) {
-	std::set<emInt> faceVerts = { v0, v1, v2, v3 };
-	emInt cellID = cellInfo.first;
-	emInt cellType = cellInfo.second;
-	cell2faces[std::make_pair(cellID, cellType)].insert(faceVerts);
-}
-
-void UMesh::testCell2FaceConn(emInt nCells) {
-
-	assert(cell2faces.size() == nCells);
-	// Checking whethee info of all cells have captured 
-	// Then, checking whether each cell type has the correct number of faces 
-	for (auto icell = cell2faces.begin(); icell != cell2faces.end(); icell++) {
-		const auto &cellType = (icell->first).second;
-		switch (cellType) {
-		case CGNS_ENUMV(TETRA_4):
-			assert(icell->second.size() == 4);
-			break;
-		case CGNS_ENUMV(PYRA_5):
-			assert(icell->second.size() == 5);
-			break;
-		case CGNS_ENUMV(PENTA_6):
-			assert(icell->second.size() == 5);
-			break;
-		case CGNS_ENUMV(HEXA_8):
-			assert(icell->second.size() == 6);
-			break;
-			// case CGNS_ENUMV(TRI_3):
-			// 	assert(icell->second.size()==3);
-			// 	break;
-			// case CGNS_ENUMV(QUAD_4):
-			// 	assert(icell->second.size()==5);
-			// 	break;
-			// default:
-			// 	assert(0);
-		}
-
-	}
-
-}
-
 std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshMPI(const emInt partID,
 		const std::vector<emInt> &partcells, const int numDivs,
 		const std::unordered_set<TriFaceVerts> tris,
@@ -1761,7 +1701,7 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshMPI(const emInt partID,
 		// emInt type = vecCPD[ii].getCellType();
 		// emInt ind = vecCPD[ii].getIndex();
 		emInt globalInd = partcells[ii];
-		emInt ind = (cellID2cellTypeLocalID[globalInd].second) - 1;
+		emInt ind = cellID2cellTypeLocalID[globalInd].second;
 		emInt type = cellID2cellTypeLocalID[globalInd].first;
 
 		switch (type) {
@@ -1957,7 +1897,7 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshMPI(const emInt partID,
 		//emInt type = vecCPD[ii].getCellType();
 		//emInt ind = vecCPD[ii].getIndex();
 		emInt globalInd = partcells[ii];
-		emInt ind = (cellID2cellTypeLocalID[globalInd].second) - 1;
+		emInt ind = cellID2cellTypeLocalID[globalInd].second;
 		emInt type = cellID2cellTypeLocalID[globalInd].first;
 		switch (type) {
 		default:
@@ -2096,7 +2036,7 @@ void UMesh::partFaceMatching(const std::vector<std::vector<emInt>> &part2cells,
 			// emInt type = vecCPD[ii].getCellType();
 			// emInt ind = vecCPD[ii].getIndex();
 			emInt globalInd = part2cells[iPart][ii];
-			emInt ind = (cellID2cellTypeLocalID[globalInd].second) - 1;
+			emInt ind = cellID2cellTypeLocalID[globalInd].second;
 			emInt type = cellID2cellTypeLocalID[globalInd].first;
 			switch (type) {
 			default:

@@ -59,6 +59,7 @@ protected:
 	std::vector<std::vector<emInt>>   vcell2cell;
 	std::vector<emInt>                vcellID2type;
 	std::vector<std::pair<emInt,emInt>>  cellID2cellTypeLocalID;
+	std::map < std::pair<emInt,emInt>, std::set<std::set<emInt>>>   cell2faces;
 
 
 	void setupLengthScales();
@@ -168,6 +169,11 @@ public:
 	MeshSize computeFineMeshSize(const int nDivs) const;
 
 	void buildFaceCellConnectivity();
+	void buildCell2CellConn(multimpFace2Cell& face2cell, const emInt nCells);
+	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2);
+	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2, emInt v3);
+	void testCell2CellConn(emInt nCells);
+	void testCell2FaceConn(emInt nCells);
 
 	virtual void refineForParallel(const emInt numDivs,
 			const emInt maxCellsPerPart) const;

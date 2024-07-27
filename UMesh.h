@@ -50,7 +50,6 @@ class UMesh: public ExaMesh {
 	emInt (*m_HexConn)[8];
 	char *m_buffer, *m_fileImage;
 	TableCell2Cell                                                  cell2cell; 
-	std::map < std::pair<emInt,emInt>, std::set<std::set<emInt>>>   cell2faces; 
 	std::unordered_map<emInt, std::set<std::set<emInt>>>            cell2bdryfaces; 
 	UMesh& operator=(const UMesh& inPut);
 
@@ -259,11 +258,6 @@ public:
 
 	void incrementVertIndices(emInt* conn, emInt size, int inc);
 	void calcMemoryRequirements (const UMesh &UMIn, const int nDivs); 
-	void buildCell2CellConn(multimpFace2Cell& face2cell, const emInt nCells);
-	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2); 
-	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2, emInt v3);
-	void testCell2CellConn(emInt nCells); 
-	void testCell2FaceConn(emInt nCells);
 	std::vector<std::pair<emInt,emInt>> getCellID2CellType () const 
 	{
 		return cellID2cellTypeLocalID; 

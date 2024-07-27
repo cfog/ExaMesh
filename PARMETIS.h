@@ -6,4 +6,4 @@ std::vector<std::vector<emInt>> partitionMetis(const ExaMesh* const pEM, emInt i
 void mesh2MetisGraphs(const ExaMesh* const pEM,
 idx_t xadj[], idx_t adjncy[], idx_t adjwgt[]);
 
-void printPart2Cell (const std::vector<std::vector<idx_t>>& part2cell); 
+void printPart2Cell (const std::vector<std::vector<emInt>>& part2cell);

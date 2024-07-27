@@ -1090,8 +1090,16 @@ emInt ExaMesh::FastpartFaceMatching(const emInt nParts,
 		emInt partID1 = cell2part[cellID1];
 		emInt partID2 = cell2part[cellID2];
 
-		emInt ind1 = (cellID2cellTypeLocalID[cellID1].second) - 1;
-		emInt ind2 = (cellID2cellTypeLocalID[cellID2].second) - 1;
+//		printf("Cell 1: (%5u %5u)  Cell 2: (%5u %5u)\n",
+//				cellID1, partID1, cellID2, partID2);
+//		printf("  Locals: (%5u %5u)  (%5u %5u)\n",
+//				cellID2cellTypeLocalID[cellID1].first,
+//				cellID2cellTypeLocalID[cellID1].second,
+//				cellID2cellTypeLocalID[cellID2].first,
+//				cellID2cellTypeLocalID[cellID2].second);
+
+		emInt ind1 = cellID2cellTypeLocalID[cellID1].second;
+		emInt ind2 = cellID2cellTypeLocalID[cellID2].second;
 
 		emInt type1 = cellID2cellTypeLocalID[cellID1].first;
 		emInt type2 = cellID2cellTypeLocalID[cellID2].first;
@@ -1122,7 +1130,6 @@ emInt ExaMesh::FastpartFaceMatching(const emInt nParts,
 		preMatchingPartBdryTris(numDivs, partBdryTris, tris);
 		preMatchingPartBdryQuads(numDivs, partBdryQuads, quads);
 	}
-
 	return cellParts.size();
 
 }
@@ -1135,6 +1142,7 @@ void ExaMesh::getFaceLists(const emInt ind, const emInt type, const emInt partID
 	switch (type) {
 	default:
 		// Panic! Should never get here.
+		printf("Type: %u  Ind: %u \n", type, ind);
 		assert(0);
 		break;
 	case CGNS_ENUMV(TRI_3):
@@ -1231,5 +1239,104 @@ void ExaMesh::getFaceLists(const emInt ind, const emInt type, const emInt partID
 		break;
 	}
 	}
+}
+
+void ExaMesh::buildCell2CellConn(multimpFace2Cell &face2cell,
+		const emInt nCells) {
+
+	auto it = face2cell.begin();
+	vcell2cell.resize(nCells);
+	while (it != face2cell.end()) {
+		auto current = it;
+		auto next = std::next(it);
+		if (next != face2cell.end() && current->first == next->first) {
+			emInt currentCellID = current->second.first;
+			//emInt currentCellType   = current->second.second;
+
+			emInt nextCellID = next->second.first;
+			//emInt nextCellType      = next->second.second;
+
+			auto &currentCellVector = vcell2cell[currentCellID];
+			auto &nextCellVector = vcell2cell[nextCellID];
+
+			currentCellVector.emplace_back(nextCellID);
+			nextCellVector.emplace_back(currentCellID);
+		}
+
+		it++;
+	}
+}
+
+void ExaMesh::testCell2CellConn(emInt nCells) {
+
+	// for(auto icell= cell2cell.begin(); icell!=cell2cell.end();icell++)
+	// {
+	// 	const int nNeigbrs = icell->second.size();
+	// 	assert(nNeigbrs!=0); // number of neighbours can't be zero
+	// 	const auto cellType = icell->first.second;
+	// 	auto Itrcell =
+	// 	cell2faces.find(std::make_pair(icell->first.first,icell->first.second));
+	// 	auto const& faces = Itrcell->second;
+
+	// }
+	// for (const auto& entry : cell2cell) {
+	//     const auto& key = entry.first;
+	//     const auto& values = entry.second;
+
+	//     std::cout << "Cell ID: {" << key.first << ", " << key.second << "} Neighbors: {";
+	//     for (const auto& value : values) {
+	//         std::cout << value << " ";
+	//     }
+	//     std::cout << "}\n";
+	// }
+
+}
+void ExaMesh::buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0,
+		emInt v1, emInt v2) {
+	std::set<emInt> faceVerts = { v0, v1, v2 };
+	emInt cellID = cellInfo.first;
+	emInt cellType = cellInfo.second;
+	cell2faces[std::make_pair(cellID, cellType)].insert(faceVerts);
+}
+void ExaMesh::buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0,
+		emInt v1, emInt v2, emInt v3) {
+	std::set<emInt> faceVerts = { v0, v1, v2, v3 };
+	emInt cellID = cellInfo.first;
+	emInt cellType = cellInfo.second;
+	cell2faces[std::make_pair(cellID, cellType)].insert(faceVerts);
+}
+
+void ExaMesh::testCell2FaceConn(emInt nCells) {
+
+	assert(cell2faces.size() == nCells);
+	// Checking whethee info of all cells have captured
+	// Then, checking whether each cell type has the correct number of faces
+	for (auto icell = cell2faces.begin(); icell != cell2faces.end(); icell++) {
+		const auto &cellType = (icell->first).second;
+		switch (cellType) {
+		case CGNS_ENUMV(TETRA_4):
+			assert(icell->second.size() == 4);
+			break;
+		case CGNS_ENUMV(PYRA_5):
+			assert(icell->second.size() == 5);
+			break;
+		case CGNS_ENUMV(PENTA_6):
+			assert(icell->second.size() == 5);
+			break;
+		case CGNS_ENUMV(HEXA_8):
+			assert(icell->second.size() == 6);
+			break;
+			// case CGNS_ENUMV(TRI_3):
+			// 	assert(icell->second.size()==3);
+			// 	break;
+			// case CGNS_ENUMV(QUAD_4):
+			// 	assert(icell->second.size()==5);
+			// 	break;
+			// default:
+			// 	assert(0);
+		}
+
+	}
+
 }
 
