@@ -640,6 +640,28 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 	}
 	delete[] isBdryVert;
 
+	buildCellToCellConnectivity();
+
+	// If any of these fail, your file was invalid.
+	assert(m_nVerts == m_header[eVert]);
+	assert(m_nTris == m_header[eTri]);
+	assert(m_nQuads == m_header[eQuad]);
+	assert(m_nTets == m_header[eTet]);
+	assert(m_nPyrs == m_header[ePyr]);
+	assert(m_nPrisms == m_header[ePrism]);
+	assert(m_nHexes == m_header[eHex]);
+
+	//vheader.assign(m_header, m_header+7);
+
+	delete reader;
+
+	setupLengthScales();
+
+	//vLengthScale.assign(m_lenScale,m_lenScale+m_header[0]);
+}
+
+void UMesh::buildCellToCellConnectivity() {
+
 	// Now go through the cell-vert connectivity to set up
 	// face-cell connectivity
 	{
@@ -794,23 +816,6 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 		printf("Number of face-cell entries: %lu\n", face2cell.size());
 		buildCell2CellConn(face2cell, numCells());
 	}
-
-	// If any of these fail, your file was invalid.
-	assert(m_nVerts == m_header[eVert]);
-	assert(m_nTris == m_header[eTri]);
-	assert(m_nQuads == m_header[eQuad]);
-	assert(m_nTets == m_header[eTet]);
-	assert(m_nPyrs == m_header[ePyr]);
-	assert(m_nPrisms == m_header[ePrism]);
-	assert(m_nHexes == m_header[eHex]);
-
-	//vheader.assign(m_header, m_header+7);
-
-	delete reader;
-
-	setupLengthScales();
-
-	//vLengthScale.assign(m_lenScale,m_lenScale+m_header[0]); 
 }
 
 std::unique_ptr<UMesh>

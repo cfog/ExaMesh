@@ -233,6 +233,7 @@ public:
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;
 
+	void buildCellToCellConnectivity();
 
 	virtual std::unique_ptr<ExaMesh> extractCoarseMeshPseudoParallel(Part& P,	std::vector<CellPartData>& vecCPD, 
 	const int numDivs,
