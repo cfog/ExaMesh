@@ -1241,7 +1241,165 @@ void ExaMesh::getFaceLists(const emInt ind, const emInt type, const emInt partID
 	}
 }
 
-void ExaMesh::buildCell2CellConn(multimpFace2Cell &face2cell,
+void ExaMesh::buildCellToCellConnectivity() {
+
+	// Now go through the cell-vert connectivity to set up
+	// face-cell connectivity
+	{
+		multimpFace2Cell face2cell;
+		std::vector<emInt> faceVerts;
+		std::vector<emInt> sortedTriVerts(3);
+		std::vector<emInt> sortedQuadVerts(4);
+
+		cellID2cellTypeLocalID.resize(numCells());
+
+		emInt offset = 0;
+
+		for (emInt ii = 0; ii < numBdryTris(); ii++) {
+			const emInt *triConn = getBdryTriConn(ii);
+			faceVerts = { triConn[0], triConn[1], triConn[2] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TRI_3)));
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(TRI_3),
+					ii);
+		}
+		offset += numBdryTris();
+
+		for (emInt ii = 0; ii < numBdryQuads(); ii++) {
+			const emInt *quadConn = getBdryQuadConn(ii);
+			faceVerts = { quadConn[0], quadConn[1], quadConn[2], quadConn[3] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii+offset, CGNS_ENUMV(QUAD_4)));
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(QUAD_4),
+					ii);
+		}
+		offset += numBdryQuads();
+
+		for (emInt ii = 0; ii < numTets(); ii++) {
+			const emInt *tetConn = getTetConn(ii);
+			faceVerts = { tetConn[0], tetConn[1], tetConn[2] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TETRA_4)));
+
+			faceVerts = { tetConn[0], tetConn[1], tetConn[3] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TETRA_4)));
+
+			faceVerts = { tetConn[1], tetConn[2], tetConn[3] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TETRA_4)));
+
+			faceVerts = { tetConn[2], tetConn[0], tetConn[3] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TETRA_4)));
+
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(TETRA_4),
+					ii);
+		}
+		offset += numTets();
+
+		for (emInt ii = 0; ii < numPyramids(); ii++) {
+			const emInt *pyrConn = getPyrConn(ii);
+			faceVerts = { pyrConn[0], pyrConn[1], pyrConn[4] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+
+			faceVerts = { pyrConn[1], pyrConn[2], pyrConn[4] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+
+			faceVerts = { pyrConn[2], pyrConn[3], pyrConn[4] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+
+			faceVerts = { pyrConn[3], pyrConn[0], pyrConn[4] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+
+			faceVerts = { pyrConn[0], pyrConn[1], pyrConn[2], pyrConn[3] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(PYRA_5),
+					ii);
+		}
+		offset += numPyramids();
+
+		for (emInt ii = 0; ii < numPrisms(); ii++) {
+			const emInt *prismConn = getPrismConn(ii);
+			faceVerts = { prismConn[0], prismConn[1], prismConn[2] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+
+			faceVerts = { prismConn[3], prismConn[4], prismConn[5] };
+			sortVerts3(faceVerts.data(), sortedTriVerts.data());
+			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+
+			faceVerts = { prismConn[0], prismConn[1], prismConn[4], prismConn[3] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+
+			faceVerts = { prismConn[1], prismConn[2], prismConn[5], prismConn[4] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+
+			faceVerts = { prismConn[2], prismConn[0], prismConn[3], prismConn[5] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(PENTA_6),
+					ii);
+		}
+		offset += numPrisms();
+
+		for (emInt ii = 0; ii < numHexes(); ii++) {
+			const emInt *hexConn = getHexConn(ii);
+			faceVerts = { hexConn[0], hexConn[1], hexConn[2], hexConn[3] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+
+			faceVerts = { hexConn[4], hexConn[5], hexConn[6], hexConn[7] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+
+			faceVerts = { hexConn[0], hexConn[1], hexConn[5], hexConn[4] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+
+			faceVerts = { hexConn[1], hexConn[2], hexConn[6], hexConn[5] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+
+			faceVerts = { hexConn[2], hexConn[3], hexConn[7], hexConn[6] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+
+			faceVerts = { hexConn[3], hexConn[0], hexConn[4], hexConn[7] };
+			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
+			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(HEXA_8),
+					ii);
+		}
+
+		// Debugging diagnostics
+//		for (auto cellPair : cellID2cellTypeLocalID) {
+//			printf("ID pairs: %5u %5u\n",
+//					cellPair.first, cellPair.second);
+//		}
+//
+//		for (auto faceEntry : face2cell) {
+//			printf("Num verts: %lu (%2u %2u %2u %2u)  Cell: %3u  Type: %2u\n",
+//					faceEntry.first.size(), faceEntry.first[0],
+//					faceEntry.first[1], faceEntry.first[2], faceEntry.first[3],
+//					faceEntry.second.first, faceEntry.second.second);
+//		}
+		printf("Number of face-cell entries: %lu\n", face2cell.size());
+		buildCell2CellConnFromFace2Cell(face2cell, numCells());
+	}
+}
+
+void ExaMesh::buildCell2CellConnFromFace2Cell(multimpFace2Cell &face2cell,
 		const emInt nCells) {
 
 	auto it = face2cell.begin();

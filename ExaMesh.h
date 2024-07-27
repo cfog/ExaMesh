@@ -168,8 +168,9 @@ public:
 	}
 	MeshSize computeFineMeshSize(const int nDivs) const;
 
+	void buildCellToCellConnectivity();
 	void buildFaceCellConnectivity();
-	void buildCell2CellConn(multimpFace2Cell& face2cell, const emInt nCells);
+	void buildCell2CellConnFromFace2Cell(multimpFace2Cell& face2cell, const emInt nCells);
 	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2);
 	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2, emInt v3);
 	void testCell2CellConn(emInt nCells);
