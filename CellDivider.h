@@ -40,7 +40,7 @@ protected:
 	UMesh *m_pMesh;
 	Mapping *m_Map;
 	emInt (*localVerts)[MAX_DIVS + 1][MAX_DIVS + 1];
-	double (*m_uvw)[MAX_DIVS+1][MAX_DIVS+1][3];
+	double (*m_uvw)[MAX_DIVS + 1][MAX_DIVS + 1][3];
 	emInt edgeVertIndices[12][2];
 	emInt faceVertIndices[6][4];
 	emInt faceEdgeIndices[6][4];
@@ -57,16 +57,15 @@ private:
 	void getEdgeVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges, const emInt edge,
 			const double dihedral, EdgeVerts &EV);
 
-	QuadFaceVerts getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads, const emInt face);
+	QuadFaceVerts getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
+			const emInt face);
 
 	TriFaceVerts getTriVerts(
-			exa_set<TriFaceVerts> &vertsOnTris,
-			const emInt face);
+	exa_set<TriFaceVerts> &vertsOnTris, const emInt face);
 public:
 	CellDivider(UMesh *pVolMesh, const emInt segmentsPerEdge) :
-			m_pMesh(pVolMesh), m_Map(nullptr),
-					numTriFaces(0), numQuadFaces(0), numEdges(0),
-					numVerts(0), nDivs(segmentsPerEdge) {
+			m_pMesh(pVolMesh), m_Map(nullptr), numTriFaces(0), numQuadFaces(0), numEdges(
+					0), numVerts(0), nDivs(segmentsPerEdge) {
 		localVerts = new emInt[MAX_DIVS + 1][MAX_DIVS + 1][MAX_DIVS + 1];
 		m_uvw = new double[MAX_DIVS + 1][MAX_DIVS + 1][MAX_DIVS + 1][3];
 #ifndef NDEBUG
@@ -74,9 +73,8 @@ public:
 			for (int jj = 0; jj <= MAX_DIVS; jj++) {
 				for (int kk = 0; kk <= MAX_DIVS; kk++) {
 					localVerts[ii][jj][kk] = 100;
-					m_uvw[ii][jj][kk][0] =
-							m_uvw[ii][jj][kk][1] =
-									m_uvw[ii][jj][kk][2] = -1;
+					m_uvw[ii][jj][kk][0] = m_uvw[ii][jj][kk][1] =
+							m_uvw[ii][jj][kk][2] = -1;
 				}
 			}
 		}
@@ -85,11 +83,12 @@ public:
 	virtual ~CellDivider() {
 		delete[] localVerts;
 		delete[] m_uvw;
-		if (m_Map) delete m_Map;
+		if (m_Map)
+			delete m_Map;
 	}
 	void createDivisionVerts(exa_map<Edge, EdgeVerts> &vertsOnEdges,
-			exa_set<TriFaceVerts> &vertsOnTris,
-			exa_set<QuadFaceVerts> &vertsOnQuads) {
+	exa_set<TriFaceVerts> &vertsOnTris,
+	exa_set<QuadFaceVerts> &vertsOnQuads) {
 		divideEdges(vertsOnEdges);
 
 		// Divide all the faces, including storing info about which new verts
@@ -109,8 +108,7 @@ public:
 	virtual void setupCoordMapping(const emInt verts[]) = 0;
 	virtual void getPhysCoordsFromParamCoords(const double uvw[],
 			double xyz[]) = 0;
-	void getParamCoords(const int i, const int j, const int k,
-			double uvw[]) {
+	void getParamCoords(const int i, const int j, const int k, double uvw[]) {
 		assert(i >= 0 && i <= MAX_DIVS);
 		assert(j >= 0 && j <= MAX_DIVS);
 		assert(k >= 0 && k <= MAX_DIVS);
@@ -120,36 +118,47 @@ public:
 	}
 
 	// The virtual functions here will be overridden in most subclasses.
-	emInt minI(const emInt /*j*/, const emInt /*k*/) const {return 0;}
-	emInt minJ(const emInt /*i*/, const emInt /*k*/) const {return 0;}
-	emInt minK(const emInt /*i*/, const emInt /*j*/) const {return 0;}
+	emInt minI(const emInt /*j*/, const emInt /*k*/) const {
+		return 0;
+	}
+	emInt minJ(const emInt /*i*/, const emInt /*k*/) const {
+		return 0;
+	}
+	emInt minK(const emInt /*i*/, const emInt /*j*/) const {
+		return 0;
+	}
 
-	virtual emInt maxI(const emInt /*j*/, const emInt /*k*/) const {return nDivs;}
-	virtual emInt maxJ(const emInt /*i*/, const emInt /*k*/) const {return nDivs;}
-	virtual emInt maxK(const emInt /*i*/, const emInt /*j*/) const {return nDivs;}
+	virtual emInt maxI(const emInt /*j*/, const emInt /*k*/) const {
+		return nDivs;
+	}
+	virtual emInt maxJ(const emInt /*i*/, const emInt /*k*/) const {
+		return nDivs;
+	}
+	virtual emInt maxK(const emInt /*i*/, const emInt /*j*/) const {
+		return nDivs;
+	}
 
-	virtual emInt getMinInteriorDivs() const {return 3;}
+	virtual emInt getMinInteriorDivs() const {
+		return 3;
+	}
 	void computeParaCoords(const emInt ii, const emInt jj, const emInt kk,
 			double uvw[3]) const;
 	// Output for diagnostic purposes
 	void printAllPoints();
 private:
 	void getEdgeParametricDivision(EdgeVerts &EV) const;
-	void initPerimeterParams(TriFaceVerts& TFV, const emInt face) const;
-	void initPerimeterParams(QuadFaceVerts& QFV, const emInt face) const;
-	bool isEdgeForwardForFace(const EdgeVerts &EV,
-			emInt cornerStart, emInt cornerEnd) const;
+	void initPerimeterParams(TriFaceVerts &TFV, const emInt face) const;
+	void initPerimeterParams(QuadFaceVerts &QFV, const emInt face) const;
+	bool isEdgeForwardForFace(const EdgeVerts &EV, emInt cornerStart,
+			emInt cornerEnd) const;
 };
 
-void getFaceParametricIntersectionPoint(
-		const double uvL[2], const double uvR[2],
-		const double uvB[2], const double uvT[2],
+void getFaceParametricIntersectionPoint(const double uvL[2],
+		const double uvR[2], const double uvB[2], const double uvT[2],
 		double uv[2]);
 
-void getCellInteriorParametricIntersectionPoint(
-		const double uvwA[3], const double uvwB[3],
-		const double uvwC[3], const double uvwD[3],
-		const double uvwE[3], const double uvwF[3],
-		double uvw[3]);
+void getCellInteriorParametricIntersectionPoint(const double uvwA[3],
+		const double uvwB[3], const double uvwC[3], const double uvwD[3],
+		const double uvwE[3], const double uvwF[3], double uvw[3]);
 
 #endif /* SRC_CELLDIVIDER_H_ */

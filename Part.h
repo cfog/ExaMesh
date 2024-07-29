@@ -36,19 +36,22 @@
 #include "exa-defs.h"
 
 class CellPartData {
-private: 
-	friend class boost::serialization::access; 
-	template <class Archive> 
-	void serialize(Archive &ar, const unsigned int /*version*/)	{
-		ar &m_index; 
-		ar &m_cellType; 
-		ar &m_coords; 
+private:
+	friend class boost::serialization::access;
+	template<class Archive>
+	void serialize(Archive &ar, const unsigned int /*version*/) {
+		ar & m_index;
+		ar & m_cellType;
+		ar & m_coords;
 	}
 	emInt m_index, m_cellType;
 	double m_coords[3];
 public:
 	// for registering MPI-type-CAUTION 
-	CellPartData() : m_index(EMINT_MAX), m_cellType(TETRA_4) {};
+	CellPartData() :
+			m_index(EMINT_MAX), m_cellType(TETRA_4) {
+	}
+	;
 	CellPartData(const emInt ind, const emInt type, const double x,
 			const double y, const double z) :
 			m_index(ind), m_cellType(type) {
@@ -56,7 +59,10 @@ public:
 		m_coords[1] = y;
 		m_coords[2] = z;
 	}
-	CellPartData (const emInt ind, const emInt type): m_index(ind),m_cellType(type){}; 
+	CellPartData(const emInt ind, const emInt type) :
+			m_index(ind), m_cellType(type) {
+	}
+	;
 	double getCoord(const int which) const {
 		assert(which >= 0 && which < 3);
 		return m_coords[which];
@@ -70,38 +76,40 @@ public:
 		return m_index;
 	}
 	friend MPI_Datatype register_mpi_type(CellPartData const&);
-	friend bool operator==(const CellPartData& a, const CellPartData& b); 
+	friend bool operator==(const CellPartData &a, const CellPartData &b);
 
 };
 
 class Part {
-private: 
-	friend class boost::serialization::access; 
-	template <class Archive> 
-	void serialize(Archive &ar, const unsigned int /*version*/)	{
-		ar &m_xmin; 
-		ar &m_xmax; 
-		ar &m_ymin; 
-		ar &m_ymax; 
-		ar &m_zmin; 
-		ar &m_zmax; 
-		ar &m_first; 
-		ar &m_last; 
-		ar &m_nParts; 
+private:
+	friend class boost::serialization::access;
+	template<class Archive>
+	void serialize(Archive &ar, const unsigned int /*version*/) {
+		ar & m_xmin;
+		ar & m_xmax;
+		ar & m_ymin;
+		ar & m_ymax;
+		ar & m_zmin;
+		ar & m_zmax;
+		ar & m_first;
+		ar & m_last;
+		ar & m_nParts;
 	}
 
 	double m_xmin, m_xmax, m_ymin, m_ymax, m_zmin, m_zmax;
 	emInt m_first, m_last, m_nParts;
 public:
 	Part() :
-			m_xmin(DBL_MAX), m_xmax(-DBL_MAX), m_ymin(DBL_MAX), m_ymax(-DBL_MAX),
-					m_zmin(DBL_MAX), m_zmax(-DBL_MAX), m_first(0), m_last(0), m_nParts(0) {
+			m_xmin(DBL_MAX), m_xmax(-DBL_MAX), m_ymin(DBL_MAX), m_ymax(
+					-DBL_MAX), m_zmin(DBL_MAX), m_zmax(-DBL_MAX), m_first(0), m_last(
+					0), m_nParts(0) {
 	}
 	Part(const emInt first, const emInt last, const emInt partsToMake,
 			const double xmin, const double xmax, const double ymin,
 			const double ymax, const double zmin, const double zmax) :
-			m_xmin(xmin), m_xmax(xmax), m_ymin(ymin), m_ymax(ymax), m_zmin(zmin),
-					m_zmax(zmax), m_first(first), m_last(last), m_nParts(partsToMake) {
+			m_xmin(xmin), m_xmax(xmax), m_ymin(ymin), m_ymax(ymax), m_zmin(
+					zmin), m_zmax(zmax), m_first(first), m_last(last), m_nParts(
+					partsToMake) {
 	}
 	void setData(const emInt first, const emInt last, const emInt partsToMake,
 			const double mins[3], const double maxes[3]) {
@@ -118,7 +126,7 @@ public:
 	emInt numParts() const {
 		return m_nParts;
 	}
-	void split(std::vector<CellPartData>& vCPD, Part& P1, Part& P2) const;
+	void split(std::vector<CellPartData> &vCPD, Part &P1, Part &P2) const;
 
 	emInt getFirst() const {
 		return m_first;
@@ -151,17 +159,23 @@ public:
 	double getZmin() const {
 		return m_zmin;
 	}
-	
+
 	friend MPI_Datatype register_mpi_type(Part const&);
-	friend bool operator==(const Part& a, const Part& b); 
+	friend bool operator==(const Part &a, const Part &b);
 
 };
-namespace boost { namespace mpi {
-	template <>
-struct is_mpi_datatype<Part> : mpl::true_ { };
-} }
-namespace boost { namespace mpi {
-	template <>
-struct is_mpi_datatype<CellPartData> : mpl::true_ { };
-} }
+namespace boost {
+namespace mpi {
+template<>
+struct is_mpi_datatype<Part> : mpl::true_ {
+};
+}
+}
+namespace boost {
+namespace mpi {
+template<>
+struct is_mpi_datatype<CellPartData> : mpl::true_ {
+};
+}
+}
 #endif /* SRC_PART_H_ */

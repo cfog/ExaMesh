@@ -34,42 +34,41 @@ class HexDivider: public CellDivider {
 	double xyzOffsetTop[3], uVecTop[3], vVecTop[3], uvVecTop[3];
 
 public:
-	HexDivider(UMesh *pVolMesh, const ExaMesh* const pInitMesh,
-			const int segmentsPerEdge,
-			const Mapping::MappingType type = Mapping::Invalid)
-      :
+	HexDivider(UMesh *pVolMesh, const ExaMesh *const pInitMesh,
+			const int segmentsPerEdge, const Mapping::MappingType type =
+					Mapping::Invalid) :
 			CellDivider(pVolMesh, segmentsPerEdge) {
-    vertIJK[0][0] = 0;
-    vertIJK[0][1] = 0;
-    vertIJK[0][2] = 0;
+		vertIJK[0][0] = 0;
+		vertIJK[0][1] = 0;
+		vertIJK[0][2] = 0;
 
-    vertIJK[1][0] = nDivs;
-    vertIJK[1][1] = 0;
-    vertIJK[1][2] = 0;
+		vertIJK[1][0] = nDivs;
+		vertIJK[1][1] = 0;
+		vertIJK[1][2] = 0;
 
-    vertIJK[2][0] = nDivs;
-    vertIJK[2][1] = nDivs;
-    vertIJK[2][2] = 0;
+		vertIJK[2][0] = nDivs;
+		vertIJK[2][1] = nDivs;
+		vertIJK[2][2] = 0;
 
-    vertIJK[3][0] = 0;
-    vertIJK[3][1] = nDivs;
-    vertIJK[3][2] = 0;
+		vertIJK[3][0] = 0;
+		vertIJK[3][1] = nDivs;
+		vertIJK[3][2] = 0;
 
-    vertIJK[4][0] = 0;
-    vertIJK[4][1] = 0;
-    vertIJK[4][2] = nDivs;
+		vertIJK[4][0] = 0;
+		vertIJK[4][1] = 0;
+		vertIJK[4][2] = nDivs;
 
-    vertIJK[5][0] = nDivs;
-    vertIJK[5][1] = 0;
-    vertIJK[5][2] = nDivs;
+		vertIJK[5][0] = nDivs;
+		vertIJK[5][1] = 0;
+		vertIJK[5][2] = nDivs;
 
-    vertIJK[6][0] = nDivs;
-    vertIJK[6][1] = nDivs;
-    vertIJK[6][2] = nDivs;
+		vertIJK[6][0] = nDivs;
+		vertIJK[6][1] = nDivs;
+		vertIJK[6][2] = nDivs;
 
-    vertIJK[7][0] = 0;
-    vertIJK[7][1] = nDivs;
-    vertIJK[7][2] = nDivs;
+		vertIJK[7][0] = 0;
+		vertIJK[7][1] = nDivs;
+		vertIJK[7][2] = nDivs;
 
 		uvwIJK[0][0] = 0;
 		uvwIJK[0][1] = 0;
@@ -105,7 +104,7 @@ public:
 
 		numVerts = 8;
 		numEdges = 12;
- 		numTriFaces = 0;
+		numTriFaces = 0;
 		numQuadFaces = 6;
 		edgeVertIndices[0][0] = 0;
 		edgeVertIndices[0][1] = 1;
@@ -197,12 +196,12 @@ public:
 		faceEdgeIndices[4][1] = 6;
 		faceEdgeIndices[4][2] = 11;
 		faceEdgeIndices[4][3] = 2;
-	       
+
 		faceEdgeIndices[5][0] = 11;
 		faceEdgeIndices[5][1] = 7;
 		faceEdgeIndices[5][2] = 8;
 		faceEdgeIndices[5][3] = 3;
-	      
+
 		Mapping::MappingType myType = type;
 		if (myType == Mapping::Invalid) {
 			myType = pInitMesh->getDefaultMappingType();
@@ -216,15 +215,17 @@ public:
 			m_Map = new Q1HexMapping(pInitMesh);
 			break;
 		}
-  }
+	}
 	~HexDivider() {
 	}
 //	void divideInterior();
-  void createNewCells();
+	void createNewCells();
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
 
-	virtual emInt getMinInteriorDivs() const {return 2;}
+	virtual emInt getMinInteriorDivs() const {
+		return 2;
+	}
 
 };
 

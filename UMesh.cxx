@@ -485,7 +485,6 @@ UMesh::UMesh(const std::string baseFileName, const std::string fileSuffix,
 
 	reader->seekStartOfConnectivity();
 
-
 	vcellID2type.resize(reader->getNumCells());
 
 	for (emInt ii = 0; ii < reader->getNumCells(); ii++) {
@@ -557,7 +556,6 @@ UMesh::UMesh(const std::string baseFileName, const std::string fileSuffix,
 
 	nBdryTris += setTris.size();
 	nBdryQuads += setQuads.size();
-
 
 	//BdryVertsTrisQuads.push_back(reader->getNumBdryVerts());
 	//BdryVertsTrisQuads.push_back(numBdryTris); 
@@ -661,21 +659,20 @@ UMesh::UMesh(const std::string baseFileName, const std::string fileSuffix,
 	//vLengthScale.assign(m_lenScale,m_lenScale+m_header[0]);
 }
 
-
-std::unique_ptr<UMesh>
-UMesh::subdivideMesh(const emInt nDivs, const emInt partID) const {
+std::unique_ptr<UMesh> UMesh::subdivideMesh(const emInt nDivs,
+		const emInt partID) const {
 	setlocale(LC_ALL, "");
-	size_t totalInputCells = size_t(m_nTets) + m_nPyrs
-			+ m_nPrisms + m_nHexes;
+	size_t totalInputCells = size_t(m_nTets) + m_nPyrs + m_nPrisms + m_nHexes;
 	fprintf(
 	stderr,
 			"Initial mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15lu cells total\n",
-			m_nVerts, m_nTris, m_nQuads, m_nTets,
-			m_nPyrs, m_nPrisms, m_nHexes, totalInputCells);
+			m_nVerts, m_nTris, m_nQuads, m_nTets, m_nPyrs, m_nPrisms, m_nHexes,
+			totalInputCells);
 
 	MeshSize MSOut = computeFineMeshSize(nDivs);
-	auto outMesh = std::make_unique<UMesh>(MSOut.nVerts, MSOut.nBdryVerts, MSOut.nBdryTris, MSOut.nBdryQuads,
-			MSOut.nTets, MSOut.nPyrs, MSOut.nPrisms, MSOut.nHexes);
+	auto outMesh = std::make_unique<UMesh>(MSOut.nVerts, MSOut.nBdryVerts,
+			MSOut.nBdryTris, MSOut.nBdryQuads, MSOut.nTets, MSOut.nPyrs,
+			MSOut.nPrisms, MSOut.nHexes);
 	// Copy length scale data from the other mesh.
 	for (emInt vv = 0; vv < m_nVerts; vv++) {
 		outMesh->setLengthScale(vv, m_lenScale[vv]);
@@ -688,13 +685,11 @@ UMesh::subdivideMesh(const emInt nDivs, const emInt partID) const {
 	stderr,
 			"Final mesh has:\n %'15u verts,\n %'15u bdry tris,\n %'15u bdry quads,\n %'15u tets,\n %'15u pyramids,\n %'15u prisms,\n %'15u hexes,\n%'15u cells total\n",
 			outMesh->numVerts(), outMesh->numBdryTris(),
-			outMesh->numBdryQuads(), outMesh->numTets(),
-			outMesh->numPyramids(), outMesh->numPrisms(),
-			outMesh->numHexes(), outMesh->numCells());
+			outMesh->numBdryQuads(), outMesh->numTets(), outMesh->numPyramids(),
+			outMesh->numPrisms(), outMesh->numHexes(), outMesh->numCells());
 #endif		
 	return outMesh;
 }
-
 
 bool UMesh::writeVTKFile(const char fileName[]) {
 	double timeBefore = exaTime();
@@ -935,8 +930,7 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshPseudoParallel(Part &P,
 			break;
 		case CGNS_ENUMV(QUAD_4):
 			break;
-		case CGNS_ENUMV(TETRA_4):
-		{
+		case CGNS_ENUMV(TETRA_4): {
 			nTets++;
 			conn = getTetConn(ind);
 			TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], type, ind);
@@ -953,11 +947,11 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshPseudoParallel(Part &P,
 			isVertUsed[conn[3]] = true;
 			break;
 		}
-		case CGNS_ENUMV(PYRA_5):
-		{
+		case CGNS_ENUMV(PYRA_5): {
 			nPyrs++;
 			conn = getPyrConn(ind);
-			QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], type, ind);
+			QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3],
+					type, ind);
 			TriFaceVerts TFV014(numDivs, conn[0], conn[1], conn[4], type, ind);
 			TriFaceVerts TFV124(numDivs, conn[1], conn[2], conn[4], type, ind);
 			TriFaceVerts TFV234(numDivs, conn[2], conn[3], conn[4], type, ind);
@@ -974,13 +968,15 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshPseudoParallel(Part &P,
 			isVertUsed[conn[4]] = true;
 			break;
 		}
-		case CGNS_ENUMV(PENTA_6):
-		{
+		case CGNS_ENUMV(PENTA_6): {
 			nPrisms++;
 			conn = getPrismConn(ind);
-			QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3], type, ind);
-			QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4], type, ind);
-			QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5], type, ind);
+			QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3],
+					type, ind);
+			QuadFaceVerts QFV1254(numDivs, conn[1], conn[2], conn[5], conn[4],
+					type, ind);
+			QuadFaceVerts QFV2035(numDivs, conn[2], conn[0], conn[3], conn[5],
+					type, ind);
 			TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2], type, ind);
 			TriFaceVerts TFV345(numDivs, conn[3], conn[4], conn[5], type, ind);
 			addUniquely(partBdryQuads, QFV0143);
@@ -996,16 +992,21 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshPseudoParallel(Part &P,
 			isVertUsed[conn[5]] = true;
 			break;
 		}
-		case CGNS_ENUMV(HEXA_8):
-		{
+		case CGNS_ENUMV(HEXA_8): {
 			nHexes++;
 			conn = getHexConn(ind);
-			QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4], type, ind);
-			QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5], type, ind);
-			QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6], type, ind);
-			QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7], type, ind);
-			QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3], type, ind);
-			QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7], type, ind);
+			QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4],
+					type, ind);
+			QuadFaceVerts QFV1265(numDivs, conn[1], conn[2], conn[6], conn[5],
+					type, ind);
+			QuadFaceVerts QFV2376(numDivs, conn[2], conn[3], conn[7], conn[6],
+					type, ind);
+			QuadFaceVerts QFV3047(numDivs, conn[3], conn[0], conn[4], conn[7],
+					type, ind);
+			QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3],
+					type, ind);
+			QuadFaceVerts QFV4567(numDivs, conn[4], conn[5], conn[6], conn[7],
+					type, ind);
 			addUniquely(partBdryQuads, QFV0154);
 			addUniquely(partBdryQuads, QFV1265);
 			addUniquely(partBdryQuads, QFV2376);
@@ -1087,8 +1088,10 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshPseudoParallel(Part &P,
 	}
 	emInt nBdryVerts = 0, nVerts = 0;
 	for (emInt ii = 0; ii < numVerts(); ii++) {
-		if (isVertUsed[ii])	nVerts++;
-		if (isBdryVert[ii]) nBdryVerts++;
+		if (isVertUsed[ii])
+			nVerts++;
+		if (isBdryVert[ii])
+			nBdryVerts++;
 	}
 
 	// Now set up the data structures for the new coarse UMesh
@@ -1168,18 +1171,20 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshPseudoParallel(Part &P,
 	assert(partBdryTris.size() == tris.size());
 
 	for (auto tri : partBdryTris) {
-		emInt localConn[] = { newIndices[tri.getCorner(0)], newIndices[tri.getCorner(
-				1)], newIndices[tri.getCorner(2)] };
-		emInt global[3] = {tri.getCorner(0), tri.getCorner(1), tri.getCorner(2)};
+		emInt localConn[] = { newIndices[tri.getCorner(0)],
+				newIndices[tri.getCorner(1)], newIndices[tri.getCorner(2)] };
+		emInt global[3] =
+				{ tri.getCorner(0), tri.getCorner(1), tri.getCorner(2) };
 		TriFaceVerts TF(numDivs, global, partID, -1, true);
 		auto itr = tris.find(TF);
 		if (itr != tris.end()) {
-			assert(itr->getGlobalCorner(0) == global[0] &&
-			       itr->getGlobalCorner(1) == global[1] &&
-			       itr->getGlobalCorner(2) == global[2] &&
-			       itr->getPartid() == partID);
-			TriFaceVerts TFV(numDivs, localConn, global, partID, itr->getRemoteId(),
-					 0, EMINT_MAX, false);
+			assert(
+					itr->getGlobalCorner(0) == global[0]
+							&& itr->getGlobalCorner(1) == global[1]
+							&& itr->getGlobalCorner(2) == global[2]
+							&& itr->getPartid() == partID);
+			TriFaceVerts TFV(numDivs, localConn, global, partID,
+					itr->getRemoteId(), 0, EMINT_MAX, false);
 			// need to be corrected, I could not generate with correct bool value unless
 			// I pass all arguments
 
@@ -1194,18 +1199,19 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshPseudoParallel(Part &P,
 		emInt localConn[] = { newIndices[quad.getCorner(0)],
 				newIndices[quad.getCorner(1)], newIndices[quad.getCorner(2)],
 				newIndices[quad.getCorner(3)] };
-		emInt global[4] = {quad.getCorner(0), quad.getCorner(1),
-		  quad.getCorner(2), quad.getCorner(3)};
+		emInt global[4] = { quad.getCorner(0), quad.getCorner(1),
+				quad.getCorner(2), quad.getCorner(3) };
 		QuadFaceVerts QF(numDivs, global, partID, -1, true);
 		auto itr = quads.find(QF);
 		if (itr != quads.end()) {
-			assert(itr->getGlobalCorner(0) == global[0] &&
-			       itr->getGlobalCorner(1) == global[1] &&
-			       itr->getGlobalCorner(2) == global[2] &&
-			       itr->getGlobalCorner(3) == global[3] &&
-			       itr->getPartid() == partID);
-			QuadFaceVerts QFV(numDivs, localConn, global, partID, itr->getRemoteId(),
-					  0, EMINT_MAX, false);
+			assert(
+					itr->getGlobalCorner(0) == global[0]
+							&& itr->getGlobalCorner(1) == global[1]
+							&& itr->getGlobalCorner(2) == global[2]
+							&& itr->getGlobalCorner(3) == global[3]
+							&& itr->getPartid() == partID);
+			QuadFaceVerts QFV(numDivs, localConn, global, partID,
+					itr->getRemoteId(), 0, EMINT_MAX, false);
 			// need to be corrected, I could not generate with correct bool value unless
 			// I pass all arguments
 			extractedMesh->addPartQuadtoSet(QFV);
@@ -1312,8 +1318,7 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshMPI(const emInt partID,
 			break;
 		case CGNS_ENUMV(QUAD_4):
 			break;
-		case CGNS_ENUMV(TETRA_4):
-		{
+		case CGNS_ENUMV(TETRA_4): {
 			nTets++;
 			conn = getTetConn(ind);
 			TriFaceVerts TFV012(numDivs, conn[0], conn[1], conn[2]);
@@ -1330,8 +1335,7 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshMPI(const emInt partID,
 			isVertUsed[conn[3]] = true;
 			break;
 		}
-		case CGNS_ENUMV(PYRA_5):
-		{
+		case CGNS_ENUMV(PYRA_5): {
 			nPyrs++;
 			conn = getPyrConn(ind);
 			QuadFaceVerts QFV0123(numDivs, conn[0], conn[1], conn[2], conn[3]);
@@ -1351,8 +1355,7 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshMPI(const emInt partID,
 			isVertUsed[conn[4]] = true;
 			break;
 		}
-		case CGNS_ENUMV(PENTA_6):
-		{
+		case CGNS_ENUMV(PENTA_6): {
 			nPrisms++;
 			conn = getPrismConn(ind);
 			QuadFaceVerts QFV0143(numDivs, conn[0], conn[1], conn[4], conn[3]);
@@ -1373,8 +1376,7 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshMPI(const emInt partID,
 			isVertUsed[conn[5]] = true;
 			break;
 		}
-		case CGNS_ENUMV(HEXA_8):
-		{
+		case CGNS_ENUMV(HEXA_8): {
 			nHexes++;
 			conn = getHexConn(ind);
 			QuadFaceVerts QFV0154(numDivs, conn[0], conn[1], conn[5], conn[4]);
@@ -1604,6 +1606,4 @@ std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshMPI(const emInt partID,
 	assert(UUM->getSizePartQuads() == quads.size());
 	return UUM;
 }
-
-
 

@@ -28,7 +28,7 @@
 
 #include "Mapping.h"
 
-LagrangeMapping::LagrangeMapping(const ExaMesh* const EM, const int nVals) :
+LagrangeMapping::LagrangeMapping(const ExaMesh *const EM, const int nVals) :
 		Mapping(EM), m_numValues(nVals) {
 	m_nodalValues = new double[nVals][3];
 }

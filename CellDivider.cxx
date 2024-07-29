@@ -53,82 +53,81 @@ void sortVerts3(const emInt input[3], emInt output[3]) {
 }
 
 TriFaceVerts::TriFaceVerts(const emInt nDivs, const emInt v0, const emInt v1,
-		const emInt v2,const emInt type, 
-		const emInt elemInd,const emInt partID ,const emInt remoteId,bool globalComparison) :
+		const emInt v2, const emInt type, const emInt elemInd,
+		const emInt partID, const emInt remoteId, bool globalComparison) :
 		FaceVerts(nDivs, 3) {
 	m_volElem = elemInd;
 	m_volElemType = type;
-	m_partId=partID; 
-	m_globalComparison=globalComparison;
+	m_partId = partID;
+	m_globalComparison = globalComparison;
 	setCorners(v0, v1, v2);
 }
 
 TriFaceVerts::TriFaceVerts(const emInt nDivs, const emInt local[3],
-	const emInt global[3],const emInt partid_,const emInt remoteID_, 
-	const emInt type ,const emInt elemInd,
-	bool globalComparison):FaceVerts(nDivs,3){
-		m_volElem = elemInd;
-		m_volElemType = type;
-		m_partId=partid_; 
-		m_remoteId=remoteID_;
-		m_globalComparison=globalComparison; 
-		setCorners(local[0],local[1],local[2]); 
-		emInt output [3]; 
-		sortVerts3(global,output);
-		for(auto i=0 ; i<3; i++){
-			m_global[i]=global[i]; 
-			m_sortedGlobal[i]= output[i];
-		}	 
-}
-TriFaceVerts::TriFaceVerts(const emInt nDivs,const emInt global[3],
-const emInt partid_, const emInt remoteID_ ,bool globalComparison,
-const emInt type, const emInt elemInd
-):FaceVerts(nDivs,3){
-		m_volElem = elemInd;
-		m_volElemType = type;
-		m_partId=partid_; 
-		m_remoteId=remoteID_; 
-		m_globalComparison=globalComparison;
-		emInt local[3]={EMINT_MAX, EMINT_MAX, EMINT_MAX};
-	
-		setCorners(local[0],local[1],local[2]); 
-		emInt output [3]; 
-		sortVerts3(global,output);
-		for(auto i=0 ; i<3; i++){
-			m_global[i]=global[i]; 
-			m_sortedGlobal[i]= output[i];
-		}	 
-}
-TriFaceVerts::TriFaceVerts(const emInt nDivs, const emInt local[3],
-	const emInt global[3], const emInt remoteIndices_ [3] ,const emInt partid_, 
-	const emInt remoteID_ ,
-	const emInt type ,const emInt elemInd,bool globalComparison):
-	FaceVerts(nDivs,3){
+		const emInt global[3], const emInt partid_, const emInt remoteID_,
+		const emInt type, const emInt elemInd, bool globalComparison) :
+		FaceVerts(nDivs, 3) {
 	m_volElem = elemInd;
 	m_volElemType = type;
-	m_partId=partid_; 
-	m_remoteId=remoteID_;
-	m_globalComparison=globalComparison; 
-	setCorners(local[0],local[1],local[2]); 
-	emInt output [3];
-	emInt remoteOutput [3];  
-	sortVerts3(global,output);
-	sortVerts3(remoteIndices_,remoteOutput); 
-	for(auto i=0 ; i<3; i++){
-		m_global[i]=global[i]; 
-		m_sortedGlobal[i]= output[i];
-		m_remote[i]= remoteIndices_[i];
-		m_sortedRemote[i]= remoteOutput[i]; 
-	}	
-}; 
+	m_partId = partid_;
+	m_remoteId = remoteID_;
+	m_globalComparison = globalComparison;
+	setCorners(local[0], local[1], local[2]);
+	emInt output[3];
+	sortVerts3(global, output);
+	for (auto i = 0; i < 3; i++) {
+		m_global[i] = global[i];
+		m_sortedGlobal[i] = output[i];
+	}
+}
+TriFaceVerts::TriFaceVerts(const emInt nDivs, const emInt global[3],
+		const emInt partid_, const emInt remoteID_, bool globalComparison,
+		const emInt type, const emInt elemInd) :
+		FaceVerts(nDivs, 3) {
+	m_volElem = elemInd;
+	m_volElemType = type;
+	m_partId = partid_;
+	m_remoteId = remoteID_;
+	m_globalComparison = globalComparison;
+	emInt local[3] = { EMINT_MAX, EMINT_MAX, EMINT_MAX };
 
-
+	setCorners(local[0], local[1], local[2]);
+	emInt output[3];
+	sortVerts3(global, output);
+	for (auto i = 0; i < 3; i++) {
+		m_global[i] = global[i];
+		m_sortedGlobal[i] = output[i];
+	}
+}
+TriFaceVerts::TriFaceVerts(const emInt nDivs, const emInt local[3],
+		const emInt global[3], const emInt remoteIndices_[3],
+		const emInt partid_, const emInt remoteID_, const emInt type,
+		const emInt elemInd, bool globalComparison) :
+		FaceVerts(nDivs, 3) {
+	m_volElem = elemInd;
+	m_volElemType = type;
+	m_partId = partid_;
+	m_remoteId = remoteID_;
+	m_globalComparison = globalComparison;
+	setCorners(local[0], local[1], local[2]);
+	emInt output[3];
+	emInt remoteOutput[3];
+	sortVerts3(global, output);
+	sortVerts3(remoteIndices_, remoteOutput);
+	for (auto i = 0; i < 3; i++) {
+		m_global[i] = global[i];
+		m_sortedGlobal[i] = output[i];
+		m_remote[i] = remoteIndices_[i];
+		m_sortedRemote[i] = remoteOutput[i];
+	}
+}
+;
 
 void TriFaceVerts::setupSorted() {
 	sortVerts3(m_corners, m_sorted);
 }
 
-void TriFaceVerts::getVertAndST(const emInt ii, const emInt jj, emInt& vert,
+void TriFaceVerts::getVertAndST(const emInt ii, const emInt jj, emInt &vert,
 		double st[2], const int rotationCase) const {
 	assert(isValidIJ(ii, jj));
 	emInt trueI = EMINT_MAX, trueJ = EMINT_MAX;
@@ -198,8 +197,8 @@ void TriFaceVerts::getVertAndST(const emInt ii, const emInt jj, emInt& vert,
 	assert(isValidParam(st[1]));
 	vert = getIntVertInd(trueI, trueJ);
 }
-void TriFaceVerts:: getTrueIJ(const emInt ii, const emInt jj,
-			emInt &trueI, emInt &trueJ , const int rotCase )const{
+void TriFaceVerts::getTrueIJ(const emInt ii, const emInt jj, emInt &trueI,
+		emInt &trueJ, const int rotCase) const {
 	trueI = -1, trueJ = -1;
 	switch (rotCase) {
 	case 1:
@@ -235,24 +234,22 @@ void TriFaceVerts:: getTrueIJ(const emInt ii, const emInt jj,
 
 }
 bool operator==(const TriFaceVerts &a, const TriFaceVerts &b) {
-	    assert(a.m_globalComparison == b.m_globalComparison);
-		if(a.m_globalComparison==false && b.m_globalComparison==false){
-					return (a.m_sorted[0] == b.m_sorted[0] && a.m_sorted[1] == b.m_sorted[1]
-			&& a.m_sorted[2] == b.m_sorted[2] 
-			//&& a.partid==b.partid
-			);
-		}
-		if(a.m_globalComparison==true && b.m_globalComparison==true){
-			return (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
-			&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
-			);
-		}
-		else {
-			// Should never get here.
-			return false;
-		}
+	assert(a.m_globalComparison == b.m_globalComparison);
+	if (a.m_globalComparison == false && b.m_globalComparison == false) {
+		return (a.m_sorted[0] == b.m_sorted[0] && a.m_sorted[1] == b.m_sorted[1]
+				&& a.m_sorted[2] == b.m_sorted[2]
+		//&& a.partid==b.partid
+		);
+	}
+	if (a.m_globalComparison == true && b.m_globalComparison == true) {
+		return (a.m_sortedGlobal[0] == b.m_sortedGlobal[0]
+				&& a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+				&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]);
+	} else {
+		// Should never get here.
+		return false;
+	}
 
-		
 	//}
 	// Only for Vector as a primary container for face matching
 	//: we'll need this 
@@ -261,35 +258,31 @@ bool operator==(const TriFaceVerts &a, const TriFaceVerts &b) {
 	// 	a.global_sorted[1]==b.global_sorted[1]&&
 	// 	a.global_sorted[2]==b.global_sorted[2]);
 	// }
-	 
-	
-	
+
 }
 
-bool operator<(const TriFaceVerts &a, const TriFaceVerts &b)
-{
-	if(a.m_remoteId==EMINT_MAX && b.m_remoteId==EMINT_MAX)
-	{
-		if(a.m_partId==b.m_partId &&
-			a.m_sortedGlobal[0]==b.m_sortedGlobal[0]&&
-			a.m_sortedGlobal[1]==b.m_sortedGlobal[1]&&
-			a.m_sortedGlobal[2]==b.m_sortedGlobal[2]  ){
-				return false; 
+bool operator<(const TriFaceVerts &a, const TriFaceVerts &b) {
+	if (a.m_remoteId == EMINT_MAX && b.m_remoteId == EMINT_MAX) {
+		if (a.m_partId == b.m_partId
+				&& a.m_sortedGlobal[0] == b.m_sortedGlobal[0]
+				&& a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+				&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]) {
+			return false;
 
-		}else{
-			return ((a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && 
-		a.m_sortedGlobal[1] == b.m_sortedGlobal[1] && a.m_sortedGlobal[2] == b.m_sortedGlobal[2]) 
-		||a.m_sortedGlobal[0] < b.m_sortedGlobal[0]
-		|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] < b.m_sortedGlobal[1])
-		|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
-		&& a.m_sortedGlobal[2] < b.m_sortedGlobal[2]) ) ;
+		} else {
+			return ((a.m_sortedGlobal[0] == b.m_sortedGlobal[0]
+					&& a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+					&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2])
+					|| a.m_sortedGlobal[0] < b.m_sortedGlobal[0]
+					|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0]
+							&& a.m_sortedGlobal[1] < b.m_sortedGlobal[1])
+					|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0]
+							&& a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+							&& a.m_sortedGlobal[2] < b.m_sortedGlobal[2]));
 		}
+	} else {
+		return (a.m_remoteId < b.m_remoteId);
 	}
-	else
-	{
-		return (a.m_remoteId<b.m_remoteId); 
-	}
-
 
 }
 
@@ -323,75 +316,77 @@ void TriFaceVerts::computeParaCoords(const emInt ii, const emInt jj,
 }
 
 QuadFaceVerts::QuadFaceVerts(const emInt nDivs, const emInt v0, const emInt v1,
-		const emInt v2, const emInt v3,const emInt type, 
-		const emInt elemInd,  const emInt partID, const emInt remoteID,
-		bool globalCompare) :
+		const emInt v2, const emInt v3, const emInt type, const emInt elemInd,
+		const emInt partID, const emInt remoteID, bool globalCompare) :
 		FaceVerts(nDivs, 4) {
-	m_partId    = partID; 
+	m_partId = partID;
 	m_volElem = elemInd;
 	m_volElemType = type;
-	m_remoteId=remoteID; 
-	m_globalComparison=globalCompare;
+	m_remoteId = remoteID;
+	m_globalComparison = globalCompare;
 	setCorners(v0, v1, v2, v3);
 }
 QuadFaceVerts::QuadFaceVerts(const emInt nDivs, const emInt local[4],
-	const emInt global[4],const emInt partid_, const emInt remoteID_ ,
-	const emInt type ,const emInt elemInd,bool globalCompare):FaceVerts(nDivs,4){
-		m_volElem = elemInd;
-		m_volElemType = type;
-		m_partId=partid_; 
-		m_remoteId=remoteID_; 
-		m_globalComparison=globalCompare;
-		setCorners(local[0],local[1],local[2],local[3]); 
-		emInt output [4]; 
-		sortVerts4(global,output);
-		for(auto i=0 ; i<4; i++){
-			m_global[i]=global[i]; 
-			m_sortedGlobal[i]= output[i];
-		}	
-		
-}
-QuadFaceVerts::QuadFaceVerts(const emInt nDivs,const emInt global[4],
-const emInt partid_, const emInt remoteID, bool globalCompare, 
-	const emInt type,const emInt elemInd):FaceVerts(nDivs,4){
+		const emInt global[4], const emInt partid_, const emInt remoteID_,
+		const emInt type, const emInt elemInd, bool globalCompare) :
+		FaceVerts(nDivs, 4) {
+	m_volElem = elemInd;
+	m_volElemType = type;
+	m_partId = partid_;
+	m_remoteId = remoteID_;
+	m_globalComparison = globalCompare;
+	setCorners(local[0], local[1], local[2], local[3]);
+	emInt output[4];
+	sortVerts4(global, output);
+	for (auto i = 0; i < 4; i++) {
+		m_global[i] = global[i];
+		m_sortedGlobal[i] = output[i];
+	}
 
-		m_volElem = elemInd;
-		m_volElemType = type;
-		m_partId=partid_; 
-		m_remoteId=remoteID; 
-		m_globalComparison=globalCompare;
-		emInt local[4]= {EMINT_MAX, EMINT_MAX, EMINT_MAX, EMINT_MAX}; 
-		setCorners(local[0],local[1],local[2],local[3]); 
-		emInt output [4]; 
-		sortVerts4(global,output);
-		for(auto i=0 ; i<4; i++){
-			m_global[i]=global[i]; 
-			m_sortedGlobal[i]= output[i];
-		}
+}
+QuadFaceVerts::QuadFaceVerts(const emInt nDivs, const emInt global[4],
+		const emInt partid_, const emInt remoteID, bool globalCompare,
+		const emInt type, const emInt elemInd) :
+		FaceVerts(nDivs, 4) {
+
+	m_volElem = elemInd;
+	m_volElemType = type;
+	m_partId = partid_;
+	m_remoteId = remoteID;
+	m_globalComparison = globalCompare;
+	emInt local[4] = { EMINT_MAX, EMINT_MAX, EMINT_MAX, EMINT_MAX };
+	setCorners(local[0], local[1], local[2], local[3]);
+	emInt output[4];
+	sortVerts4(global, output);
+	for (auto i = 0; i < 4; i++) {
+		m_global[i] = global[i];
+		m_sortedGlobal[i] = output[i];
+	}
 
 }
 QuadFaceVerts::QuadFaceVerts(const emInt nDivs, const emInt local[4],
-	const emInt global[4], const emInt remotelocal[4] ,const emInt partid_, const emInt remoteID,const emInt type 
-	,const emInt elemInd,
-	bool globalCompare):FaceVerts(nDivs,4){
-		m_volElem = elemInd;
-		m_volElemType = type;
-		m_partId=partid_; 
-		m_remoteId=remoteID; 
-		m_globalComparison=globalCompare;
+		const emInt global[4], const emInt remotelocal[4], const emInt partid_,
+		const emInt remoteID, const emInt type, const emInt elemInd,
+		bool globalCompare) :
+		FaceVerts(nDivs, 4) {
+	m_volElem = elemInd;
+	m_volElemType = type;
+	m_partId = partid_;
+	m_remoteId = remoteID;
+	m_globalComparison = globalCompare;
 	//	emInt local[4]= {-1,-1,-1,-1}; 
-		setCorners(local[0],local[1],local[2],local[3]); 
-		emInt output [4]; 
-		emInt remoteoutput[4]; 
-		sortVerts4(global,output);
-		sortVerts4(remotelocal,remoteoutput); 
-		for(auto i=0 ; i<4; i++){
-			m_global[i]=global[i]; 
-			m_sortedGlobal[i]= output[i];
-			m_remote[i]= remotelocal[i];
-			m_sortedRemote[i]=remoteoutput[i]; 
-		}
+	setCorners(local[0], local[1], local[2], local[3]);
+	emInt output[4];
+	emInt remoteoutput[4];
+	sortVerts4(global, output);
+	sortVerts4(remotelocal, remoteoutput);
+	for (auto i = 0; i < 4; i++) {
+		m_global[i] = global[i];
+		m_sortedGlobal[i] = output[i];
+		m_remote[i] = remotelocal[i];
+		m_sortedRemote[i] = remoteoutput[i];
 	}
+}
 
 void QuadFaceVerts::setupSorted() {
 	sortVerts4(m_corners, m_sorted);
@@ -438,60 +433,52 @@ void sortVerts4(const emInt input[4], emInt output[4]) {
 }
 
 bool operator==(const QuadFaceVerts &a, const QuadFaceVerts &b) {
-    assert(a.m_globalComparison == b.m_globalComparison);
-	if(a.m_globalComparison==false && b.m_globalComparison==false){
+	assert(a.m_globalComparison == b.m_globalComparison);
+	if (a.m_globalComparison == false && b.m_globalComparison == false) {
 		return (a.m_sorted[0] == b.m_sorted[0] && a.m_sorted[1] == b.m_sorted[1]
-			&& a.m_sorted[2] == b.m_sorted[2] && a.m_sorted[3] == b.m_sorted[3] 
-			);
+				&& a.m_sorted[2] == b.m_sorted[2]
+				&& a.m_sorted[3] == b.m_sorted[3]);
 	}
-	if(a.m_globalComparison==true && b.m_globalComparison==true){
-		return (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && 
-		a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
-			&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2] && 
-			a.m_sortedGlobal[3] == b.m_sortedGlobal[3]);
-	}
-	else {
+	if (a.m_globalComparison == true && b.m_globalComparison == true) {
+		return (a.m_sortedGlobal[0] == b.m_sortedGlobal[0]
+				&& a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+				&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
+				&& a.m_sortedGlobal[3] == b.m_sortedGlobal[3]);
+	} else {
 		// Should never get here.
 		return false;
 	}
-	
+
 }
 
 bool operator<(const QuadFaceVerts &a, const QuadFaceVerts &b) {
 
-	if(a.m_remoteId==EMINT_MAX && b.m_remoteId==EMINT_MAX)
-	{
-		if(a.m_partId==b.m_partId &&
-				a.m_sortedGlobal[0]== b.m_sortedGlobal[0]&&
-				a.m_sortedGlobal[1]== b.m_sortedGlobal[1]&&
-				a.m_sortedGlobal[2]== b.m_sortedGlobal[2] &&
-				a.m_sortedGlobal[3]== b.m_sortedGlobal[3]  ){
-				return false;
-		}else
-		{
-			return (
-				(a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
-							&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
-							&& a.m_sortedGlobal[3] == b.m_sortedGlobal[3])
-							||
-				a.m_sortedGlobal[0] < b.m_sortedGlobal[0]
-					|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] < b.m_sortedGlobal[1])
-					|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+	if (a.m_remoteId == EMINT_MAX && b.m_remoteId == EMINT_MAX) {
+		if (a.m_partId == b.m_partId
+				&& a.m_sortedGlobal[0] == b.m_sortedGlobal[0]
+				&& a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+				&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
+				&& a.m_sortedGlobal[3] == b.m_sortedGlobal[3]) {
+			return false;
+		} else {
+			return ((a.m_sortedGlobal[0] == b.m_sortedGlobal[0]
+					&& a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+					&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
+					&& a.m_sortedGlobal[3] == b.m_sortedGlobal[3])
+					|| a.m_sortedGlobal[0] < b.m_sortedGlobal[0]
+					|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0]
+							&& a.m_sortedGlobal[1] < b.m_sortedGlobal[1])
+					|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0]
+							&& a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
 							&& a.m_sortedGlobal[2] < b.m_sortedGlobal[2])
-					|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0] && a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
+					|| (a.m_sortedGlobal[0] == b.m_sortedGlobal[0]
+							&& a.m_sortedGlobal[1] == b.m_sortedGlobal[1]
 							&& a.m_sortedGlobal[2] == b.m_sortedGlobal[2]
-							&& a.m_sortedGlobal[3] < b.m_sortedGlobal[3]) 
-							)
-							;
+							&& a.m_sortedGlobal[3] < b.m_sortedGlobal[3]));
 		}
+	} else {
+		return (a.m_remoteId < b.m_remoteId);
 	}
-	else
-	{
-		return (a.m_remoteId<b.m_remoteId); 
-	}
-
-		
-
 
 }
 
@@ -523,7 +510,7 @@ void QuadFaceVerts::computeParaCoords(const emInt ii, const emInt jj,
 	assert(isValidParam(st[1]));
 }
 
-void QuadFaceVerts::getVertAndST(const emInt ii, const emInt jj, emInt& vert,
+void QuadFaceVerts::getVertAndST(const emInt ii, const emInt jj, emInt &vert,
 		double st[2], const int rotCase) const {
 	assert(isValidIJ(ii, jj));
 	emInt trueI = EMINT_MAX, trueJ = EMINT_MAX;
@@ -609,9 +596,9 @@ void QuadFaceVerts::getVertAndST(const emInt ii, const emInt jj, emInt& vert,
 	assert(isValidParam(st[1]));
 	vert = getIntVertInd(trueI, trueJ);
 }
-void QuadFaceVerts::getTrueIJ(const emInt ii, const emInt jj,
-			emInt &trueI, emInt &trueJ, const int rotCase) const{
-assert(isValidIJ(ii, jj));
+void QuadFaceVerts::getTrueIJ(const emInt ii, const emInt jj, emInt &trueI,
+		emInt &trueJ, const int rotCase) const {
+	assert(isValidIJ(ii, jj));
 	trueI = -1, trueJ = -1;
 	switch (rotCase) {
 	case 1:
@@ -653,7 +640,7 @@ assert(isValidIJ(ii, jj));
 		break;
 	}
 
-} 
+}
 
 int CellDivider::checkOrient3D(const emInt verts[4]) const {
 	double coords0[3], coords1[3], coords2[3], coords3[3];
@@ -791,7 +778,8 @@ bool CellDivider::isEdgeForwardForFace(const EdgeVerts &EV, emInt cornerStart,
 	return isForward;
 }
 
-void CellDivider::initPerimeterParams(TriFaceVerts &TFV, const emInt face) const {
+void CellDivider::initPerimeterParams(TriFaceVerts &TFV,
+		const emInt face) const {
 	// Need to identify which edge of the tri is which previously defined
 	// edge, and use the edge parameter info to set up parameter info
 	// for the triangle.
@@ -908,15 +896,14 @@ exa_set<TriFaceVerts> &vertsOnTris, const emInt face) {
 	if (!newFace) {
 		for (emInt cc = 0; cc < 3; cc++) {
 			if (vert0 == iterTris->getCorner(cc)) {
-				if (vert1 == iterTris->getCorner((cc+1)%3)) {
+				if (vert1 == iterTris->getCorner((cc + 1) % 3)) {
 					// Oriented forward; bdry tri
-					assert(vert2 == iterTris->getCorner((cc+2)%3));
-					rotCase = cc+1;
-				}
-				else {
-					assert(vert1 == iterTris->getCorner((cc+2)%3));
-					assert(vert2 == iterTris->getCorner((cc+1)%3));
-					rotCase = -(cc+1);
+					assert(vert2 == iterTris->getCorner((cc + 2) % 3));
+					rotCase = cc + 1;
+				} else {
+					assert(vert1 == iterTris->getCorner((cc + 2) % 3));
+					assert(vert2 == iterTris->getCorner((cc + 1) % 3));
+					rotCase = -(cc + 1);
 				}
 			}
 		}
@@ -1075,19 +1062,15 @@ QuadFaceVerts CellDivider::getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
 	emInt vert3 = cellVerts[ind3];
 //	printf("%6d %6d %6d %6d ", vert0, vert1, vert2, vert3);
 
-	const double uvw0[] = { uvwIJK[ind0][0], uvwIJK[ind0][1],
-			uvwIJK[ind0][2] };
-	const double uvw1[] = { uvwIJK[ind1][0], uvwIJK[ind1][1],
-			uvwIJK[ind1][2] };
-	const double uvw2[] = { uvwIJK[ind2][0], uvwIJK[ind2][1],
-			uvwIJK[ind2][2] };
-	const double uvw3[] = { uvwIJK[ind3][0], uvwIJK[ind3][1],
-			uvwIJK[ind3][2] };
+	const double uvw0[] = { uvwIJK[ind0][0], uvwIJK[ind0][1], uvwIJK[ind0][2] };
+	const double uvw1[] = { uvwIJK[ind1][0], uvwIJK[ind1][1], uvwIJK[ind1][2] };
+	const double uvw2[] = { uvwIJK[ind2][0], uvwIJK[ind2][1], uvwIJK[ind2][2] };
+	const double uvw3[] = { uvwIJK[ind3][0], uvwIJK[ind3][1], uvwIJK[ind3][2] };
 
-	const double deltaInS[] = { (uvw1[0] - uvw0[0]), (uvw1[1] - uvw0[1]), (uvw1[2]
-			- uvw0[2]) };
-	const double deltaInT[] = { (uvw3[0] - uvw0[0]), (uvw3[1] - uvw0[1]), (uvw3[2]
-			- uvw0[2]) };
+	const double deltaInS[] = { (uvw1[0] - uvw0[0]), (uvw1[1] - uvw0[1]),
+			(uvw1[2] - uvw0[2]) };
+	const double deltaInT[] = { (uvw3[0] - uvw0[0]), (uvw3[1] - uvw0[1]),
+			(uvw3[2] - uvw0[2]) };
 	const double crossDelta[] = { (uvw2[0] + uvw0[0] - uvw1[0] - uvw3[0]),
 			(uvw2[1] + uvw0[1] - uvw1[1] - uvw3[1]), (uvw2[2] + uvw0[2]
 					- uvw1[2] - uvw3[2]) };
@@ -1102,17 +1085,16 @@ QuadFaceVerts CellDivider::getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
 	if (!newFace) {
 		for (emInt cc = 0; cc < 4; cc++) {
 			if (vert0 == iterQuads->getCorner(cc)) {
-				if (vert1 == iterQuads->getCorner((cc+1)%4)) {
+				if (vert1 == iterQuads->getCorner((cc + 1) % 4)) {
 					// Oriented forward; bdry quad
-					assert(vert2 == iterQuads->getCorner((cc+2)%4));
-					assert(vert3 == iterQuads->getCorner((cc+3)%4));
-					rotCase = cc+1;
-				}
-				else {
-					assert(vert1 == iterQuads->getCorner((cc+3)%4));
-					assert(vert2 == iterQuads->getCorner((cc+2)%4));
-					assert(vert3 == iterQuads->getCorner((cc+1)%4));
-					rotCase = -(cc+1);
+					assert(vert2 == iterQuads->getCorner((cc + 2) % 4));
+					assert(vert3 == iterQuads->getCorner((cc + 3) % 4));
+					rotCase = cc + 1;
+				} else {
+					assert(vert1 == iterQuads->getCorner((cc + 3) % 4));
+					assert(vert2 == iterQuads->getCorner((cc + 2) % 4));
+					assert(vert3 == iterQuads->getCorner((cc + 1) % 4));
+					rotCase = -(cc + 1);
 				}
 			}
 		}
@@ -1131,12 +1113,12 @@ QuadFaceVerts CellDivider::getQuadVerts(exa_set<QuadFaceVerts> &vertsOnQuads,
 				iterQuads->getVertAndST(ii, jj, vert, st, rotCase);
 			}
 			assert(s >= 0 && s <= 1 && t >= 0 && t <= 1);
-			double uvw[] = { uvw0[0] + deltaInS[0] * s + deltaInT[0] * t
-					+ crossDelta[0] * s * t,
-					uvw0[1] + deltaInS[1] * s + deltaInT[1] * t
-					+ crossDelta[1] * s * t,
-					uvw0[2] + deltaInS[2] * s + deltaInT[2] * t
-						+ crossDelta[2] * s * t };
+			double uvw[] =
+					{ uvw0[0] + deltaInS[0] * s + deltaInT[0] * t
+							+ crossDelta[0] * s * t, uvw0[1] + deltaInS[1] * s
+							+ deltaInT[1] * t + crossDelta[1] * s * t, uvw0[2]
+							+ deltaInS[2] * s + deltaInT[2] * t
+							+ crossDelta[2] * s * t };
 			QFV.setVertUVWParams(ii, jj, uvw);
 			if (newFace) {
 				double newCoords[3];
@@ -1316,8 +1298,8 @@ exa_set<QuadFaceVerts> &vertsOnQuads) {
 	}
 }
 
-void CellDivider::computeParaCoords(const emInt ii, const emInt jj, const emInt kk,
-		double uvw[3]) const {
+void CellDivider::computeParaCoords(const emInt ii, const emInt jj,
+		const emInt kk, double uvw[3]) const {
 	emInt iMin = minI(jj, kk);
 	emInt iMax = maxI(jj, kk);
 
@@ -1336,8 +1318,8 @@ void CellDivider::computeParaCoords(const emInt ii, const emInt jj, const emInt 
 	double *uvwFr = m_uvw[ii][jj][kMin];
 	double *uvwBa = m_uvw[ii][jj][kMax];
 
-	getCellInteriorParametricIntersectionPoint(uvwL, uvwR, uvwBot, uvwTop, uvwFr,
-			uvwBa, uvw);
+	getCellInteriorParametricIntersectionPoint(uvwL, uvwR, uvwBot, uvwTop,
+			uvwFr, uvwBa, uvw);
 	assert(uvw[0] >= 0 && uvw[0] <= 1);
 	assert(uvw[1] >= 0 && uvw[1] <= 1);
 	assert(uvw[2] >= 0 && uvw[2] <= 1);
@@ -1350,7 +1332,7 @@ void CellDivider::divideInterior() {
 //    Prisms:    (nD-1)(nD-2)nD/2
 //    Hexes:     (nD-1)^3
 	if (nDivs < getMinInteriorDivs())
-	return;
+		return;
 	for (emInt kk = 1; kk < nDivs; kk++) {
 		emInt jMax = maxJ(1, kk);
 		for (emInt jj = 1; jj < jMax; jj++) {
@@ -1384,9 +1366,12 @@ void getCellInteriorParametricIntersectionPoint(const double uvwA[3],
 // Points C and D are opposite each other.
 // Points E and F are opposite each other.
 
-	double deltaBA[] = {uvwB[0] - uvwA[0], uvwB[1] - uvwA[1], uvwB[2] - uvwA[2]};
-	double deltaDC[] = {uvwD[0] - uvwC[0], uvwD[1] - uvwC[1], uvwD[2] - uvwC[2]};
-	double deltaFE[] = {uvwF[0] - uvwE[0], uvwF[1] - uvwE[1], uvwF[2] - uvwE[2]};
+	double deltaBA[] =
+			{ uvwB[0] - uvwA[0], uvwB[1] - uvwA[1], uvwB[2] - uvwA[2] };
+	double deltaDC[] =
+			{ uvwD[0] - uvwC[0], uvwD[1] - uvwC[1], uvwD[2] - uvwC[2] };
+	double deltaFE[] =
+			{ uvwF[0] - uvwE[0], uvwF[1] - uvwE[1], uvwF[2] - uvwE[2] };
 
 // The three lines in parametric space connecting these three
 // pairs of points almost certainly don't intersect.  So find
@@ -1401,20 +1386,14 @@ void getCellInteriorParametricIntersectionPoint(const double uvwA[3],
 // First, set up the least-squares system, with all nine of the
 // equalities that we'd like to satisfy.
 
-	double L2LHS[9][3] = {
-			{deltaBA[0], -deltaDC[0], 0},
-			{deltaBA[1], -deltaDC[1], 0},
-			{deltaBA[2], -deltaDC[2], 0},
-			{0, deltaDC[0], -deltaFE[0]},
-			{0, deltaDC[1], -deltaFE[1]},
-			{0, deltaDC[2], -deltaFE[2]},
-			{-deltaBA[0], 0, deltaFE[0]},
-			{-deltaBA[1], 0, deltaFE[1]},
-			{-deltaBA[2], 0, deltaFE[2]}};
-	double L2RHS[9] = {uvwC[0] - uvwA[0],
-			uvwC[1] - uvwA[1], uvwC[2] - uvwA[2],
-		uvwE[0] - uvwC[0], uvwE[1] - uvwC[1], uvwE[2] - uvwC[2], uvwA[0]
-		- uvwE[0], uvwA[1] - uvwE[1], uvwA[2] - uvwE[2]};
+	double L2LHS[9][3] = { { deltaBA[0], -deltaDC[0], 0 }, { deltaBA[1],
+			-deltaDC[1], 0 }, { deltaBA[2], -deltaDC[2], 0 }, { 0, deltaDC[0],
+			-deltaFE[0] }, { 0, deltaDC[1], -deltaFE[1] }, { 0, deltaDC[2],
+			-deltaFE[2] }, { -deltaBA[0], 0, deltaFE[0] }, { -deltaBA[1], 0,
+			deltaFE[1] }, { -deltaBA[2], 0, deltaFE[2] } };
+	double L2RHS[9] = { uvwC[0] - uvwA[0], uvwC[1] - uvwA[1], uvwC[2] - uvwA[2],
+			uvwE[0] - uvwC[0], uvwE[1] - uvwC[1], uvwE[2] - uvwC[2], uvwA[0]
+					- uvwE[0], uvwA[1] - uvwE[1], uvwA[2] - uvwE[2] };
 
 // Now multiply L2LHS . s = L2RHS from the left by L2LHS^T
 	double RHS[3], LHS[3][3];
@@ -1437,22 +1416,36 @@ void getCellInteriorParametricIntersectionPoint(const double uvwA[3],
 	// This version has noticeably fewer floating point ops (39 multiplies,
 	// 33 adds), compared with the above version (something like 108 multiply-adds).
 	// And this version hasn't got the triple-nested loops, either.
-	RHS[0] = (L2RHS[0] - L2RHS[6])*deltaBA[0] + (L2RHS[1] - L2RHS[7])*deltaBA[1] + (L2RHS[2] - L2RHS[8])*deltaBA[2];
-	RHS[1] = (L2RHS[3] - L2RHS[0])*deltaDC[0] + (L2RHS[4] - L2RHS[1])*deltaDC[1] + (L2RHS[5] - L2RHS[2])*deltaDC[2];
-	RHS[2] = (L2RHS[6] - L2RHS[3])*deltaFE[0] + (L2RHS[7] - L2RHS[4])*deltaFE[1] + (L2RHS[8] - L2RHS[5])*deltaFE[2];
+	RHS[0] = (L2RHS[0] - L2RHS[6]) * deltaBA[0]
+			+ (L2RHS[1] - L2RHS[7]) * deltaBA[1]
+			+ (L2RHS[2] - L2RHS[8]) * deltaBA[2];
+	RHS[1] = (L2RHS[3] - L2RHS[0]) * deltaDC[0]
+			+ (L2RHS[4] - L2RHS[1]) * deltaDC[1]
+			+ (L2RHS[5] - L2RHS[2]) * deltaDC[2];
+	RHS[2] = (L2RHS[6] - L2RHS[3]) * deltaFE[0]
+			+ (L2RHS[7] - L2RHS[4]) * deltaFE[1]
+			+ (L2RHS[8] - L2RHS[5]) * deltaFE[2];
 
-
-	LHS[0][0] = 2*(deltaBA[0]*deltaBA[0] + deltaBA[1]*deltaBA[1] + deltaBA[2]*deltaBA[2]);
-	LHS[1][0] = -(deltaBA[0]*deltaDC[0] + deltaBA[1]*deltaDC[1] + deltaBA[2]*deltaDC[2]);
-	LHS[2][0] = -(deltaBA[0]*deltaFE[0] + deltaBA[1]*deltaFE[1] + deltaBA[2]*deltaFE[2]);
+	LHS[0][0] = 2
+			* (deltaBA[0] * deltaBA[0] + deltaBA[1] * deltaBA[1]
+					+ deltaBA[2] * deltaBA[2]);
+	LHS[1][0] = -(deltaBA[0] * deltaDC[0] + deltaBA[1] * deltaDC[1]
+			+ deltaBA[2] * deltaDC[2]);
+	LHS[2][0] = -(deltaBA[0] * deltaFE[0] + deltaBA[1] * deltaFE[1]
+			+ deltaBA[2] * deltaFE[2]);
 
 	LHS[0][1] = LHS[1][0];
-	LHS[1][1] = 2*(deltaDC[0]*deltaDC[0] + deltaDC[1]*deltaDC[1] + deltaDC[2]*deltaDC[2]);
-	LHS[2][1] = -(deltaDC[0]*deltaFE[0] + deltaDC[1]*deltaFE[1] + deltaDC[2]*deltaFE[2]);
+	LHS[1][1] = 2
+			* (deltaDC[0] * deltaDC[0] + deltaDC[1] * deltaDC[1]
+					+ deltaDC[2] * deltaDC[2]);
+	LHS[2][1] = -(deltaDC[0] * deltaFE[0] + deltaDC[1] * deltaFE[1]
+			+ deltaDC[2] * deltaFE[2]);
 
 	LHS[0][2] = LHS[2][0];
 	LHS[1][2] = LHS[2][1];
-	LHS[2][2] = 2*(deltaFE[0]*deltaFE[0] + deltaFE[1]*deltaFE[1] + deltaFE[2]*deltaFE[2]);
+	LHS[2][2] = 2
+			* (deltaFE[0] * deltaFE[0] + deltaFE[1] * deltaFE[1]
+					+ deltaFE[2] * deltaFE[2]);
 
 	// Equality comparison of doubles is prone to failure, but as a quick-and-dirty check,
 	// it did what I needed it to.
@@ -1478,12 +1471,14 @@ void getCellInteriorParametricIntersectionPoint(const double uvwA[3],
 	double &ee = LHS[2][1];
 	double &ff = LHS[2][2];
 	double LHSdet = aa * dd * ff - aa * ee * ee - ff * bb * bb - dd * cc * cc
-	+ 2 * bb * ee * cc;
-	double solnS[] = {(RHS[0] * (dd * ff - ee * ee) + RHS[1] * (cc * ee - bb * ff)
-				+ RHS[2] * (bb * ee - cc * dd)) / LHSdet, (RHS[0] * (cc * ee - bb * ff)
-				+ RHS[1] * (aa * ff - cc * cc) + RHS[2] * (bb * cc - aa * ee)) / LHSdet,
-		(RHS[0] * (bb * ee - cc * dd) + RHS[1] * (bb * cc - aa * ee)
-				+ RHS[2] * (aa * dd - bb * bb)) / LHSdet};
+			+ 2 * bb * ee * cc;
+	double solnS[] = { (RHS[0] * (dd * ff - ee * ee)
+			+ RHS[1] * (cc * ee - bb * ff) + RHS[2] * (bb * ee - cc * dd))
+			/ LHSdet, (RHS[0] * (cc * ee - bb * ff)
+			+ RHS[1] * (aa * ff - cc * cc) + RHS[2] * (bb * cc - aa * ee))
+			/ LHSdet, (RHS[0] * (bb * ee - cc * dd)
+			+ RHS[1] * (bb * cc - aa * ee) + RHS[2] * (aa * dd - bb * bb))
+			/ LHSdet };
 
 // All of these curve params had better fall in the range (0,1)
 	assert(solnS[0] >= 0 && solnS[0] <= 1);
@@ -1493,12 +1488,12 @@ void getCellInteriorParametricIntersectionPoint(const double uvwA[3],
 // Unfortunately, the three uvw triples that these s's imply aren't the same.
 // So let's compute all three of them and then average.
 
-	double uvwAB[] = {uvwA[0] + deltaBA[0] * solnS[0], uvwA[1]
-		+ deltaBA[1] * solnS[0], uvwA[2] + deltaBA[2] * solnS[0]};
-	double uvwCD[] = {uvwC[0] + deltaDC[0] * solnS[1], uvwC[1]
-		+ deltaDC[1] * solnS[1], uvwC[2] + deltaDC[2] * solnS[1]};
-	double uvwEF[] = {uvwE[0] + deltaFE[0] * solnS[2], uvwE[1]
-		+ deltaFE[1] * solnS[2], uvwE[2] + deltaFE[2] * solnS[2]};
+	double uvwAB[] = { uvwA[0] + deltaBA[0] * solnS[0], uvwA[1]
+			+ deltaBA[1] * solnS[0], uvwA[2] + deltaBA[2] * solnS[0] };
+	double uvwCD[] = { uvwC[0] + deltaDC[0] * solnS[1], uvwC[1]
+			+ deltaDC[1] * solnS[1], uvwC[2] + deltaDC[2] * solnS[1] };
+	double uvwEF[] = { uvwE[0] + deltaFE[0] * solnS[2], uvwE[1]
+			+ deltaFE[1] * solnS[2], uvwE[2] + deltaFE[2] * solnS[2] };
 
 	uvw[0] = (uvwAB[0] + uvwCD[0] + uvwEF[0]) / 3;
 	uvw[1] = (uvwAB[1] + uvwCD[1] + uvwEF[1]) / 3;

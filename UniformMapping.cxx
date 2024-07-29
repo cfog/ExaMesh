@@ -46,9 +46,9 @@ void Q1TetMapping::setupCoordMapping(const emInt verts[]) {
 
 void Q1TetMapping::computeTransformedCoords(const double uvw[3],
 		double xyz[3]) const {
-	const double& u = uvw[0];
-	const double& v = uvw[1];
-	const double& w = uvw[2];
+	const double &u = uvw[0];
+	const double &v = uvw[1];
+	const double &w = uvw[2];
 	for (int ii = 0; ii < 3; ii++) {
 		xyz[ii] = A[ii] + u * dU[ii] + v * dV[ii] + w * dW[ii];
 	}
@@ -63,11 +63,17 @@ void Q1PyramidMapping::setupCoordMapping(const emInt verts[]) {
 	m_pMesh->getCoords(verts[4], coords4);
 	for (int ii = 0; ii < 3; ii++) {
 		A[ii] = 0.25 * (coords0[ii] + coords1[ii] + coords2[ii] + coords3[ii]);
-		dU[ii] = 0.25 * (-coords0[ii] + coords1[ii] + coords2[ii] - coords3[ii]);
-		dV[ii] = 0.25 * (-coords0[ii] - coords1[ii] + coords2[ii] + coords3[ii]);
-		dUV[ii] = 0.25 * (-coords0[ii] + coords1[ii] - coords2[ii] + coords3[ii]);
-		dW[ii] = coords4[ii]
-				- 0.25 * (coords0[ii] + coords1[ii] + coords2[ii] + coords3[ii]);
+		dU[ii] = 0.25
+				* (-coords0[ii] + coords1[ii] + coords2[ii] - coords3[ii]);
+		dV[ii] = 0.25
+				* (-coords0[ii] - coords1[ii] + coords2[ii] + coords3[ii]);
+		dUV[ii] = 0.25
+				* (-coords0[ii] + coords1[ii] - coords2[ii] + coords3[ii]);
+		dW[ii] =
+				coords4[ii]
+						- 0.25
+								* (coords0[ii] + coords1[ii] + coords2[ii]
+										+ coords3[ii]);
 		Apex[ii] = coords4[ii];
 	}
 }
@@ -76,7 +82,7 @@ void Q1PyramidMapping::computeTransformedCoords(const double uvw[3],
 		double xyz[3]) const {
 	double u = uvw[0];
 	double v = uvw[1];
-	const double& w = uvw[2];
+	const double &w = uvw[2];
 	if (w == 1) {
 		xyz[0] = Apex[0];
 		xyz[1] = Apex[1];
@@ -91,7 +97,8 @@ void Q1PyramidMapping::computeTransformedCoords(const double uvw[3],
 }
 
 void Q1PrismMapping::setupCoordMapping(const emInt verts[]) {
-	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3], coords5[3];
+	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3],
+			coords5[3];
 	m_pMesh->getCoords(verts[0], coords0);
 	m_pMesh->getCoords(verts[1], coords1);
 	m_pMesh->getCoords(verts[2], coords2);
@@ -111,18 +118,18 @@ void Q1PrismMapping::setupCoordMapping(const emInt verts[]) {
 
 void Q1PrismMapping::computeTransformedCoords(const double uvw[3],
 		double xyz[3]) const {
-	const double& u = uvw[0];
-	const double& v = uvw[1];
-	const double& w = uvw[2];
+	const double &u = uvw[0];
+	const double &v = uvw[1];
+	const double &w = uvw[2];
 	for (int ii = 0; ii < 3; ii++) {
 		xyz[ii] = A[ii] + u * dU[ii] + v * dV[ii]
-			+ w * (dW[ii] + u * dUW[ii]	+ v * dVW[ii]);
+				+ w * (dW[ii] + u * dUW[ii] + v * dVW[ii]);
 	}
 }
 
 void Q1HexMapping::setupCoordMapping(const emInt verts[]) {
-	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3], coords5[3],
-			coords6[3], coords7[3];
+	double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3],
+			coords5[3], coords6[3], coords7[3];
 	m_pMesh->getCoords(verts[0], coords0);
 	m_pMesh->getCoords(verts[1], coords1);
 	m_pMesh->getCoords(verts[2], coords2);
@@ -156,25 +163,22 @@ void Q1HexMapping::setupCoordMapping(const emInt verts[]) {
 		dVW[ii] = coords7[ii] + coords0[ii] - coords3[ii] - coords4[ii];
 
 		dUVW[ii] = coords6[ii] - coords7[ii] - coords5[ii] - coords0[ii]
-				+ coords4[ii] + coords3[ii]
-								- coords2[ii]
-								+ coords1[ii];
+				+ coords4[ii] + coords3[ii] - coords2[ii] + coords1[ii];
 	}
 }
 
 void Q1HexMapping::computeTransformedCoords(const double uvw[3],
 		double xyz[3]) const {
-	const double& u = uvw[0];
-	const double& v = uvw[1];
-	const double& w = uvw[2];
+	const double &u = uvw[0];
+	const double &v = uvw[1];
+	const double &w = uvw[2];
 	for (int ii = 0; ii < 3; ii++) {
 		// Original, naive implementation of polynomial evaluation
 		xyz[ii] = A[ii] + u * dU[ii] + v * dV[ii] + w * dW[ii] + u * v * dUV[ii]
-							+ u * w * dUW[ii] + v * w * dVW[ii] + u * v * w * dUVW[ii];
+				+ u * w * dUW[ii] + v * w * dVW[ii] + u * v * w * dUVW[ii];
 		// Faster version that has only one multiply-add per term.
 //		xyz[ii] = A[ii] + u * (dU[ii] + v * dUV[ii] + w * (dUW[ii] + v * dUVW[ii]))
 //								 + v * dV[ii] + w * (dW[ii] + v * dVW[ii]);
 	}
 }
-
 

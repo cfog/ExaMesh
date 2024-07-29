@@ -32,30 +32,29 @@
 class PyrDivider: public CellDivider {
 	double xyzOffset[3], uVec[3], vVec[3], uvVec[3], xyzApex[3];
 public:
-	PyrDivider(UMesh *pVolMesh, const ExaMesh* const pInitMesh,
-			const int segmentsPerEdge,
-			const Mapping::MappingType type = Mapping::Invalid)
-      :
+	PyrDivider(UMesh *pVolMesh, const ExaMesh *const pInitMesh,
+			const int segmentsPerEdge, const Mapping::MappingType type =
+					Mapping::Invalid) :
 			CellDivider(pVolMesh, segmentsPerEdge) {
-    vertIJK[0][0] = 0;
-    vertIJK[0][1] = 0;
-    vertIJK[0][2] = 0;
+		vertIJK[0][0] = 0;
+		vertIJK[0][1] = 0;
+		vertIJK[0][2] = 0;
 
-    vertIJK[1][0] = nDivs;
-    vertIJK[1][1] = 0;
-    vertIJK[1][2] = 0;
+		vertIJK[1][0] = nDivs;
+		vertIJK[1][1] = 0;
+		vertIJK[1][2] = 0;
 
-    vertIJK[2][0] = nDivs;
-    vertIJK[2][1] = nDivs;
-    vertIJK[2][2] = 0;
+		vertIJK[2][0] = nDivs;
+		vertIJK[2][1] = nDivs;
+		vertIJK[2][2] = 0;
 
-    vertIJK[3][0] = 0;
-    vertIJK[3][1] = nDivs;
-    vertIJK[3][2] = 0;
+		vertIJK[3][0] = 0;
+		vertIJK[3][1] = nDivs;
+		vertIJK[3][2] = 0;
 
-    vertIJK[4][0] = 0;
-    vertIJK[4][1] = 0;
-    vertIJK[4][2] = nDivs;
+		vertIJK[4][0] = 0;
+		vertIJK[4][1] = 0;
+		vertIJK[4][2] = nDivs;
 
 		uvwIJK[0][0] = 0;
 		uvwIJK[0][1] = 0;
@@ -160,16 +159,20 @@ public:
 			m_Map = new Q1PyramidMapping(pInitMesh);
 			break;
 		}
-  }
+	}
 	~PyrDivider() {
 	}
 //	void divideInterior();
-  void createNewCells();
+	void createNewCells();
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
 
-	virtual emInt maxI(const emInt /*j*/, const emInt k) const {return nDivs - k;}
-	virtual emInt maxJ(const emInt /*i*/, const emInt k) const {return nDivs - k;}
+	virtual emInt maxI(const emInt /*j*/, const emInt k) const {
+		return nDivs - k;
+	}
+	virtual emInt maxJ(const emInt /*i*/, const emInt k) const {
+		return nDivs - k;
+	}
 	virtual emInt maxK(const emInt i, const emInt j) const {
 		return nDivs - (i >= j ? i : j);
 	}
