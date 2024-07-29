@@ -29,9 +29,8 @@
 #include "ExaMesh.h"
 #include "Part.h"
 
-void ExaMesh::findCentroidOfVerts(const emInt* verts,
-		emInt nPts, double& x,
-		double& y, double& z) const {
+void ExaMesh::findCentroidOfVerts(const emInt *verts, emInt nPts, double &x,
+		double &y, double &z) const {
 	x = y = z = 0;
 	for (emInt jj = 0; jj < nPts; jj++) {
 		x += getX(verts[jj]);
@@ -43,8 +42,8 @@ void ExaMesh::findCentroidOfVerts(const emInt* verts,
 	z /= nPts;
 }
 
-void extentBoundingBox(double x, double y, double z, double& xmin, double& ymin,
-		double& zmin, double& xmax, double& ymax, double& zmax) {
+void extentBoundingBox(double x, double y, double z, double &xmin, double &ymin,
+		double &zmin, double &xmax, double &ymax, double &zmax) {
 	xmin = std::min(xmin, x);
 	ymin = std::min(ymin, y);
 	zmin = std::min(zmin, z);
@@ -53,10 +52,9 @@ void extentBoundingBox(double x, double y, double z, double& xmin, double& ymin,
 	zmax = std::max(zmax, z);
 }
 
-void ExaMesh::addCellToPartitionData(const emInt* verts,
-		emInt nPts, emInt ii, int type, std::vector<CellPartData>& vecCPD,
-		double& xmin, double& ymin, double& zmin, double& xmax, double& ymax,
-		double& zmax) const {
+void ExaMesh::addCellToPartitionData(const emInt *verts, emInt nPts, emInt ii,
+		int type, std::vector<CellPartData> &vecCPD, double &xmin, double &ymin,
+		double &zmin, double &xmax, double &ymax, double &zmax) const {
 	{
 		double x(0), y(0), z(0);
 		findCentroidOfVerts(verts, nPts, x, y, z);
@@ -66,8 +64,8 @@ void ExaMesh::addCellToPartitionData(const emInt* verts,
 	}
 }
 
-bool partitionCells(const ExaMesh* const pEM, const emInt nPartsToMake,
-		std::vector<Part>& parts, std::vector<CellPartData>& vecCPD) {
+bool partitionCells(const ExaMesh *const pEM, const emInt nPartsToMake,
+		std::vector<Part> &parts, std::vector<CellPartData> &vecCPD) {
 	// Create collection of all cell (and bdry face) data, including info about
 	// which entity it is.  Along the way, find the global bounding box.
 	double xmin, xmax, ymin, ymax, zmin, zmax;
@@ -76,7 +74,8 @@ bool partitionCells(const ExaMesh* const pEM, const emInt nPartsToMake,
 
 	// Partitioning only cells, not bdry faces.  Also, currently no
 	// cost differential for different cell types.
-	pEM->setupCellDataForPartitioning(vecCPD, xmin, ymin, zmin, xmax, ymax, zmax);
+	pEM->setupCellDataForPartitioning(vecCPD, xmin, ymin, zmin, xmax, ymax,
+			zmax);
 	// Create a single part that contains all the cells, and put it in a deque.
 	std::deque<Part> partsToSplit;
 
@@ -92,18 +91,15 @@ bool partitionCells(const ExaMesh* const pEM, const emInt nPartsToMake,
 		P.split(vecCPD, P1, P2);
 		if (P1.numParts() > 1) {
 			partsToSplit.push_back(P1);
-		}
-		else {
+		} else {
 			parts.push_back(P1);
 		}
 		if (P2.numParts() > 1) {
 			partsToSplit.push_back(P2);
-		}
-		else {
+		} else {
 			parts.push_back(P2);
 		}
 	}
 	return true;
 }
-
 

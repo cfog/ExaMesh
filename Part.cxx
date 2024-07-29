@@ -36,12 +36,12 @@ public:
 	CellPartDataComparator(const int which) :
 			whichVar(which) {
 	}
-	bool operator()(const CellPartData& CPD1, const CellPartData& CPD2) const {
+	bool operator()(const CellPartData &CPD1, const CellPartData &CPD2) const {
 		return (CPD1.getCoord(whichVar) < CPD2.getCoord(whichVar));
 	}
 };
 
-void Part::split(std::vector<CellPartData>& vCPD, Part& P1, Part& P2) const {
+void Part::split(std::vector<CellPartData> &vCPD, Part &P1, Part &P2) const {
 	assert(m_nParts > 1);
 	// Find lengths in each coord direction; we're going to split the longest.
 	double extents[] = { m_xmax - m_xmin, m_ymax - m_ymin, m_zmax - m_zmin };
@@ -52,12 +52,10 @@ void Part::split(std::vector<CellPartData>& vCPD, Part& P1, Part& P2) const {
 	if (extents[0] > extents[1] && extents[0] > extents[2]) {
 		// Sort in order of increasing x
 		whichVar = 0;
-	}
-	else if (extents[1] > extents[2]) {
+	} else if (extents[1] > extents[2]) {
 		// Sort in order of increasing y
 		whichVar = 1;
-	}
-	else {
+	} else {
 		// Sort in order of increasing z
 		whichVar = 2;
 	}
@@ -84,8 +82,7 @@ void Part::split(std::vector<CellPartData>& vCPD, Part& P1, Part& P2) const {
 			bestNParts = ii;
 			divider = candDivider;
 			divCoord = candDivCoord;
-		}
-		else {
+		} else {
 			// Once we get past halfway, it'll never get any better again.
 			break;
 		}
@@ -104,44 +101,35 @@ void Part::split(std::vector<CellPartData>& vCPD, Part& P1, Part& P2) const {
 	P2.setData(divider, m_last, m_nParts - bestNParts, newMin2, newMax2);
 }
 
-bool operator==(const Part& a, const Part& b){
-	if
-	(
-		a.getFirst() == b.getFirst()  &&
-		a.getLast () == b.getLast()   && 
-		a.numParts() == b.numParts()  &&
+bool operator==(const Part &a, const Part &b) {
+	if (a.getFirst() == b.getFirst() &&
+	a.getLast () == b.getLast() &&
+	a.numParts() == b.numParts() &&
 
-		(a.getXmin()-b.getXmin()) < TOLTEST && 
-		(a.getXmax()-b.getXmax()) < TOLTEST && 
+	(a.getXmin()-b.getXmin()) < TOLTEST &&
+	(a.getXmax()-b.getXmax()) < TOLTEST &&
 
-		(a.getYmin()-b.getYmin()) < TOLTEST && 
-		(a.getYmax()-b.getYmax()) < TOLTEST && 
+	(a.getYmin()-b.getYmin()) < TOLTEST &&
+	(a.getYmax()-b.getYmax()) < TOLTEST &&
 
-		(a.getZmin()-b.getZmin()) < TOLTEST &&
-		(a.getZmax()-b.getZmax()) < TOLTEST
+	(a.getZmin()-b.getZmin()) < TOLTEST &&
+	(a.getZmax()-b.getZmax()) < TOLTEST
 
-	)
-	{
-		return true; 
-	}else
-	{
-		return false; 
+	) {
+		return true;
+	} else {
+		return false;
 	}
 }
-bool operator==(const CellPartData& a, const CellPartData& b)
-{
-	if
-	(
-		a.getCellType()== b.getCellType()        && 
-		a.getIndex()   == b.getIndex()           &&
-		(a.getCoord(0)- b.getCoord(0)) < TOLTEST && 
-		(a.getCoord(1)- b.getCoord(1)) < TOLTEST && 
-		(a.getCoord(2)- b.getCoord(2)) < TOLTEST
-	)
-	{
-		return true; 
-	}else 
-	{
-		return false; 
+bool operator==(const CellPartData &a, const CellPartData &b) {
+	if (a.getCellType() == b.getCellType() &&
+	a.getIndex() == b.getIndex() &&
+	(a.getCoord(0)- b.getCoord(0)) < TOLTEST &&
+	(a.getCoord(1)- b.getCoord(1)) < TOLTEST &&
+	(a.getCoord(2)- b.getCoord(2)) < TOLTEST
+	) {
+		return true;
+	} else {
+		return false;
 	}
 }

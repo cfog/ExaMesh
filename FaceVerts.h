@@ -58,7 +58,7 @@ public:
 	FaceVerts() :
 			m_nCorners(0), m_nDivs(0), m_volElem(EMINT_MAX), m_volElemType(
 					TETRA_4), m_bothSidesDone(false), m_partId(EMINT_MAX), m_remoteId(
-					EMINT_MAX), m_globalComparison(false) {
+			EMINT_MAX), m_globalComparison(false) {
 	}
 	;
 	FaceVerts(const int nDivs, const emInt NC = 0) :
@@ -69,7 +69,7 @@ public:
 					std::vector<std::vector<double>>(nDivs + 1,
 							std::vector<double>(3))), m_volElem(EMINT_MAX), m_volElemType(
 					0), m_bothSidesDone(false), m_partId(EMINT_MAX), m_remoteId(
-					EMINT_MAX), m_globalComparison(false)
+			EMINT_MAX), m_globalComparison(false)
 
 	{
 		assert(NC == 3 || NC == 4);
@@ -261,7 +261,7 @@ public:
 	TriFaceVerts(const emInt nDivs, const emInt local[3], const emInt global[3],
 			const emInt remoteIndices_[3], const emInt partid_,
 			const emInt remoteID, const emInt type = 0, const emInt elemInd =
-					EMINT_MAX, bool globalComparison = false);
+			EMINT_MAX, bool globalComparison = false);
 
 	//virtual ~TriFaceVerts() {};
 	//	void allocVertMemory() {

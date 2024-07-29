@@ -33,34 +33,33 @@ class PrismDivider: public CellDivider {
 	double xyzOffsetBot[3], uVecBot[3], vVecBot[3];
 	double xyzOffsetTop[3], uVecTop[3], vVecTop[3];
 public:
-	PrismDivider(UMesh *pVolMesh, const ExaMesh* const pInitMesh,
-			const int segmentsPerEdge,
-			const Mapping::MappingType type = Mapping::Invalid)
-:
+	PrismDivider(UMesh *pVolMesh, const ExaMesh *const pInitMesh,
+			const int segmentsPerEdge, const Mapping::MappingType type =
+					Mapping::Invalid) :
 			CellDivider(pVolMesh, segmentsPerEdge) {
-    vertIJK[0][0] = 0;
-    vertIJK[0][1] = 0;
-    vertIJK[0][2] = 0;
+		vertIJK[0][0] = 0;
+		vertIJK[0][1] = 0;
+		vertIJK[0][2] = 0;
 
-    vertIJK[1][0] = nDivs;
-    vertIJK[1][1] = 0;
-    vertIJK[1][2] = 0;
+		vertIJK[1][0] = nDivs;
+		vertIJK[1][1] = 0;
+		vertIJK[1][2] = 0;
 
-    vertIJK[2][0] = 0;
-    vertIJK[2][1] = nDivs;
-    vertIJK[2][2] = 0;
+		vertIJK[2][0] = 0;
+		vertIJK[2][1] = nDivs;
+		vertIJK[2][2] = 0;
 
-    vertIJK[3][0] = 0;
-    vertIJK[3][1] = 0;
-    vertIJK[3][2] = nDivs;
+		vertIJK[3][0] = 0;
+		vertIJK[3][1] = 0;
+		vertIJK[3][2] = nDivs;
 
-    vertIJK[4][0] = nDivs;
-    vertIJK[4][1] = 0;
-    vertIJK[4][2] = nDivs;
+		vertIJK[4][0] = nDivs;
+		vertIJK[4][1] = 0;
+		vertIJK[4][2] = nDivs;
 
-    vertIJK[5][0] = 0;
-    vertIJK[5][1] = nDivs;
-    vertIJK[5][2] = nDivs;
+		vertIJK[5][0] = 0;
+		vertIJK[5][1] = nDivs;
+		vertIJK[5][2] = nDivs;
 
 		uvwIJK[0][0] = 0;
 		uvwIJK[0][1] = 0;
@@ -184,8 +183,12 @@ public:
 	void setupCoordMapping(const emInt verts[]);
 	void getPhysCoordsFromParamCoords(const double uvw[], double xyz[]);
 
-	virtual emInt maxI(const emInt j, const emInt /*k*/) const {return nDivs - j;}
-	virtual emInt maxJ(const emInt i, const emInt /*k*/) const {return nDivs - i;}
+	virtual emInt maxI(const emInt j, const emInt /*k*/) const {
+		return nDivs - j;
+	}
+	virtual emInt maxJ(const emInt i, const emInt /*k*/) const {
+		return nDivs - i;
+	}
 
 };
 

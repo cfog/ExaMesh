@@ -97,7 +97,8 @@ int checkOrient3D(const double adA[3], const double adB[3], const double adC[3],
 
 	// dDet is proportional to the cell volume
 	double dDet = (dDX2 * (dDY3 * dDZ4 - dDY4 * dDZ3)
-			+ dDX3 * (dDY4 * dDZ2 - dDY2 * dDZ4) + dDX4 * (dDY2 * dDZ3 - dDY3 * dDZ2));
+			+ dDX3 * (dDY4 * dDZ2 - dDY2 * dDZ4)
+			+ dDX4 * (dDY2 * dDZ3 - dDY3 * dDZ2));
 
 	//   // Compute a length scale based on edge lengths.
 	//   double dScale = ( dDIST3D(adA, adB) + dDIST3D(adA, adC) +
@@ -114,8 +115,10 @@ int checkOrient3D(const double adA[3], const double adB[3], const double adC[3],
 
 	double dError = dMachEps * dMax * dMax * dMax;
 
-	if (dDet > dError) return (1);
-	else if (dDet < -dError) return (-1);
+	if (dDet > dError)
+		return (1);
+	else if (dDet < -dError)
+		return (-1);
 
 	//     If neither of those two worked, compute a more accurate error bound.
 	//     The stuff in parentheses is the result of perturbing each term in
@@ -153,10 +156,15 @@ double pyrVolume(const double coords0[], const double coords1[],
 	// Point 4 is the apex.
 	double vecB[3], vecC[3], vecE[3];
 	for (int ii = 0; ii < 3; ii++) {
-		vecB[ii] = 0.25 * (coords0[ii] + coords3[ii] - coords1[ii] - coords2[ii]);
-		vecC[ii] = 0.25 * (coords0[ii] + coords1[ii] - coords3[ii] - coords2[ii]);
-		vecE[ii] = coords4[ii]
-				- 0.25 * (coords0[ii] + coords1[ii] + coords2[ii] + coords3[ii]);
+		vecB[ii] = 0.25
+				* (coords0[ii] + coords3[ii] - coords1[ii] - coords2[ii]);
+		vecC[ii] = 0.25
+				* (coords0[ii] + coords1[ii] - coords3[ii] - coords2[ii]);
+		vecE[ii] =
+				coords4[ii]
+						- 0.25
+								* (coords0[ii] + coords1[ii] + coords2[ii]
+										+ coords3[ii]);
 	}
 	double normal[3];
 	CROSS(vecB, vecC, normal);
@@ -164,9 +172,4 @@ double pyrVolume(const double coords0[], const double coords1[],
 //	assert(retVal > 0);
 	return retVal;
 }
-
-
-
-
-
 

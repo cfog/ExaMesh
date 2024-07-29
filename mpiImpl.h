@@ -1,20 +1,16 @@
-#include <unistd.h>
+#include <string>
 #include <cstdio>
-#include "ExaMesh.h"
-#include "CubicMesh.h"
-#include "PARMETIS.h"
-#include "UMesh.h"
+//#include "ExaMesh.h"
+//#include "CubicMesh.h"
+//#include "PARMETIS.h"
+//#include "UMesh.h"
 
 
-std::unique_ptr<UMesh>  ReadMesh ( const char  baseFileName[] , const char type[], 
-                                     const char  ugridInfix[]   , const char CGNSFileName[], 
-                                     const char MeshType); 
-
-
-void refineForMPI ( const char  baseFileName[] , const char type[], 
-                    const char  ugridInfix[]   , const char CGNSFileName[],
-                    const int   numDivs        , const char MeshType, 
-                    std::string mshName, FILE* eachRank);
+void refineForMPI ( const std::string  baseFileName,
+			const std::string fileSuffix,
+			const std::string ugridInfix,
+			const emInt   numDivs,
+			std::string mshName);
 
 
 

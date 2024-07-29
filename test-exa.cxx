@@ -49,239 +49,236 @@ static void checkExpectedSize(const UMesh &UM) {
 }
 #endif
 
-void SetArtificialIntVertQuad(QuadFaceVerts &quad, const emInt nDivs){
+void SetArtificialIntVertQuad(QuadFaceVerts &quad, const emInt nDivs) {
 	// Numbering from 1 to .. 
-	emInt k=1; 	
-	for (emInt jj = 0; jj <= nDivs ; jj++) {
-	 	for (emInt ii = 0; ii <= nDivs; ii++) {
-			quad.setIntVertInd(ii,jj,k);
-			k++; 
+	emInt k = 1;
+	for (emInt jj = 0; jj <= nDivs; jj++) {
+		for (emInt ii = 0; ii <= nDivs; ii++) {
+			quad.setIntVertInd(ii, jj, k);
+			k++;
 		}
 	}
 
 }
-void setExpectedMapping (const int rotation,
-std::unordered_map<emInt,emInt> &map){
+void setExpectedMapping(const int rotation,
+		std::unordered_map<emInt, emInt> &map) {
 	switch (rotation) {
-  		case -1:
-   		 	map[1]=1; 
-			map[2]=5;
-			map[3]=9;
-			map[4]=13; 
-			map[5]=2;
-			map[6]=6;
-			map[7]=10;
-			map[8]=14; 
-			map[9]=3;
-			map[10]=7;
-			map[11]=11;
-			map[12]=15;
-			map[13]=4; 
-			map[14]=8;
-			map[15]=12;
-			map[16]=16;
-   	 	break;
-  		case -2:
-		   	map[1]=4; 
-			map[2]=3;
-			map[3]=2;
-			map[4]=1; 
-			map[5]=8;
-			map[6]=7;
-			map[7]=6;
-			map[8]=5; 
-			map[9]=12;
-			map[10]=11;
-			map[11]=10;
-			map[12]=9;
-			map[13]=16; 
-			map[14]=15;
-			map[15]=14;
-			map[16]=13;
-    		
-    	break;
-  		case -3:
-			map[1]=16; 
-			map[2]=12;
-			map[3]=8;
-			map[4]=4; 
-			map[5]=15;
-			map[6]=11;
-			map[7]=7;
-			map[8]=3; 
-			map[9]=14;
-			map[10]=10;
-			map[11]=6;
-			map[12]=2;
-			map[13]=13; 
-			map[14]=9;
-			map[15]=5;
-			map[16]=1;
-    		
-    	break;
-  		case -4:
-			map[1]=13; 
-			map[2]=14;
-			map[3]=15;
-			map[4]=16; 
-			map[5]=9;
-			map[6]=10;
-			map[7]=11;
-			map[8]=12; 
-			map[9]=5;
-			map[10]=6;
-			map[11]=7;
-			map[12]=8;
-			map[13]=1; 
-			map[14]=2;
-			map[15]=3;
-			map[16]=4;
-    		
-    	break;
-  		case 2:
-			map[1]=13; 
-			map[2]=9;
-			map[3]=5;
-			map[4]=1; 
-			map[5]=14;
-			map[6]=10;
-			map[7]=6;
-			map[8]=2; 
-			map[9]=15;
-			map[10]=11;
-			map[11]=7;
-			map[12]=3;
-			map[13]=16; 
-			map[14]=12;
-			map[15]=8;
-			map[16]=4 ;
-    		
-    	break;
-  		case 3:
-			map[1]=16; 
-			map[2]=15;
-			map[3]=14;
-			map[4]=13; 
-			map[5]=12;
-			map[6]=11;
-			map[7]=10;
-			map[8]=9; 
-			map[9]=8;
-			map[10]=7;
-			map[11]=6;
-			map[12]=5;
-			map[13]=4; 
-			map[14]=3;
-			map[15]=2;
-			map[16]=1;
-    		
-    	break;
-  		case 4:
-			map[1]=4; 
-			map[2]=8;
-			map[3]=12;
-			map[4]=16; 
-			map[5]=3;
-			map[6]=7;
-			map[7]=11;
-			map[8]=15; 
-			map[9]=2;
-			map[10]=6;
-			map[11]=10;
-			map[12]=14;
-			map[13]=1; 
-			map[14]=5;
-			map[15]=9;
-			map[16]=13;
-    		
-    	break;
+	case -1:
+		map[1] = 1;
+		map[2] = 5;
+		map[3] = 9;
+		map[4] = 13;
+		map[5] = 2;
+		map[6] = 6;
+		map[7] = 10;
+		map[8] = 14;
+		map[9] = 3;
+		map[10] = 7;
+		map[11] = 11;
+		map[12] = 15;
+		map[13] = 4;
+		map[14] = 8;
+		map[15] = 12;
+		map[16] = 16;
+		break;
+	case -2:
+		map[1] = 4;
+		map[2] = 3;
+		map[3] = 2;
+		map[4] = 1;
+		map[5] = 8;
+		map[6] = 7;
+		map[7] = 6;
+		map[8] = 5;
+		map[9] = 12;
+		map[10] = 11;
+		map[11] = 10;
+		map[12] = 9;
+		map[13] = 16;
+		map[14] = 15;
+		map[15] = 14;
+		map[16] = 13;
+
+		break;
+	case -3:
+		map[1] = 16;
+		map[2] = 12;
+		map[3] = 8;
+		map[4] = 4;
+		map[5] = 15;
+		map[6] = 11;
+		map[7] = 7;
+		map[8] = 3;
+		map[9] = 14;
+		map[10] = 10;
+		map[11] = 6;
+		map[12] = 2;
+		map[13] = 13;
+		map[14] = 9;
+		map[15] = 5;
+		map[16] = 1;
+
+		break;
+	case -4:
+		map[1] = 13;
+		map[2] = 14;
+		map[3] = 15;
+		map[4] = 16;
+		map[5] = 9;
+		map[6] = 10;
+		map[7] = 11;
+		map[8] = 12;
+		map[9] = 5;
+		map[10] = 6;
+		map[11] = 7;
+		map[12] = 8;
+		map[13] = 1;
+		map[14] = 2;
+		map[15] = 3;
+		map[16] = 4;
+
+		break;
+	case 2:
+		map[1] = 13;
+		map[2] = 9;
+		map[3] = 5;
+		map[4] = 1;
+		map[5] = 14;
+		map[6] = 10;
+		map[7] = 6;
+		map[8] = 2;
+		map[9] = 15;
+		map[10] = 11;
+		map[11] = 7;
+		map[12] = 3;
+		map[13] = 16;
+		map[14] = 12;
+		map[15] = 8;
+		map[16] = 4;
+
+		break;
+	case 3:
+		map[1] = 16;
+		map[2] = 15;
+		map[3] = 14;
+		map[4] = 13;
+		map[5] = 12;
+		map[6] = 11;
+		map[7] = 10;
+		map[8] = 9;
+		map[9] = 8;
+		map[10] = 7;
+		map[11] = 6;
+		map[12] = 5;
+		map[13] = 4;
+		map[14] = 3;
+		map[15] = 2;
+		map[16] = 1;
+
+		break;
+	case 4:
+		map[1] = 4;
+		map[2] = 8;
+		map[3] = 12;
+		map[4] = 16;
+		map[5] = 3;
+		map[6] = 7;
+		map[7] = 11;
+		map[8] = 15;
+		map[9] = 2;
+		map[10] = 6;
+		map[11] = 10;
+		map[12] = 14;
+		map[13] = 1;
+		map[14] = 5;
+		map[15] = 9;
+		map[16] = 13;
+
+		break;
 	}
 }
-void setArbitraryTriDataForTesting (const emInt i ,emInt (&local)[3], emInt (&global)[3], 
-emInt (&remote)[3], emInt &nDivs, emInt &partId, emInt &remoteId, emInt &type, 
-emInt &elemInd, bool &globalCompare){
+void setArbitraryTriDataForTesting(const emInt i, emInt (&local)[3],
+		emInt (&global)[3], emInt (&remote)[3], emInt &nDivs, emInt &partId,
+		emInt &remoteId, emInt &type, emInt &elemInd, bool &globalCompare) {
 	local[0] = i;
-    local[1] = 2 * i;
-    local[2] = 3 * i;
-    
-    global[0] = 2 * i;
-    global[1] = 3 * i;
-    global[2] = 4 * i;
-    
-    remote[0] = i+1;
-    remote[1] = i + 2;
-    remote[2] = i + 3;
+	local[1] = 2 * i;
+	local[2] = 3 * i;
 
-	nDivs= i ; 
-	partId= 2*i; 
-	remoteId= 3*i; 
-	type= 4*i; 
-	elemInd= 5*i;
-	
+	global[0] = 2 * i;
+	global[1] = 3 * i;
+	global[2] = 4 * i;
 
-	if(i%2==0){
-		globalCompare=true; 
-	}else{
-		globalCompare=false;
+	remote[0] = i + 1;
+	remote[1] = i + 2;
+	remote[2] = i + 3;
+
+	nDivs = i;
+	partId = 2 * i;
+	remoteId = 3 * i;
+	type = 4 * i;
+	elemInd = 5 * i;
+
+	if (i % 2 == 0) {
+		globalCompare = true;
+	} else {
+		globalCompare = false;
 	}
 }
-void setArbitraryQuadDataForTesting (const emInt i ,emInt (&local)[4], emInt (&global)[4], 
-emInt (&remote)[4], emInt &nDivs, emInt &partId, emInt &remoteId, emInt &type, 
-emInt &elemInd, bool &globalCompare){
+void setArbitraryQuadDataForTesting(const emInt i, emInt (&local)[4],
+		emInt (&global)[4], emInt (&remote)[4], emInt &nDivs, emInt &partId,
+		emInt &remoteId, emInt &type, emInt &elemInd, bool &globalCompare) {
 	local[0] = i;
-    local[1] = 2 * i;
-    local[2] = 3 * i;
-	local[3]=  4 * i; 
-    
-    global[0] = 2 * i;
-    global[1] = 3 * i;
-    global[2] = 4 * i;
-	global[3]=  5*i ; 
-    
-    remote[0] = i+1;
-    remote[1] = i + 2;
-    remote[2] = i + 3;
-	remote[3]=  i + 4 ; 
+	local[1] = 2 * i;
+	local[2] = 3 * i;
+	local[3] = 4 * i;
 
-	nDivs= i ; 
-	partId= 2*i; 
-	remoteId= 3*i; 
-	type= 4*i; 
-	elemInd= 5*i;
-	
+	global[0] = 2 * i;
+	global[1] = 3 * i;
+	global[2] = 4 * i;
+	global[3] = 5 * i;
 
-	if(i%2==0){
-		globalCompare=true; 
-	}else{
-		globalCompare=false;
+	remote[0] = i + 1;
+	remote[1] = i + 2;
+	remote[2] = i + 3;
+	remote[3] = i + 4;
+
+	nDivs = i;
+	partId = 2 * i;
+	remoteId = 3 * i;
+	type = 4 * i;
+	elemInd = 5 * i;
+
+	if (i % 2 == 0) {
+		globalCompare = true;
+	} else {
+		globalCompare = false;
 	}
 }
-void setArbitrary_CellPartData_ForTesting (const emInt i ,double (&coords)[3],
- emInt &index, emInt &cellType){
+void setArbitrary_CellPartData_ForTesting(const emInt i, double (&coords)[3],
+		emInt &index, emInt &cellType) {
 
-    
-    coords[0] = i+1;
-    coords[1] = i + 2;
-    coords[2] = i + 3;
+	coords[0] = i + 1;
+	coords[1] = i + 2;
+	coords[2] = i + 3;
 
-	index= 10*i; 
-	cellType= 20*i; 
+	index = 10 * i;
+	cellType = 20 * i;
 }
-void setArbitrary_Part_DataForTesting (const emInt i , double &xmin, double &xmax, 
-double &ymin, double &ymax, double &zmin, double &zmax,
-emInt &first, emInt &last, emInt &parts ){
-	xmin= 1.2*i; 
-	xmax= 2.4*i ; 
+void setArbitrary_Part_DataForTesting(const emInt i, double &xmin, double &xmax,
+		double &ymin, double &ymax, double &zmin, double &zmax, emInt &first,
+		emInt &last, emInt &parts) {
+	xmin = 1.2 * i;
+	xmax = 2.4 * i;
 
-	ymin= 3.2*i; 
-	ymax= 1.2+i; 
+	ymin = 3.2 * i;
+	ymax = 1.2 + i;
 
-	zmin= 2.3+i; 
-	zmax= 5.2*i; 
+	zmin = 2.3 + i;
+	zmax = 5.2 * i;
 
-	first= i; 
-	last=  i+1; 
-	parts= i+2; 
+	first = i;
+	last = i + 1;
+	parts = i + 2;
 }
 struct MixedMeshFixture {
 	UMesh *pUM_In, *pUM_Out;
@@ -327,16 +324,19 @@ struct MixedMeshFixture {
 	}
 };
 
-void makeLengthScaleUniform(const UMesh* pUM_In) {
+void makeLengthScaleUniform(const UMesh *pUM_In) {
 	// Check the uniform length scale cases.
 	for (unsigned int ii = 0; ii < pUM_In->numVerts(); ii++) {
 		pUM_In->setLengthScale(ii, 1.);
 	}
 }
-void setPrescribedLengthScale(const UMesh* pUM_In) {
+void setPrescribedLengthScale(const UMesh *pUM_In) {
 	// A simple analytic length scale.
 	for (unsigned int ii = 0; ii < pUM_In->numVerts(); ii++) {
-		double len = 1 + 0.1*(pUM_In->getX(ii) + pUM_In->getY(ii) + pUM_In->getZ(ii));
+		double len = 1
+				+ 0.1
+						* (pUM_In->getX(ii) + pUM_In->getY(ii)
+								+ pUM_In->getZ(ii));
 		pUM_In->setLengthScale(ii, len);
 	}
 }
@@ -647,8 +647,7 @@ BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_FIXTURE_TEST_SUITE(MappingTests, MixedMeshFixture)
 
-BOOST_AUTO_TEST_CASE(EdgeMappingUniform)
- {
+BOOST_AUTO_TEST_CASE(EdgeMappingUniform) {
 	// Check the uniform length scale cases.
 	makeLengthScaleUniform(pUM_In);
 
@@ -719,7 +718,7 @@ BOOST_AUTO_TEST_CASE(TetFaceMappingUniform) {
 BOOST_AUTO_TEST_CASE(PyramidFaceMappingUniform) {
 	printf("Pyramid face uniform mapping test\n");
 	// Check the uniform length scale cases.
-makeLengthScaleUniform(pUM_In);
+	makeLengthScaleUniform(pUM_In);
 
 	PyrDivider PD(pUM_Out, pUM_In, 4);
 	// Compute point locations and compare to the analytic
@@ -741,7 +740,7 @@ makeLengthScaleUniform(pUM_In);
 			coords[ii][1] = pUM_Out->getY(corners[ii]);
 			coords[ii][2] = pUM_Out->getZ(corners[ii]);
 		}
-		emInt vertInd = thisTriData.getIntVertInd(2,1);
+		emInt vertInd = thisTriData.getIntVertInd(2, 1);
 		BOOST_CHECK_CLOSE(pUM_Out->getX(vertInd),
 				0.5 * coords[1][0] + 0.25 * coords[2][0] + 0.25 * coords[0][0],
 				1.e-8);
@@ -754,8 +753,8 @@ makeLengthScaleUniform(pUM_In);
 	}
 
 	for (auto thisQuadData : vertsOnQuads) {
-		emInt corners[] = { thisQuadData.getCorner(0), thisQuadData.getCorner(1),
-				thisQuadData.getCorner(2), thisQuadData.getCorner(3) };
+		emInt corners[] = { thisQuadData.getCorner(0), thisQuadData.getCorner(
+				1), thisQuadData.getCorner(2), thisQuadData.getCorner(3) };
 		double coords[4][3];
 		for (int ii = 0; ii < 4; ii++) {
 			coords[ii][0] = pUM_Out->getX(corners[ii]);
@@ -778,7 +777,7 @@ makeLengthScaleUniform(pUM_In);
 BOOST_AUTO_TEST_CASE(PrismFaceMappingUniform) {
 	printf("Prism face uniform mapping test\n");
 	// Check the uniform length scale cases.
-makeLengthScaleUniform(pUM_In);
+	makeLengthScaleUniform(pUM_In);
 
 	PrismDivider PD(pUM_Out, pUM_In, 4);
 	// Compute point locations and compare to the analytic
@@ -813,8 +812,8 @@ makeLengthScaleUniform(pUM_In);
 	}
 
 	for (auto thisQuadData : vertsOnQuads) {
-		emInt corners[] = { thisQuadData.getCorner(0), thisQuadData.getCorner(1),
-				thisQuadData.getCorner(2), thisQuadData.getCorner(3) };
+		emInt corners[] = { thisQuadData.getCorner(0), thisQuadData.getCorner(
+				1), thisQuadData.getCorner(2), thisQuadData.getCorner(3) };
 		double coords[4][3];
 		for (int ii = 0; ii < 4; ii++) {
 			coords[ii][0] = pUM_Out->getX(corners[ii]);
@@ -837,7 +836,7 @@ makeLengthScaleUniform(pUM_In);
 BOOST_AUTO_TEST_CASE(HexFaceMappingUniform) {
 	printf("Hex face uniform mapping test\n");
 	// Check the uniform length scale cases.
-makeLengthScaleUniform(pUM_In);
+	makeLengthScaleUniform(pUM_In);
 
 	HexDivider HD(pUM_Out, pUM_In, 4);
 	// Compute point locations and compare to the analytic
@@ -851,8 +850,8 @@ makeLengthScaleUniform(pUM_In);
 	BOOST_CHECK_EQUAL(vertsOnQuads.size(), 6);
 
 	for (auto thisQuadData : vertsOnQuads) {
-		emInt corners[] = { thisQuadData.getCorner(0), thisQuadData.getCorner(1),
-				thisQuadData.getCorner(2), thisQuadData.getCorner(3) };
+		emInt corners[] = { thisQuadData.getCorner(0), thisQuadData.getCorner(
+				1), thisQuadData.getCorner(2), thisQuadData.getCorner(3) };
 		double coords[4][3];
 		for (int ii = 0; ii < 4; ii++) {
 			coords[ii][0] = pUM_Out->getX(corners[ii]);
@@ -875,7 +874,7 @@ makeLengthScaleUniform(pUM_In);
 BOOST_AUTO_TEST_CASE(TetMappingUniform) {
 	printf("Tet uniform mapping\n");
 	// Check the uniform length scale cases.
-makeLengthScaleUniform(pUM_In);
+	makeLengthScaleUniform(pUM_In);
 
 	TetDivider TD(pUM_Out, pUM_In, 5);
 
@@ -936,7 +935,7 @@ makeLengthScaleUniform(pUM_In);
 BOOST_AUTO_TEST_CASE(PyramidMappingUniform) {
 	printf("Pyramid uniform mapping\n");
 	// Check the uniform length scale cases.
-makeLengthScaleUniform(pUM_In);
+	makeLengthScaleUniform(pUM_In);
 
 	PyrDivider PD(pUM_Out, pUM_In, 5);
 
@@ -945,7 +944,8 @@ makeLengthScaleUniform(pUM_In);
 
 	PD.createDivisionVerts(vertsOnEdges, vertsOnTris, vertsOnQuads);
 
-	double uvw[5][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, {1, 1, 0}, { 0, 0, 1 } };
+	double uvw[5][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, { 1, 1, 0 }, {
+			0, 0, 1 } };
 	double xyz[5][3];
 	PD.getPhysCoordsFromParamCoords(uvw[0], xyz[0]);
 	PD.getPhysCoordsFromParamCoords(uvw[1], xyz[1]);
@@ -983,7 +983,7 @@ makeLengthScaleUniform(pUM_In);
 BOOST_AUTO_TEST_CASE(PrismMappingUniform) {
 	printf("Prism uniform mapping\n");
 	// Check the uniform length scale cases.
-makeLengthScaleUniform(pUM_In);
+	makeLengthScaleUniform(pUM_In);
 
 	PrismDivider PD(pUM_Out, pUM_In, 4);
 
@@ -992,8 +992,8 @@ makeLengthScaleUniform(pUM_In);
 
 	PD.createDivisionVerts(vertsOnEdges, vertsOnTris, vertsOnQuads);
 
-	double uvw[6][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 },
-			{ 1, 0, 1 }, { 0, 1, 1 }};
+	double uvw[6][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, {
+			1, 0, 1 }, { 0, 1, 1 } };
 	double xyz[6][3];
 	PD.getPhysCoordsFromParamCoords(uvw[0], xyz[0]);
 	PD.getPhysCoordsFromParamCoords(uvw[1], xyz[1]);
@@ -1011,8 +1011,10 @@ makeLengthScaleUniform(pUM_In);
 	double wArray[] = { 0.25, 0.25, 0.25, 0.5, 0.5, 0.5, 0.75, 0.75, 0.75 };
 
 	double xArray[] = { 0.25, 0.25, 0.5, 0.25, 0.25, 0.5, 0.25, 0.25, 0.5 };
-	double yArray[] = { -0.5, -0.25, -0.25, -0.5, -0.25, -0.25, -0.5, -0.25, -0.25 };
-	double zArray[] = { -0.75, -0.75, -0.75, -0.5, -0.5, -0.5, -0.25, -0.25, -0.25 };
+	double yArray[] = { -0.5, -0.25, -0.25, -0.5, -0.25, -0.25, -0.5, -0.25,
+			-0.25 };
+	double zArray[] = { -0.75, -0.75, -0.75, -0.5, -0.5, -0.5, -0.25, -0.25,
+			-0.25 };
 
 	// Now extract the uvw values and check correctness
 	for (int ii = 0; ii < 9; ii++) {
@@ -1041,8 +1043,8 @@ BOOST_AUTO_TEST_CASE(HexMappingUniform) {
 
 	HD.createDivisionVerts(vertsOnEdges, vertsOnTris, vertsOnQuads);
 
-	double uvw[8][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, { 1, 1, 0 },
-			{ 0, 0, 1 }, { 1, 0, 1 }, { 0, 1, 1 }, { 1, 1, 1 }	};
+	double uvw[8][3] = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 }, { 1, 1, 0 }, {
+			0, 0, 1 }, { 1, 0, 1 }, { 0, 1, 1 }, { 1, 1, 1 } };
 	double xyz[8][3];
 	HD.getPhysCoordsFromParamCoords(uvw[0], xyz[0]);
 	HD.getPhysCoordsFromParamCoords(uvw[1], xyz[1]);
@@ -1058,20 +1060,20 @@ BOOST_AUTO_TEST_CASE(HexMappingUniform) {
 	emInt jArray[] = { 1, 2, 2, 1, 1, 2, 2, 1 };
 	emInt kArray[] = { 1, 1, 1, 1, 2, 2, 2, 2 };
 
-	const double oneThird = 1./3;
+	const double oneThird = 1. / 3;
 
 	// Now extract the uvw values and check correctness
 	for (int ii = 0; ii < 8; ii++) {
 		double my_uvw[3], my_xyz[3];
 		HD.getParamCoords(iArray[ii], jArray[ii], kArray[ii], my_uvw);
-		BOOST_CHECK_CLOSE(iArray[ii]*oneThird, my_uvw[0], 1.e-8);
-		BOOST_CHECK_CLOSE(jArray[ii]*oneThird, my_uvw[1], 1.e-8);
-		BOOST_CHECK_CLOSE(kArray[ii]*oneThird, my_uvw[2], 1.e-8);
+		BOOST_CHECK_CLOSE(iArray[ii] * oneThird, my_uvw[0], 1.e-8);
+		BOOST_CHECK_CLOSE(jArray[ii] * oneThird, my_uvw[1], 1.e-8);
+		BOOST_CHECK_CLOSE(kArray[ii] * oneThird, my_uvw[2], 1.e-8);
 
 		HD.getPhysCoordsFromParamCoords(my_uvw, my_xyz);
 		BOOST_CHECK_CLOSE(my_uvw[0], my_xyz[0], 1.e-8);
 		BOOST_CHECK_CLOSE(my_uvw[1], my_xyz[1], 1.e-8);
-		BOOST_CHECK_CLOSE(-1+my_uvw[2], my_xyz[2], 1.e-8);
+		BOOST_CHECK_CLOSE(-1 + my_uvw[2], my_xyz[2], 1.e-8);
 	}
 }
 
@@ -1099,8 +1101,8 @@ BOOST_AUTO_TEST_CASE(EdgeMappingNonuniformPrescribed) {
 		double startCoords[3], endCoords[3];
 		pUM_In->getCoords(startInd, startCoords);
 		pUM_In->getCoords(endInd, endCoords);
-		double delta[] = {endCoords[0] - startCoords[0],
-				endCoords[1] - startCoords[1], endCoords[2] - startCoords[2]};
+		double delta[] = { endCoords[0] - startCoords[0], endCoords[1]
+				- startCoords[1], endCoords[2] - startCoords[2] };
 
 		// Working out parametric coordinate along the edge, so (see Carl's
 		// notes for June 16, 2020, or the journal article) x_A = 0, dx = 1,
@@ -1109,23 +1111,22 @@ BOOST_AUTO_TEST_CASE(EdgeMappingNonuniformPrescribed) {
 		// u = startLen * xi + (3 - 2*startLen - endLen) * xi^2
 		//     + (startLen + endLen - 2) * xi^3
 
-		double startLen = sqrt(startLenOrig/endLenOrig);
+		double startLen = sqrt(startLenOrig / endLenOrig);
 		double endLen = 1. / startLen;
 
 		double xi = 0.25;
-		double u = startLen * xi + (3 - 2*startLen - endLen) * xi*xi
-				   + (startLen + endLen - 2) * xi*xi*xi;
+		double u = startLen * xi + (3 - 2 * startLen - endLen) * xi * xi
+				+ (startLen + endLen - 2) * xi * xi * xi;
 
 		// Adding 10 to avoid problems comparing machine zero to exactly zero.
-		BOOST_CHECK_CLOSE(10+pUM_Out->getX(vertInd), 10+startCoords[0] + u*delta[0],
-				1.e-10);
-		BOOST_CHECK_CLOSE(10+pUM_Out->getY(vertInd), 10+startCoords[1] + u*delta[1],
-				1.e-10);
-		BOOST_CHECK_CLOSE(10+pUM_Out->getZ(vertInd), 10+startCoords[2] + u*delta[2],
-				1.e-10);
+		BOOST_CHECK_CLOSE(10 + pUM_Out->getX(vertInd),
+				10 + startCoords[0] + u * delta[0], 1.e-10);
+		BOOST_CHECK_CLOSE(10 + pUM_Out->getY(vertInd),
+				10 + startCoords[1] + u * delta[1], 1.e-10);
+		BOOST_CHECK_CLOSE(10 + pUM_Out->getZ(vertInd),
+				10 + startCoords[2] + u * delta[2], 1.e-10);
 	}
 }
-
 
 BOOST_AUTO_TEST_SUITE_END()
 
@@ -1133,14 +1134,14 @@ BOOST_AUTO_TEST_SUITE(NonuniformParamMapping)
 
 BOOST_AUTO_TEST_CASE(FaceInteriorIntersectionTrivial) {
 	// Trivial: coordinate aligned
-	double uvL[] = {0, 0.25};
-	double uvR[] = {1, 0.25};
+	double uvL[] = { 0, 0.25 };
+	double uvR[] = { 1, 0.25 };
 
-	double uvB[] = {0.43, 0};
-	double uvT[] = {0.43, 1};
+	double uvB[] = { 0.43, 0 };
+	double uvT[] = { 0.43, 1 };
 
-	double uv[] = {0, 0};
-	double uvExp[] = {0.43, 0.25};
+	double uv[] = { 0, 0 };
+	double uvExp[] = { 0.43, 0.25 };
 
 	getFaceParametricIntersectionPoint(uvL, uvR, uvB, uvT, uv);
 
@@ -1148,16 +1149,15 @@ BOOST_AUTO_TEST_CASE(FaceInteriorIntersectionTrivial) {
 	BOOST_CHECK_CLOSE(uv[1], uvExp[1], 1.e-8);
 }
 
-BOOST_AUTO_TEST_CASE(FaceInteriorIntersectionQuad)
-{
-	double uvL[] = {0, 0.207};
-	double uvR[] = {1, 0.307};
+BOOST_AUTO_TEST_CASE(FaceInteriorIntersectionQuad) {
+	double uvL[] = { 0, 0.207 };
+	double uvR[] = { 1, 0.307 };
 
-	double uvB[] = {0.38, 0};
-	double uvT[] = {0.58, 1};
+	double uvB[] = { 0.38, 0 };
+	double uvT[] = { 0.58, 1 };
 
-	double uv[] = {0, 0};
-	double uvExp[] = {0.43, 0.25};
+	double uv[] = { 0, 0 };
+	double uvExp[] = { 0.43, 0.25 };
 
 	getFaceParametricIntersectionPoint(uvL, uvR, uvB, uvT, uv);
 
@@ -1167,14 +1167,14 @@ BOOST_AUTO_TEST_CASE(FaceInteriorIntersectionQuad)
 
 BOOST_AUTO_TEST_CASE(FaceInteriorIntersectionTri) {
 	// Simulated triangle data, same result
-	double uvL[] = {0, 0.36};
-	double uvR[] = {0.86, 0.14};
+	double uvL[] = { 0, 0.36 };
+	double uvR[] = { 0.86, 0.14 };
 
-	double uvB[] = {0.36, 0};
-	double uvT[] = {0.5, 0.5};
+	double uvB[] = { 0.36, 0 };
+	double uvT[] = { 0.5, 0.5 };
 
-	double uv[] = {0, 0};
-	double uvExp[] = {0.43, 0.25};
+	double uv[] = { 0, 0 };
+	double uvExp[] = { 0.43, 0.25 };
 
 	getFaceParametricIntersectionPoint(uvL, uvR, uvB, uvT, uv);
 
@@ -1184,15 +1184,16 @@ BOOST_AUTO_TEST_CASE(FaceInteriorIntersectionTri) {
 
 BOOST_AUTO_TEST_CASE(CellInteriorIntersectionTrivial) {
 	// Trivial case: coordinate aligned, intersection
-	double uvwXLo[] = {0, 0.25, 0.45};
-	double uvwXHi[] = {1, 0.25, 0.45};
-	double uvwYLo[] = {0.35, 0, 0.45};
-	double uvwYHi[] = {0.35, 1, 0.45};
-	double uvwZLo[] = {0.35, 0.25, 0};
-	double uvwZHi[] = {0.35, 0.25, 1};
-	double uvwExp[] = {0.35, 0.25, 0.45};
-	double uvw[] = {0,0,0};
-	getCellInteriorParametricIntersectionPoint(uvwXLo, uvwXHi, uvwYLo, uvwYHi, uvwZLo, uvwZHi, uvw);
+	double uvwXLo[] = { 0, 0.25, 0.45 };
+	double uvwXHi[] = { 1, 0.25, 0.45 };
+	double uvwYLo[] = { 0.35, 0, 0.45 };
+	double uvwYHi[] = { 0.35, 1, 0.45 };
+	double uvwZLo[] = { 0.35, 0.25, 0 };
+	double uvwZHi[] = { 0.35, 0.25, 1 };
+	double uvwExp[] = { 0.35, 0.25, 0.45 };
+	double uvw[] = { 0, 0, 0 };
+	getCellInteriorParametricIntersectionPoint(uvwXLo, uvwXHi, uvwYLo, uvwYHi,
+			uvwZLo, uvwZHi, uvw);
 	BOOST_CHECK_CLOSE(uvw[0], uvwExp[0], 1.e-8);
 	BOOST_CHECK_CLOSE(uvw[1], uvwExp[1], 1.e-8);
 	BOOST_CHECK_CLOSE(uvw[2], uvwExp[2], 1.e-8);
@@ -1200,20 +1201,21 @@ BOOST_AUTO_TEST_CASE(CellInteriorIntersectionTrivial) {
 
 BOOST_AUTO_TEST_CASE(CellInteriorIntersectionHexExact) {
 	// Harder but has the same (analytically exact) answer
-	double uvwXLo[] = {0, 0.215, 0.485};
-	double uvwXHi[] = {1, 0.315, 0.385};
-	double uvwYLo[] = {0.325, 0, 0.475};
-	double uvwYHi[] = {0.425, 1, 0.375};
-	double uvwZLo[] = {0.305, 0.295, 0};
-	double uvwZHi[] = {0.405, 0.195, 1};
+	double uvwXLo[] = { 0, 0.215, 0.485 };
+	double uvwXHi[] = { 1, 0.315, 0.385 };
+	double uvwYLo[] = { 0.325, 0, 0.475 };
+	double uvwYHi[] = { 0.425, 1, 0.375 };
+	double uvwZLo[] = { 0.305, 0.295, 0 };
+	double uvwZHi[] = { 0.405, 0.195, 1 };
 
 	// s1 = 0.35  uvwX[] = {s1, 0.25+(s1-0.35)/10, 0.45-(s1-0.35)/10}
 	// s2 = 0.25  uvwY[] = {0.35+(s2-0.25)/10, s2, 0.45-(s2-0.25)/10}
 	// s3 = 0.45  uvwZ[] = {0.35+(s3-0.45)/10, 0.25-(s3-0.45)/10, s3}
 
-	double uvwExp[] = {0.35, 0.25, 0.45};
-	double uvw[] = {0,0,0};
-	getCellInteriorParametricIntersectionPoint(uvwXLo, uvwXHi, uvwYLo, uvwYHi, uvwZLo, uvwZHi, uvw);
+	double uvwExp[] = { 0.35, 0.25, 0.45 };
+	double uvw[] = { 0, 0, 0 };
+	getCellInteriorParametricIntersectionPoint(uvwXLo, uvwXHi, uvwYLo, uvwYHi,
+			uvwZLo, uvwZHi, uvw);
 	BOOST_CHECK_CLOSE(uvw[0], uvwExp[0], 1.e-8);
 	BOOST_CHECK_CLOSE(uvw[1], uvwExp[1], 1.e-8);
 	BOOST_CHECK_CLOSE(uvw[2], uvwExp[2], 1.e-8);
@@ -1221,27 +1223,27 @@ BOOST_AUTO_TEST_CASE(CellInteriorIntersectionHexExact) {
 
 BOOST_AUTO_TEST_CASE(CellInteriorIntersectionTetExact) {
 	// Harder but has the same (analytically exact) answer
-	double uvwXLo[] = {0, 0.235, 0.465};
-	double uvwXHi[] = {0.3, 0.265, 0.435};
-	double uvwYLo[] = {0.175, 0, 0.475};
-	double uvwYHi[] = {0.135, 0.4, 0.435};
-	double uvwZLo[] = {0.105, 0.295, 0};
-	double uvwZHi[] = {0.165, 0.235, 0.6};
+	double uvwXLo[] = { 0, 0.235, 0.465 };
+	double uvwXHi[] = { 0.3, 0.265, 0.435 };
+	double uvwYLo[] = { 0.175, 0, 0.475 };
+	double uvwYHi[] = { 0.135, 0.4, 0.435 };
+	double uvwZLo[] = { 0.105, 0.295, 0 };
+	double uvwZHi[] = { 0.165, 0.235, 0.6 };
 
 	// s1 = 0.15  uvwX[] = {s1, 0.25+(s1-0.15)/10, 0.45-(s1-0.15)/10}
 	// s2 = 0.25  uvwY[] = {0.15+(s2-0.25)/10, s2, 0.45-(s2-0.25)/10}
 	// s3 = 0.45  uvwZ[] = {0.15+(s3-0.45)/10, 0.25-(s3-0.45)/10, s3}
 
-	double uvwExp[] = {0.15, 0.25, 0.45};
-	double uvw[] = {0,0,0};
-	getCellInteriorParametricIntersectionPoint(uvwXLo, uvwXHi, uvwYLo, uvwYHi, uvwZLo, uvwZHi, uvw);
+	double uvwExp[] = { 0.15, 0.25, 0.45 };
+	double uvw[] = { 0, 0, 0 };
+	getCellInteriorParametricIntersectionPoint(uvwXLo, uvwXHi, uvwYLo, uvwYHi,
+			uvwZLo, uvwZHi, uvw);
 	BOOST_CHECK_CLOSE(uvw[0], uvwExp[0], 1.e-8);
 	BOOST_CHECK_CLOSE(uvw[1], uvwExp[1], 1.e-8);
 	BOOST_CHECK_CLOSE(uvw[2], uvwExp[2], 1.e-8);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
 
 #ifdef DO_SUBDIVISION_TESTS
 BOOST_AUTO_TEST_SUITE(SimpleMeshSubdivisionTests)
@@ -1878,217 +1880,205 @@ BOOST_AUTO_TEST_CASE(MixedN5) {
 	BOOST_CHECK(result);
 }
 BOOST_FIXTURE_TEST_SUITE(FaceMatching,MixedMeshFixture)
-BOOST_AUTO_TEST_CASE(QuadMatching){
+BOOST_AUTO_TEST_CASE(QuadMatching) {
 	// run for quad cases of -2 , 1 , -4 
-	
-	const emInt nDivs=3; 
-	const emInt partID=0 ; 
-	const emInt remoteID=1; 
 
-	emInt globalForRef_LocalQuad [4] = {1,4,16,13};
-	emInt remoteForRef [4] = {10,20,30,40};
-	emInt localForRef  [4] = {10,20,30,40}; 
+	const emInt nDivs = 3;
+	const emInt partID = 0;
+	const emInt remoteID = 1;
+
+	emInt globalForRef_LocalQuad[4] = { 1, 4, 16, 13 };
+	emInt remoteForRef[4] = { 10, 20, 30, 40 };
+	emInt localForRef[4] = { 10, 20, 30, 40 };
 	exa_set<QuadFaceVerts> remoteQuads;
 	//Note that passing the same temp local & remote indices 
-	QuadFaceVerts refQuad (nDivs,localForRef,globalForRef_LocalQuad,
-	remoteForRef,partID,remoteID); 
-	refQuad.setCompare(true); 
-	SetArtificialIntVertQuad(refQuad,nDivs);
-	
+	QuadFaceVerts refQuad(nDivs, localForRef, globalForRef_LocalQuad,
+			remoteForRef, partID, remoteID);
+	refQuad.setCompare(true);
+	SetArtificialIntVertQuad(refQuad, nDivs);
 
 	//emInt globalForeRemote [4]= {13,16,4,1}; 
-	emInt AllCasesofglobalForeRemote [7][4]={
-		{13,16,4,1}, 
-		{16,4,1,13},
-		{4,1,13,16},
-		{1,13,16,4},
-		{13,1,4,16},
-		{16,13,1,4},
-		{4,16,13,1}
-	}; 
-	for(auto k=0; k<7; k++){
+	emInt AllCasesofglobalForeRemote[7][4] = { { 13, 16, 4, 1 },
+			{ 16, 4, 1, 13 }, { 4, 1, 13, 16 }, { 1, 13, 16, 4 },
+			{ 13, 1, 4, 16 }, { 16, 13, 1, 4 }, { 4, 16, 13, 1 } };
+	for (auto k = 0; k < 7; k++) {
 		emInt globalForeRemote[4];
 		for (int i = 0; i < 4; i++) {
- 			globalForeRemote[i] = AllCasesofglobalForeRemote[k][i];
-		}; 
-		
-		QuadFaceVerts quad (nDivs,localForRef,globalForeRemote
-		, remoteForRef,remoteID,partID); 
-		quad.setCompare(true); 
+			globalForeRemote[i] = AllCasesofglobalForeRemote[k][i];
+		};
 
-		exa_set<QuadFaceVerts> setQuads={quad};
-	
-		int rotation= getQuadRotation(refQuad,setQuads,nDivs);
-		
-		SetArtificialIntVertQuad(quad,nDivs);
-		remoteQuads.insert(quad); 
-		std::unordered_map<emInt,emInt> map; 
-		matchQuad(refQuad,rotation,nDivs,remoteQuads,map);
-		std::unordered_map<emInt,emInt> expectedMap; 
-		setExpectedMapping(rotation,expectedMap); 
+		QuadFaceVerts quad(nDivs, localForRef, globalForeRemote, remoteForRef,
+				remoteID, partID);
+		quad.setCompare(true);
+
+		exa_set<QuadFaceVerts> setQuads = { quad };
+
+		int rotation = getQuadRotation(refQuad, setQuads, nDivs);
+
+		SetArtificialIntVertQuad(quad, nDivs);
+		remoteQuads.insert(quad);
+		std::unordered_map<emInt, emInt> map;
+		matchQuad(refQuad, rotation, nDivs, remoteQuads, map);
+		std::unordered_map<emInt, emInt> expectedMap;
+		setExpectedMapping(rotation, expectedMap);
 		//bool mapsEqual = boost::range::is_permutation(map,expectedMap);
-		assert(map==expectedMap);  
-		std::cout<<"Passed Test for Rotation case: "<<rotation<<std::endl; 
+		assert(map == expectedMap);
+		std::cout << "Passed Test for Rotation case: " << rotation << std::endl;
 	}
 	// Giving us different rotated Quads
-	
 
-		
 	// }
-
 
 }
 BOOST_AUTO_TEST_SUITE_END()
 BOOST_FIXTURE_TEST_SUITE(MPIFunctions,MixedMeshFixture)
-BOOST_AUTO_TEST_CASE(CustomTypeRegisteration){
+BOOST_AUTO_TEST_CASE(CustomTypeRegisteration) {
 
-	boost::mpi::environment env; 
-	boost::mpi::communicator world; 
-	const size_t containerSize =100; 
-	emInt localTri [3]; 
-	emInt globalTri [3]; 
-	emInt remoteTri [3]; 
+	boost::mpi::environment env;
+	boost::mpi::communicator world;
+	const size_t containerSize = 100;
+	emInt localTri[3];
+	emInt globalTri[3];
+	emInt remoteTri[3];
 
-	emInt localQuad [4]; 
-	emInt globalQuad [4]; 
-	emInt remoteQuad [4]; 
+	emInt localQuad[4];
+	emInt globalQuad[4];
+	emInt remoteQuad[4];
 
-	emInt nDivs ; 
-	emInt partId ; 
-	emInt remoteId; 
-	emInt type; 
+	emInt nDivs;
+	emInt partId;
+	emInt remoteId;
+	emInt type;
 	emInt elemInd;
-	bool globalCompare; 
+	bool globalCompare;
 
 	double m_xmin, m_xmax, m_ymin, m_ymax, m_zmin, m_zmax;
 	emInt m_first, m_last, m_nParts;
 
 	emInt m_index, m_cellType;
 	double m_coords[3];
-	if(world.size()>1){
-		if(world.rank()==0){
+	if (world.size() > 1) {
+		if (world.rank() == 0) {
 
 			std::vector<TriFaceVerts> dummytris;
-			std::vector<QuadFaceVerts> dummyquads; 
+			std::vector<QuadFaceVerts> dummyquads;
 
-			std::vector<Part> dummyPart; 
-			std::vector<CellPartData> dummyCellPartData; 
+			std::vector<Part> dummyPart;
+			std::vector<CellPartData> dummyCellPartData;
 
-			for(size_t i =0 ; i<containerSize ; i++){
-				setArbitraryTriDataForTesting(i,localTri,globalTri,remoteTri,
-				nDivs,partId,remoteId,type,elemInd,globalCompare); 
+			for (size_t i = 0; i < containerSize; i++) {
+				setArbitraryTriDataForTesting(i, localTri, globalTri, remoteTri,
+						nDivs, partId, remoteId, type, elemInd, globalCompare);
 
-				setArbitraryQuadDataForTesting(i,localQuad,globalQuad,remoteQuad,
-				nDivs,partId,remoteId,type,elemInd,globalCompare); 
+				setArbitraryQuadDataForTesting(i, localQuad, globalQuad,
+						remoteQuad, nDivs, partId, remoteId, type, elemInd,
+						globalCompare);
 
-				setArbitrary_Part_DataForTesting(i,m_xmin,m_xmax,
-				m_ymin,m_ymax,m_zmin,m_zmax,m_first,m_last,m_nParts); 
+				setArbitrary_Part_DataForTesting(i, m_xmin, m_xmax, m_ymin,
+						m_ymax, m_zmin, m_zmax, m_first, m_last, m_nParts);
 
-				setArbitrary_CellPartData_ForTesting(i,m_coords,m_index,m_cellType); 
+				setArbitrary_CellPartData_ForTesting(i, m_coords, m_index,
+						m_cellType);
 
-				Part part(m_first,m_last,m_nParts,m_xmin,
-				m_xmax,m_ymin,m_ymax,m_zmin,m_zmax); 
+				Part part(m_first, m_last, m_nParts, m_xmin, m_xmax, m_ymin,
+						m_ymax, m_zmin, m_zmax);
 
-				CellPartData cellPartData (m_index,m_cellType,m_coords[0],m_coords[1],
-				m_coords[2]); 
+				CellPartData cellPartData(m_index, m_cellType, m_coords[0],
+						m_coords[1], m_coords[2]);
 
+				QuadFaceVerts quad(nDivs, localQuad, globalQuad, remoteQuad,
+						partId, remoteId, type, elemInd, globalCompare);
 
+				TriFaceVerts tri(nDivs, localTri, globalTri, remoteTri, partId,
+						remoteId, type, elemInd, globalCompare);
 
-				QuadFaceVerts quad(nDivs,localQuad,globalQuad,remoteQuad,partId,
-				remoteId,type,elemInd,globalCompare); 
-
-
-				TriFaceVerts tri (nDivs,localTri,globalTri,remoteTri,
-				partId,remoteId,type,elemInd,globalCompare); 
-
-				dummytris.push_back(tri); 
-				dummyquads.push_back(quad); 
-				dummyPart.push_back(part); 
-				dummyCellPartData.push_back(cellPartData); 
+				dummytris.push_back(tri);
+				dummyquads.push_back(quad);
+				dummyPart.push_back(part);
+				dummyCellPartData.push_back(cellPartData);
 			}
-			world.send(1,0,dummytris); 
-			world.send(1,0,dummyquads); 
-			world.send(1,0,dummyPart); 
-			world.send(1,0,dummyCellPartData); 
+			world.send(1, 0, dummytris);
+			world.send(1, 0, dummyquads);
+			world.send(1, 0, dummyPart);
+			world.send(1, 0, dummyCellPartData);
 
 		}
-		if(world.rank()==1){
-			std::vector<TriFaceVerts> dummytris(containerSize,TriFaceVerts(1)); 
-			std::vector<QuadFaceVerts> dummyquads(containerSize,QuadFaceVerts(1)); 
+		if (world.rank() == 1) {
+			std::vector<TriFaceVerts> dummytris(containerSize, TriFaceVerts(1));
+			std::vector<QuadFaceVerts> dummyquads(containerSize,
+					QuadFaceVerts(1));
 
-			std::vector<Part> dummyPart(containerSize,Part()); 
-			std::vector<CellPartData> dummyCellPartData(containerSize,CellPartData()); 
+			std::vector<Part> dummyPart(containerSize, Part());
+			std::vector<CellPartData> dummyCellPartData(containerSize,
+					CellPartData());
 
+			world.recv(0, 0, dummytris);
+			world.recv(0, 0, dummyquads);
+			world.recv(0, 0, dummyPart);
+			world.recv(0, 0, dummyCellPartData);
 
-			world.recv(0,0,dummytris);
-			world.recv(0,0,dummyquads);
-			world.recv(0,0,dummyPart); 
-			world.recv(0,0,dummyCellPartData); 
-			
+			for (size_t i = 0; i < containerSize; i++) {
+				setArbitraryTriDataForTesting(i, localTri, globalTri, remoteTri,
+						nDivs, partId, remoteId, type, elemInd, globalCompare);
 
-			for(size_t i=0 ; i<containerSize ; i++){
-				setArbitraryTriDataForTesting(i,localTri,globalTri,remoteTri,
-				nDivs,partId,remoteId,type,elemInd,globalCompare); 
+				setArbitraryQuadDataForTesting(i, localQuad, globalQuad,
+						remoteQuad, nDivs, partId, remoteId, type, elemInd,
+						globalCompare);
 
-				setArbitraryQuadDataForTesting(i,localQuad,globalQuad,remoteQuad,
-				nDivs,partId,remoteId,type,elemInd,globalCompare);
+				setArbitrary_Part_DataForTesting(i, m_xmin, m_xmax, m_ymin,
+						m_ymax, m_zmin, m_zmax, m_first, m_last, m_nParts);
 
+				setArbitrary_CellPartData_ForTesting(i, m_coords, m_index,
+						m_cellType);
 
-				setArbitrary_Part_DataForTesting(i,m_xmin,m_xmax,
-				m_ymin,m_ymax,m_zmin,m_zmax,m_first,m_last,m_nParts); 
+				BOOST_CHECK_EQUAL(dummytris[i].getNumDivs(), nDivs);
+				BOOST_CHECK_EQUAL(dummytris[i].getPartid(), partId);
+				BOOST_CHECK_EQUAL(dummytris[i].getRemoteId(), remoteId);
+				BOOST_CHECK_EQUAL(dummytris[i].getVolElementType(), type);
+				BOOST_CHECK_EQUAL(dummytris[i].getVolElement(), elemInd);
+				BOOST_CHECK_EQUAL(dummytris[i].getGlobalCompare(),
+						globalCompare);
 
-				setArbitrary_CellPartData_ForTesting(i,m_coords,m_index,m_cellType); 
+				BOOST_CHECK_EQUAL(dummyquads[i].getNumDivs(), nDivs);
+				BOOST_CHECK_EQUAL(dummyquads[i].getPartid(), partId);
+				BOOST_CHECK_EQUAL(dummyquads[i].getRemoteId(), remoteId);
+				BOOST_CHECK_EQUAL(dummyquads[i].getVolElementType(), type);
+				BOOST_CHECK_EQUAL(dummyquads[i].getVolElement(), elemInd);
+				BOOST_CHECK_EQUAL(dummyquads[i].getGlobalCompare(),
+						globalCompare);
 
+				BOOST_CHECK_EQUAL(dummyPart[i].getFirst(), m_first);
+				BOOST_CHECK_EQUAL(dummyPart[i].getLast(), m_last);
+				BOOST_CHECK_EQUAL(dummyPart[i].getXmax(), m_xmax);
+				BOOST_CHECK_EQUAL(dummyPart[i].getXmin(), m_xmin);
+				BOOST_CHECK_EQUAL(dummyPart[i].getYmax(), m_ymax);
+				BOOST_CHECK_EQUAL(dummyPart[i].getYmin(), m_ymin);
+				BOOST_CHECK_EQUAL(dummyPart[i].getZmax(), m_zmax);
+				BOOST_CHECK_EQUAL(dummyPart[i].getZmin(), m_zmin);
 
-				BOOST_CHECK_EQUAL(dummytris[i].getNumDivs(),nDivs); 
-				BOOST_CHECK_EQUAL(dummytris[i].getPartid(),partId); 
-				BOOST_CHECK_EQUAL(dummytris[i].getRemoteId(),remoteId); 
-				BOOST_CHECK_EQUAL(dummytris[i].getVolElementType(),type); 
-				BOOST_CHECK_EQUAL(dummytris[i].getVolElement(),elemInd); 
-				BOOST_CHECK_EQUAL(dummytris[i].getGlobalCompare(),globalCompare); 
+				BOOST_CHECK_EQUAL(dummyCellPartData[i].getCellType(),
+						m_cellType);
+				BOOST_CHECK_EQUAL(dummyCellPartData[i].getCoord(0),
+						m_coords[0]);
+				BOOST_CHECK_EQUAL(dummyCellPartData[i].getCoord(1),
+						m_coords[1]);
+				BOOST_CHECK_EQUAL(dummyCellPartData[i].getCoord(2),
+						m_coords[2]);
 
-
-				BOOST_CHECK_EQUAL(dummyquads[i].getNumDivs(),nDivs); 
-				BOOST_CHECK_EQUAL(dummyquads[i].getPartid(),partId); 
-				BOOST_CHECK_EQUAL(dummyquads[i].getRemoteId(),remoteId); 
-				BOOST_CHECK_EQUAL(dummyquads[i].getVolElementType(),type); 
-				BOOST_CHECK_EQUAL(dummyquads[i].getVolElement(),elemInd); 
-				BOOST_CHECK_EQUAL(dummyquads[i].getGlobalCompare(),globalCompare); 
-
-				BOOST_CHECK_EQUAL(dummyPart[i].getFirst(),m_first); 
-				BOOST_CHECK_EQUAL(dummyPart[i].getLast(), m_last); 
-				BOOST_CHECK_EQUAL(dummyPart[i].getXmax(), m_xmax); 
-				BOOST_CHECK_EQUAL(dummyPart[i].getXmin(), m_xmin); 
-				BOOST_CHECK_EQUAL(dummyPart[i].getYmax(), m_ymax); 
-				BOOST_CHECK_EQUAL(dummyPart[i].getYmin(), m_ymin); 
-				BOOST_CHECK_EQUAL(dummyPart[i].getZmax(), m_zmax); 
-				BOOST_CHECK_EQUAL(dummyPart[i].getZmin(), m_zmin); 
-
-				BOOST_CHECK_EQUAL(dummyCellPartData[i].getCellType(),m_cellType); 
-				BOOST_CHECK_EQUAL(dummyCellPartData[i].getCoord(0)  ,m_coords[0]); 
-				BOOST_CHECK_EQUAL(dummyCellPartData[i].getCoord(1)  ,m_coords[1]); 
-				BOOST_CHECK_EQUAL(dummyCellPartData[i].getCoord(2)  ,m_coords[2]); 
-
-
-				for (auto k=0 ; k<4 ; k++){
-					BOOST_CHECK_EQUAL(dummyquads[i].getGlobalCorner(k), 
-					globalQuad[k]); 
-					BOOST_CHECK_EQUAL(dummyquads[i].getCorner(k), 
-					localQuad[k]); 
-					BOOST_CHECK_EQUAL(dummyquads[i].getRemoteIndices(k), 
-					remoteQuad[k]); 
+				for (auto k = 0; k < 4; k++) {
+					BOOST_CHECK_EQUAL(dummyquads[i].getGlobalCorner(k),
+							globalQuad[k]);
+					BOOST_CHECK_EQUAL(dummyquads[i].getCorner(k), localQuad[k]);
+					BOOST_CHECK_EQUAL(dummyquads[i].getRemoteIndices(k),
+							remoteQuad[k]);
 				}
 			}
 		}
 	}
 
-
-
 }
 BOOST_AUTO_TEST_SUITE_END()
 
-
 BOOST_AUTO_TEST_SUITE_END()
-
 
 #endif // DO_SUBDIVISION_TESTS

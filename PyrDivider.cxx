@@ -75,7 +75,6 @@ void PyrDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 //	}
 //}
 
-
 //void PyrDivider::divideInterior() {
 //  // Number of verts added:
 //	//    Pyrs:      (nD-1)(nD-2)(2 nD-3)/6
@@ -129,7 +128,7 @@ void PyrDivider::getPhysCoordsFromParamCoords(const double uvw[3],
 //}
 
 void PyrDivider::createNewCells() {
-  // Output info about the points for this pyramid, layer by layer
+	// Output info about the points for this pyramid, layer by layer
 
 //	for (int level = 0; level <= nDivs; level++) {
 //		fprintf(stderr, "Level = %d\n", level);
@@ -145,38 +144,37 @@ void PyrDivider::createNewCells() {
 
 	for (int kk = 0; kk < int(nDivs); kk++) {
 //		fprintf(stderr, "Level: %d\n", level);
-    // Create up-pointing pyrs.  For a given level, there are
-    // (nDivs - k)^2 of these.
+		// Create up-pointing pyrs.  For a given level, there are
+		// (nDivs - k)^2 of these.
 		emInt jMax = maxJ(0, kk);
 		emInt iMax = maxI(0, kk);
-    for (int jj = 0; jj <= int(jMax) - 1; jj++) {
-      for (int ii = 0; ii <= int(iMax) - 1; ii++) {
+		for (int jj = 0; jj <= int(jMax) - 1; jj++) {
+			for (int ii = 0; ii <= int(iMax) - 1; ii++) {
 				emInt vertsNew[] = { localVerts[ii][jj][kk],
 						localVerts[ii + 1][jj][kk],
 						localVerts[ii + 1][jj + 1][kk],
-						localVerts[ii][jj + 1][kk],
-						localVerts[ii][jj][kk + 1] };
+						localVerts[ii][jj + 1][kk], localVerts[ii][jj][kk + 1] };
 				m_pMesh->addPyramid(vertsNew);
 #ifndef NDEBUG
 				double coords[5][3];
 				for (int vv = 0; vv < 5; vv++) {
 					m_pMesh->getCoords(vertsNew[vv], coords[vv]);
 				}
-				assert(pyrVolume(coords[0], coords[1], coords[2], coords[3],
-						coords[4]) > 0);
+				assert(
+						pyrVolume(coords[0], coords[1], coords[2], coords[3],
+								coords[4]) > 0);
 #endif
 				assert(m_pMesh->numPyramids() <= m_pMesh->maxNPyrs());
-      }
-    }
+			}
+		}
 
-    // Down-pointing pyramids, hanging from quads on the next level.  There
-    // are (level-1)^2 of these.
-    for (int jj = 0; jj <= int(jMax) - 2; jj++) {
-      for (int ii = 0; ii <= int(iMax) - 2; ii++) {
+		// Down-pointing pyramids, hanging from quads on the next level.  There
+		// are (level-1)^2 of these.
+		for (int jj = 0; jj <= int(jMax) - 2; jj++) {
+			for (int ii = 0; ii <= int(iMax) - 2; ii++) {
 				emInt vertsNew[] = { localVerts[ii][jj][kk + 1],
-						localVerts[ii][jj + 1][kk + 1],
-						localVerts[ii + 1][jj + 1][kk + 1],
-						localVerts[ii + 1][jj][kk + 1],
+						localVerts[ii][jj + 1][kk + 1], localVerts[ii + 1][jj
+								+ 1][kk + 1], localVerts[ii + 1][jj][kk + 1],
 						localVerts[ii + 1][jj + 1][kk] };
 				m_pMesh->addPyramid(vertsNew);
 #ifndef NDEBUG
@@ -184,41 +182,40 @@ void PyrDivider::createNewCells() {
 				for (emInt vv = 0; vv < 5; vv++) {
 					m_pMesh->getCoords(vertsNew[vv], coords[vv]);
 				}
-				assert(pyrVolume(coords[0], coords[1], coords[2], coords[3],
-						coords[4]) > 0);
+				assert(
+						pyrVolume(coords[0], coords[1], coords[2], coords[3],
+								coords[4]) > 0);
 #endif
 				assert(m_pMesh->numPyramids() < m_pMesh->maxNPyrs());
-      }
-    }
+			}
+		}
 
-    // Now there are tets in the gaps between these pyramids.  There are
-    // 2 (level-1) (level-2) of these.
+		// Now there are tets in the gaps between these pyramids.  There are
+		// 2 (level-1) (level-2) of these.
 
-    // The set on lines of constant j on level l.
-    for (int jj = 1; jj <= int(jMax) - 1; jj++) {
-      for (int ii = 0; ii <= int(iMax) - 1; ii++) {
+		// The set on lines of constant j on level l.
+		for (int jj = 1; jj <= int(jMax) - 1; jj++) {
+			for (int ii = 0; ii <= int(iMax) - 1; ii++) {
 				emInt vertsNew[] = { localVerts[ii][jj][kk],
-						localVerts[ii + 1][jj][kk],
-						localVerts[ii][jj][kk + 1],
+						localVerts[ii + 1][jj][kk], localVerts[ii][jj][kk + 1],
 						localVerts[ii][jj - 1][kk + 1] };
 				m_pMesh->addTet(vertsNew);
 				assert(m_pMesh->numTets() < m_pMesh->maxNTets());
 				assert(checkOrient3D(vertsNew) == 1);
-      }
-    }
+			}
+		}
 
-    // The set on lines of constant i on level l.
-    for (int jj = 0; jj <= int(jMax) - 1; jj++) {
-      for (int ii = 1; ii <= int(iMax) - 1; ii++) {
-				emInt vertsNew[] = { localVerts[ii][jj][kk],
-						localVerts[ii][jj + 1][kk],
-						localVerts[ii - 1][jj][kk + 1],
+		// The set on lines of constant i on level l.
+		for (int jj = 0; jj <= int(jMax) - 1; jj++) {
+			for (int ii = 1; ii <= int(iMax) - 1; ii++) {
+				emInt vertsNew[] = { localVerts[ii][jj][kk], localVerts[ii][jj
+						+ 1][kk], localVerts[ii - 1][jj][kk + 1],
 						localVerts[ii][jj][kk + 1] };
 				m_pMesh->addTet(vertsNew);
 				assert(m_pMesh->numTets() <= m_pMesh->maxNTets());
 				assert(checkOrient3D(vertsNew) == 1);
-      }
-    }
+			}
+		}
 
-  } // Done with this level
+	} // Done with this level
 }

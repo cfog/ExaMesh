@@ -461,8 +461,8 @@ void updateQuadSet(std::set<vertQuadruple> &quadSet, const emInt v0,
 	//}
 }
 
-UMesh::UMesh(const char baseFileName[], const char type[],
-		const char ugridInfix[]) :
+UMesh::UMesh(const std::string baseFileName, const std::string fileSuffix,
+		const std::string ugridInfix) :
 		m_nVerts(0), m_nBdryVerts(0), m_nTris(0), m_nQuads(0), m_nTets(0), m_nPyrs(
 				0), m_nPrisms(0), m_nHexes(0), m_fileImageSize(0), m_header(
 				nullptr), m_coords(nullptr), m_TriConn(nullptr), m_QuadConn(
@@ -470,7 +470,8 @@ UMesh::UMesh(const char baseFileName[], const char type[],
 				nullptr), m_HexConn(nullptr), m_buffer(nullptr), m_fileImage(
 				nullptr) {
 	// Use the same IO routines as the mesh analyzer code from GMGW.
-	FileWrapper *reader = FileWrapper::factory(baseFileName, type, ugridInfix);
+	FileWrapper *reader = FileWrapper::factory(baseFileName.c_str(),
+			fileSuffix.c_str(), ugridInfix.c_str());
 
 	reader->scanFile();
 

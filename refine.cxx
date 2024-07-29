@@ -33,26 +33,25 @@
 #include "resultGenerator.cxx"
 #include <chrono>
 
-
-int main(int argc, char* const argv[]) {
-	double startAppTime = exaTime(); 
+int main(int argc, char *const argv[]) {
+	double startAppTime = exaTime();
 	char opt = EOF;
 	emInt nDivs = 1;
-	int   nTestParts=2; 
+	int nTestParts = 2;
 	emInt maxCellsPerPart = 1000000;
 	char type[10];
 	char infix[10];
 	char inFileBaseName[1024];
 	char cgnsFileName[1024];
 	char outFileName[1024];
-	bool isInputCGNS = false, isParallel = false, isMPI=false;
-	char InputMeshType ; 
-	bool meshScanning = false; 
+	bool isInputCGNS = false, isParallel = false, isMPI = false;
+	char InputMeshType;
+	bool meshScanning = false;
 
-	double satrtScanningTime; 
-	double scanningTime; 
-	
-	double wallTime;  
+	double satrtScanningTime;
+	double scanningTime;
+
+	double wallTime;
 
 	sprintf(type, "vtk");
 	sprintf(infix, "b8");
@@ -60,117 +59,102 @@ int main(int argc, char* const argv[]) {
 	sprintf(inFileBaseName, "/need/a/file/name");
 	sprintf(cgnsFileName, "/need/a/file/name");
 
-	while ((opt = getopt(argc, argv, "g:s:c:i:m:n:o:pt:u:q")) != EOF) 
-	{
-		switch (opt) 
-		{
-			case 'g': 
-				meshScanning= true; 
-				break;
-			case 's':
-				sscanf(optarg, "%d", &nTestParts);
-				break;
-			case 'c':
-				sscanf(optarg, "%1023s", cgnsFileName);
-				isInputCGNS = true;
-				break;
-			case 'i':
-				sscanf(optarg, "%1023s", inFileBaseName);
-				break;
-			case 'n':
-				sscanf(optarg, "%d", &nDivs);
-				break;
-			case 'm':
-				sscanf(optarg, "%d", &maxCellsPerPart);
-				break;
-			case 'o':
-				sscanf(optarg, "%1023s", outFileName);
-				break;
-			case 'p':
-				isParallel = true;
-				break;
-			case 't':
-				sscanf(optarg, "%9s", type);
-				break;
-			case 'u':
-				sscanf(optarg, "%9s", infix);
-				break;
-			case 'q':
-				isParallel=true; 
-				isMPI=true; 
-				break;
+	while ((opt = getopt(argc, argv, "g:s:c:i:m:n:o:pt:u:q")) != EOF) {
+		switch (opt) {
+		case 'g':
+			meshScanning = true;
+			break;
+		case 's':
+			sscanf(optarg, "%d", &nTestParts);
+			break;
+		case 'c':
+			sscanf(optarg, "%1023s", cgnsFileName);
+			isInputCGNS = true;
+			break;
+		case 'i':
+			sscanf(optarg, "%1023s", inFileBaseName);
+			break;
+		case 'n':
+			sscanf(optarg, "%d", &nDivs);
+			break;
+		case 'm':
+			sscanf(optarg, "%d", &maxCellsPerPart);
+			break;
+		case 'o':
+			sscanf(optarg, "%1023s", outFileName);
+			break;
+		case 'p':
+			isParallel = true;
+			break;
+		case 't':
+			sscanf(optarg, "%9s", type);
+			break;
+		case 'u':
+			sscanf(optarg, "%9s", infix);
+			break;
+		case 'q':
+			isParallel = true;
+			isMPI = true;
+			break;
 		}
 	}
 
-	size_t lastSlashPos        = std::string(inFileBaseName).find_last_of('/');
-	std::string mshName        = std::string(inFileBaseName).substr(lastSlashPos + 1);
-	
-	if(isInputCGNS)
-	{
-		InputMeshType='C'; 
+	size_t lastSlashPos = std::string(inFileBaseName).find_last_of('/');
+	std::string mshName = std::string(inFileBaseName).substr(lastSlashPos + 1);
+
+	if (isInputCGNS) {
+		InputMeshType = 'C';
+	} else {
+		InputMeshType = 'U';
 	}
-	else
-	{
-		InputMeshType='U'; 
-	}
-	if(isMPI)
-	{
-		refineForMPI(inFileBaseName,type, infix, cgnsFileName,nDivs,InputMeshType,mshName,nullptr); 
-	}
-	else
-	{
-		if (isInputCGNS) 
-		{
+	if (isMPI) {
+		refineForMPI(inFileBaseName, type, infix, nDivs, mshName);
+	} else {
+		if (isInputCGNS) {
 #if (HAVE_CGNS == 1)
 			CubicMesh CMorig(cgnsFileName);
-			if (isParallel)
-			{
+			if (isParallel) {
 				CMorig.refineForParallel(nDivs, maxCellsPerPart);
-			}
-			else 
-			{
+			} else {
 				double start = exaTime();
 				auto refined = CMorig.subdivideMesh(nDivs);
 				double time = exaTime() - start;
 				size_t cells = refined->numCells();
-				
-				fprintf(stderr, "\nDone serial refinement.\n");
-				fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
-				fprintf(stderr,
-								"                          %5.2F million cells / minute\n",
-								(cells / 1000000.) / (time / 60));
 
-	//			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
-	//			UMrefined.writeVTKFile("/tmp/junk.vtk");
+				fprintf(stderr, "\nDone serial refinement.\n");
+				fprintf(stderr, "CPU time for refinement = %5.2F seconds\n",
+						time);
+				fprintf(stderr,
+						"                          %5.2F million cells / minute\n",
+						(cells / 1000000.) / (time / 60));
+
+				//			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
+				//			UMrefined.writeVTKFile("/tmp/junk.vtk");
 			}
 #else
 		fprintf(stderr, "Not compiled with CGNS; curved meshes not supported.\n");
 		exit(1);
 #endif
-		}
-		else 
-		{
+		} else {
 			UMesh UMorig(inFileBaseName, type, infix);
 
-			if (isParallel)
-			{
+			if (isParallel) {
 				UMorig.refineForParallel(nDivs, maxCellsPerPart);
+			} else {
+				double start = exaTime();
+				auto refined = UMorig.subdivideMesh(nDivs);
+				double time = exaTime() - start;
+				size_t cells = refined->numCells();
+
+				fprintf(stderr, "CPU time for refinement = %5.2F seconds\n",
+						time);
+				fprintf(stderr,
+						"                          %5.2F million cells / minute\n",
+						(cells / 1000000.) / (time / 60));
+				//UMrefined.writeUGridFile(outFileName);
+				//UMrefined.writeVTKFile(outFileName);
 			}
-			else 
-			{
-					double start = exaTime();
-					auto refined = UMorig.subdivideMesh(nDivs);
-					double time = exaTime() - start;
-					size_t cells = refined->numCells();
-					
-					fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
-					fprintf(stderr,
-									"                          %5.2F million cells / minute\n",
-									(cells / 1000000.) / (time / 60));
-					//UMrefined.writeUGridFile(outFileName);
-					//UMrefined.writeVTKFile(outFileName);
-			}
-				
+
 		}
 		printf("Exiting\n");
 		exit(0);

@@ -34,8 +34,8 @@ class ExaMesh;
 
 class Mapping {
 protected:
-	const ExaMesh* m_pMesh;
-	Mapping(const ExaMesh* const EM) :
+	const ExaMesh *m_pMesh;
+	Mapping(const ExaMesh *const EM) :
 			m_pMesh(EM) {
 	}
 public:
@@ -46,9 +46,7 @@ public:
 	virtual void computeTransformedCoords(const double uvw[3],
 			double xyz[3]) const = 0;
 	enum MappingType {
-		Uniform,
-		Lagrange,
-		Invalid
+		Uniform, Lagrange, Invalid
 	};
 };
 
@@ -56,7 +54,7 @@ public:
 // of coordinates.
 class Q1Mapping: public Mapping {
 protected:
-	Q1Mapping(const ExaMesh* const EM) :
+	Q1Mapping(const ExaMesh *const EM) :
 			Mapping(EM) {
 	}
 	virtual ~Q1Mapping() {
@@ -67,7 +65,7 @@ class Q1TetMapping: public Q1Mapping {
 private:
 	double A[3], dU[3], dV[3], dW[3];
 public:
-	Q1TetMapping(const ExaMesh* const EM) :
+	Q1TetMapping(const ExaMesh *const EM) :
 			Q1Mapping(EM) {
 	}
 	void setupCoordMapping(const emInt verts[]);
@@ -78,7 +76,7 @@ class Q1PyramidMapping: public Q1Mapping {
 private:
 	double A[3], dU[3], dV[3], dUV[3], dW[3], Apex[3];
 public:
-	Q1PyramidMapping(const ExaMesh* const EM) :
+	Q1PyramidMapping(const ExaMesh *const EM) :
 			Q1Mapping(EM) {
 	}
 	void setupCoordMapping(const emInt verts[]);
@@ -89,7 +87,7 @@ class Q1PrismMapping: public Q1Mapping {
 private:
 	double A[3], dU[3], dV[3], dW[3], dUW[3], dVW[3];
 public:
-	Q1PrismMapping(const ExaMesh* const EM) :
+	Q1PrismMapping(const ExaMesh *const EM) :
 			Q1Mapping(EM) {
 	}
 	void setupCoordMapping(const emInt verts[]);
@@ -100,7 +98,7 @@ class Q1HexMapping: public Q1Mapping {
 private:
 	double A[3], dU[3], dV[3], dW[3], dUV[3], dUW[3], dVW[3], dUVW[3];
 public:
-	Q1HexMapping(const ExaMesh* const EM) :
+	Q1HexMapping(const ExaMesh *const EM) :
 			Q1Mapping(EM) {
 	}
 	void setupCoordMapping(const emInt verts[]);
@@ -111,7 +109,7 @@ class Q1TriMapping: public Q1Mapping {
 private:
 	double A[3], dU[3], dV[3], dW[3], dUV[3], dUW[3], dVW[3], dUVW[3];
 public:
-	Q1TriMapping(const ExaMesh* const EM) :
+	Q1TriMapping(const ExaMesh *const EM) :
 			Q1Mapping(EM) {
 	}
 	void setupCoordMapping(const emInt verts[]);
@@ -122,17 +120,17 @@ class Q1QuadMapping: public Q1Mapping {
 private:
 	double A[3], dU[3], dV[3], dW[3], dUV[3], dUW[3], dVW[3], dUVW[3];
 public:
-	Q1QuadMapping(const ExaMesh* const EM) :
+	Q1QuadMapping(const ExaMesh *const EM) :
 			Q1Mapping(EM) {
 	}
-  void setupCoordMapping(const emInt /*verts*/[]) {
+	void setupCoordMapping(const emInt /*verts*/[]) {
 		assert(0);
 	}
-  void computeTransformedCoords(const double /*uvw*/[3], double /*xyz*/[3]) const {
+	void computeTransformedCoords(const double /*uvw*/[3],
+			double /*xyz*/[3]) const {
 		assert(0);
 	}
 };
-
 
 class LagrangeMapping: public Mapping {
 	int m_numValues;
@@ -140,7 +138,7 @@ class LagrangeMapping: public Mapping {
 protected:
 	double (*m_nodalValues)[3];
 public:
-	LagrangeMapping(const ExaMesh* const EM, const int nVals);
+	LagrangeMapping(const ExaMesh *const EM, const int nVals);
 	virtual ~LagrangeMapping();
 	void setupCoordMapping(const emInt verts[]);
 	// setNodalValues is public for test purposes only.
@@ -151,7 +149,7 @@ public:
 
 class LagrangeCubicMapping: public LagrangeMapping {
 protected:
-	LagrangeCubicMapping(const ExaMesh* const EM, const emInt nDOFs) :
+	LagrangeCubicMapping(const ExaMesh *const EM, const emInt nDOFs) :
 			LagrangeMapping(EM, nDOFs) {
 	}
 public:
@@ -161,10 +159,10 @@ private:
 
 class LagrangeCubicTetMapping: public LagrangeCubicMapping {
 	double C[3], Cu[3], Cv[3], Cw[3], Cuu[3], Cuv[3], Cuw[3], Cvv[3], Cvw[3],
-			Cww[3], Cuuu[3], Cuuv[3], Cuvv[3], Cuuw[3], Cuww[3], Cuvw[3], Cvvv[3],
-			Cvvw[3], Cvww[3], Cwww[3];
+			Cww[3], Cuuu[3], Cuuv[3], Cuvv[3], Cuuw[3], Cuww[3], Cuvw[3],
+			Cvvv[3], Cvvw[3], Cvww[3], Cwww[3];
 public:
-	LagrangeCubicTetMapping(const ExaMesh* const EM) :
+	LagrangeCubicTetMapping(const ExaMesh *const EM) :
 			LagrangeCubicMapping(EM, 20) {
 	}
 	virtual ~LagrangeCubicTetMapping() {
@@ -178,14 +176,14 @@ public:
 
 class LagrangeCubicPyramidMapping: public LagrangeCubicMapping {
 	double C[3], Cu[3], Cv[3], Cw[3], Cuu[3], Cuv[3], Cuw[3], Cvv[3], Cvw[3],
-			Cww[3], Cuuu[3], Cuuv[3], Cuvv[3], Cuuw[3], Cuww[3], Cuvw[3], Cvvv[3],
-			Cvvw[3], Cvww[3], Cwww[3];
+			Cww[3], Cuuu[3], Cuuv[3], Cuvv[3], Cuuw[3], Cuww[3], Cuvw[3],
+			Cvvv[3], Cvvw[3], Cvww[3], Cwww[3];
 	double CuvOverw[3], Cu2vOverw[3], Cuv2Overw[3], Cu3vOverw[3], Cu2v2Overw[3],
 			Cuv3Overw[3];
 	double Cu2v2Overw2[3], Cu3v2Overw2[3], Cu2v3Overw2[3], Cu3v3Overw3[3];
 	double Apex[3];
 public:
-	LagrangeCubicPyramidMapping(const ExaMesh* const EM) :
+	LagrangeCubicPyramidMapping(const ExaMesh *const EM) :
 			LagrangeCubicMapping(EM, 30) {
 	}
 	virtual ~LagrangeCubicPyramidMapping() {
@@ -207,7 +205,7 @@ class LagrangeCubicPrismMapping: public LagrangeCubicMapping {
 	double C3[3], Cu3[3], Cv3[3], Cuu3[3], Cuv3[3], Cvv3[3], Cuuu3[3], Cuuv3[3],
 			Cuvv3[3], Cvvv3[3];
 public:
-	LagrangeCubicPrismMapping(const ExaMesh* const EM) :
+	LagrangeCubicPrismMapping(const ExaMesh *const EM) :
 			LagrangeCubicMapping(EM, 40) {
 	}
 	virtual ~LagrangeCubicPrismMapping() {
@@ -222,15 +220,16 @@ public:
 class LagrangeCubicHexMapping: public LagrangeCubicMapping {
 	double C[3], Cu[3], Cv[3], Cw[3], Cu2[3], Cuv[3], Cv2[3], Cvw[3], Cw2[3],
 			Cuw[3], Cu3[3], Cv3[3], Cw3[3], Cu2v[3], Cuv2[3], Cv2w[3], Cvw2[3],
-			Cu2w[3], Cuw2[3], Cuvw[3], Cu3v[3], Cu3w[3], Cuv3[3], Cv3w[3], Cuw3[3],
-			Cvw3[3], Cu2v2[3], Cu2w2[3], Cv2w2[3], Cu2vw[3], Cuv2w[3], Cuvw2[3],
-			Cu3vw[3], Cuv3w[3], Cuvw3[3], Cu3v2[3], Cu3w2[3], Cu2v3[3], Cv3w2[3],
-			Cu2w3[3], Cv2w3[3], Cu2v2w[3], Cu2vw2[3], Cuv2w2[3], Cu3v3[3], Cu3w3[3],
-			Cv3w3[3], Cu3v2w[3], Cu3vw2[3], Cu2v3w[3], Cuv3w2[3], Cu2vw3[3],
-			Cuv2w3[3], Cu2v2w2[3], Cu3v2w2[3], Cu2v3w2[3], Cu2v2w3[3], Cu3v3w[3],
-			Cu3vw3[3], Cuv3w3[3], Cu3v3w2[3], Cu3v2w3[3], Cu2v3w3[3], Cu3v3w3[3];
+			Cu2w[3], Cuw2[3], Cuvw[3], Cu3v[3], Cu3w[3], Cuv3[3], Cv3w[3],
+			Cuw3[3], Cvw3[3], Cu2v2[3], Cu2w2[3], Cv2w2[3], Cu2vw[3], Cuv2w[3],
+			Cuvw2[3], Cu3vw[3], Cuv3w[3], Cuvw3[3], Cu3v2[3], Cu3w2[3],
+			Cu2v3[3], Cv3w2[3], Cu2w3[3], Cv2w3[3], Cu2v2w[3], Cu2vw2[3],
+			Cuv2w2[3], Cu3v3[3], Cu3w3[3], Cv3w3[3], Cu3v2w[3], Cu3vw2[3],
+			Cu2v3w[3], Cuv3w2[3], Cu2vw3[3], Cuv2w3[3], Cu2v2w2[3], Cu3v2w2[3],
+			Cu2v3w2[3], Cu2v2w3[3], Cu3v3w[3], Cu3vw3[3], Cuv3w3[3], Cu3v3w2[3],
+			Cu3v2w3[3], Cu2v3w3[3], Cu3v3w3[3];
 public:
-	LagrangeCubicHexMapping(const ExaMesh* const EM) :
+	LagrangeCubicHexMapping(const ExaMesh *const EM) :
 			LagrangeCubicMapping(EM, 64) {
 	}
 	virtual ~LagrangeCubicHexMapping() {
@@ -243,10 +242,10 @@ public:
 };
 
 class LagrangeCubicTriMapping: public LagrangeCubicMapping {
-	double C[3], Cu[3], Cv[3], Cu2[3], Cuv[3], Cv2[3], Cu3[3], Cv3[3],
-		Cu2v[3], Cuv2[3];
+	double C[3], Cu[3], Cv[3], Cu2[3], Cuv[3], Cv2[3], Cu3[3], Cv3[3], Cu2v[3],
+			Cuv2[3];
 public:
-	LagrangeCubicTriMapping(const ExaMesh* const EM) :
+	LagrangeCubicTriMapping(const ExaMesh *const EM) :
 			LagrangeCubicMapping(EM, 10) {
 	}
 	virtual ~LagrangeCubicTriMapping() {
@@ -259,21 +258,20 @@ public:
 };
 
 class LagrangeCubicQuadMapping: public LagrangeCubicMapping {
-	double C[3], Cu[3], Cv[3], Cu2[3], Cuv[3], Cv2[3], Cu3[3], Cv3[3],
-		Cu2v[3], Cuv2[3], Cu3v[3], Cuv3[3], Cu2v2[3], Cu3v2[3], Cu2v3[3],
-			Cu3v3[3];
+	double C[3], Cu[3], Cv[3], Cu2[3], Cuv[3], Cv2[3], Cu3[3], Cv3[3], Cu2v[3],
+			Cuv2[3], Cu3v[3], Cuv3[3], Cu2v2[3], Cu3v2[3], Cu2v3[3], Cu3v3[3];
 public:
-	LagrangeCubicQuadMapping(const ExaMesh* const EM) :
+	LagrangeCubicQuadMapping(const ExaMesh *const EM) :
 			LagrangeCubicMapping(EM, 16) {
 	}
 	virtual ~LagrangeCubicQuadMapping() {
 	}
 	// Public for testing purposes
-	void setModalValues()  {
+	void setModalValues() {
 		assert(0);
 	}
-  virtual void computeTransformedCoords(const double /*uvw*/[3],
-					double /*xyz*/[3]) const {
+	virtual void computeTransformedCoords(const double /*uvw*/[3],
+			double /*xyz*/[3]) const {
 		assert(0);
 	}
 

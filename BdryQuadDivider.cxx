@@ -32,24 +32,23 @@ void BdryQuadDivider::createNewCells() {
 	// Okay, sure, these aren't actually cells in the usual sense, but so what?
 	for (emInt jj = 0; jj <= nDivs - 1; jj++) {
 		for (emInt ii = 0; ii <= nDivs - 1; ii++) {
-			emInt vertsNew1[] = { localVerts[ii][jj][0], localVerts[ii + 1][jj][0],
-														localVerts[ii + 1][jj + 1][0],
-														localVerts[ii][jj + 1][0] };
+			emInt vertsNew1[] = { localVerts[ii][jj][0],
+					localVerts[ii + 1][jj][0], localVerts[ii + 1][jj + 1][0],
+					localVerts[ii][jj + 1][0] };
 			m_pMesh->addBdryQuad(vertsNew1);
-			assert(
-					m_pMesh->numBdryQuads() <= m_pMesh->maxNBdryQuads());
+			assert(m_pMesh->numBdryQuads() <= m_pMesh->maxNBdryQuads());
 		} // Done with all quads for this row.
 	} // Done with this row (constant j)
 }
-void BdryQuadDivider::setRefinedVerts(QuadFaceVerts &QFV){
+void BdryQuadDivider::setRefinedVerts(QuadFaceVerts &QFV) {
 	//std::cout<<"My part id is: "<<QFV.getPartid()<<std::endl; 
-	for (emInt ii = 0; ii <= nDivs ; ii++) {
-	 	for (emInt jj = 0; jj <= nDivs; jj++) {
+	for (emInt ii = 0; ii <= nDivs; ii++) {
+		for (emInt jj = 0; jj <= nDivs; jj++) {
 			//int trueI;
 			//int trueJ;
-			emInt vert= localVerts[ii][jj][0]; 
+			emInt vert = localVerts[ii][jj][0];
 			//std::cout<<"Local verts for quads: "<<vert<<std::endl; 
-			QFV.setIntVertInd(ii,jj,vert); 
+			QFV.setIntVertInd(ii, jj, vert);
 		}
 	}
 	//std::cout<<"-----------------------------"<<std::endl; 

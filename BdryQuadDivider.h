@@ -94,8 +94,7 @@ public:
 
 		if (type == Mapping::Lagrange) {
 			m_Map = new LagrangeCubicQuadMapping(pInitMesh);
-		}
-		else {
+		} else {
 			m_Map = new Q1QuadMapping(pInitMesh);
 		}
 	}
@@ -103,7 +102,7 @@ public:
 	}
 	void divideInterior();
 	void createNewCells();
-	void setRefinedVerts(QuadFaceVerts &QFV); 
+	void setRefinedVerts(QuadFaceVerts &QFV);
 
 	// TODO: Currently, there's no coord mapping set up for bdry faces
 	void setupCoordMapping(const emInt verts[]) {
@@ -112,7 +111,8 @@ public:
 		}
 
 	}
-	void getPhysCoordsFromParamCoords(const double /*uvw*/[], double /*xyz*/[]) {
+	void getPhysCoordsFromParamCoords(const double /*uvw*/[],
+			double /*xyz*/[]) {
 	}
 
 	// These definition ensure that we'll get no interior points for
@@ -127,6 +127,5 @@ public:
 	}
 
 };
-
 
 #endif /* SRC_BDRYQUADDIVIDER_H_ */

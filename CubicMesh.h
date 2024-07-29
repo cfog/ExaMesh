@@ -51,7 +51,7 @@ class CubicMesh: public ExaMesh {
 
 	CubicMesh(const CubicMesh&);
 	CubicMesh& operator=(const CubicMesh&);
-	void readCGNSfile(const char CGNSfilename[]);
+	void readCGNSfile(const std::string CGNSBaseName);
 	void reorderCubicMesh();
 	void renumberNodes(emInt thisSize, emInt* aliasConn, emInt* newNodeInd);
 	void decrementVertIndices(emInt connSize, emInt* const connect);
@@ -68,7 +68,7 @@ public:
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
 #if (HAVE_CGNS == 1)
-	CubicMesh(const char CGNSFileName[]);
+	CubicMesh(const std::string CGNSBaseName);
 #endif
 	virtual ~CubicMesh();
 
@@ -105,9 +105,14 @@ public:
 	virtual emInt numHexes() const {
 		return m_nHex64;
 	}
+	virtual emInt numVolCells() const {
+		// This needs to be changed and having number of boundary quads and tris as well
+		return numTets() + numPyramids() + numPrisms() + numHexes();
+	}
 	virtual emInt numCells() const {
 		// This needs to be changed and having number of boundary quads and tris as well 
-		return numTets() + numPyramids() + numPrisms() + numHexes();
+		return numBdryTris() + numBdryQuads() + numTets()
+				+ numPyramids() + numPrisms() + numHexes();
 	}
 	virtual emInt numVertsToCopy() const {
 		return m_nVertNodes;

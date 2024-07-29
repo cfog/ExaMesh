@@ -72,6 +72,9 @@ public:
 		if (m_lenScale) delete[] m_lenScale;
 	}
 
+	static std::unique_ptr<ExaMesh> readMeshFromFile(const std::string fileName,
+			const std::string fileSuffix, const std::string fileInfix = "");
+
 	virtual std::unique_ptr<UMesh>
 	subdivideMesh(const emInt nDivs, const emInt partID = 0) const = 0;
 

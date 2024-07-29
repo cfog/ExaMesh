@@ -141,34 +141,31 @@ void PrismDivider::createNewCells() {
 		for (int jj = 0; jj <= int(nDivs) - 1; jj++) {
 			int ii = 0;
 			for (ii = 0; ii <= int(nDivs) - jj - 2; ii++) {
-				emInt vertsNew1[] = { localVerts[ii][jj][level],
-															localVerts[ii + 1][jj][level], localVerts[ii][jj
-																	+ 1][level],
-															localVerts[ii][jj][level - 1],
-															localVerts[ii + 1][jj][level - 1],
-															localVerts[ii][jj + 1][level - 1] };
+				emInt vertsNew1[] = { localVerts[ii][jj][level], localVerts[ii
+						+ 1][jj][level], localVerts[ii][jj + 1][level],
+						localVerts[ii][jj][level - 1],
+						localVerts[ii + 1][jj][level - 1],
+						localVerts[ii][jj + 1][level - 1] };
 				m_pMesh->addPrism(vertsNew1);
 				assert(m_pMesh->numPrisms() < m_pMesh->maxNPrisms());
 
 				// And now the other in that pair:
-				emInt vertsNew2[] = { vertsNew1[1], localVerts[ii + 1][jj + 1][level],
-															vertsNew1[2], vertsNew1[4], localVerts[ii + 1][jj
-																	+ 1][level - 1],
-															vertsNew1[5] };
+				emInt vertsNew2[] = { vertsNew1[1],
+						localVerts[ii + 1][jj + 1][level], vertsNew1[2],
+						vertsNew1[4], localVerts[ii + 1][jj + 1][level - 1],
+						vertsNew1[5] };
 				m_pMesh->addPrism(vertsNew2);
 				assert(m_pMesh->numPrisms() < m_pMesh->maxNPrisms());
-      } // Done with all prism pairs for this row.
-      // Now one more at the end.
-      ii = int(nDivs) - jj - 1;
-			emInt vertsNewLast[] = { localVerts[ii][jj][level],
-																localVerts[ii + 1][jj][level], localVerts[ii][jj
-																		+ 1][level],
-																localVerts[ii][jj][level - 1],
-																localVerts[ii + 1][jj][level - 1],
-																localVerts[ii][jj + 1][level - 1] };
+			} // Done with all prism pairs for this row.
+			  // Now one more at the end.
+			ii = int(nDivs) - jj - 1;
+			emInt vertsNewLast[] = { localVerts[ii][jj][level], localVerts[ii
+					+ 1][jj][level], localVerts[ii][jj + 1][level],
+					localVerts[ii][jj][level - 1], localVerts[ii + 1][jj][level
+							- 1], localVerts[ii][jj + 1][level - 1] };
 			m_pMesh->addPrism(vertsNewLast);
 			assert(m_pMesh->numPrisms() <= m_pMesh->maxNPrisms());
-    } // Done with this row (constant j)
-  }   // Done with this level
+		} // Done with this row (constant j)
+	}   // Done with this level
 //	logMessage(MSG_MANAGER, "  final volume: %G\n", newVol);
 }

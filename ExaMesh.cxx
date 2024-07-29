@@ -44,7 +44,21 @@ using std::endl;
 #include <fstream>
 #include "resultGenerator.cxx"
 
-
+std::unique_ptr<ExaMesh> ExaMesh::readMeshFromFile(
+		const std::string fileName,
+		const std::string fileSuffix,
+		const std::string fileInfix) {
+	std::unique_ptr<ExaMesh> retVal;
+	if (fileSuffix == "cgns") {
+		retVal = std::make_unique<CubicMesh>(fileName);
+	}
+	else {
+		// This calls the UnstructuredMeshAnalyzer FileWrapper,
+		// which can read a lot more than ugrid files.
+		retVal = std::make_unique<UMesh>(fileName, fileSuffix, fileInfix);
+	}
+	return retVal;
+}
 static void triUnitNormal(const double coords0[], const double coords1[],
 		const double coords2[], double normal[]) {
 	double edge01[] = DIFF(coords1, coords0);
@@ -57,8 +71,10 @@ static void quadUnitNormal(const double coords0[], const double coords1[],
 		const double coords2[], const double coords3[], double normal[]) {
 	double vecB[3], vecC[3];
 	for (int ii = 0; ii < 3; ii++) {
-		vecB[ii] = 0.25 * (coords0[ii] + coords3[ii] - coords1[ii] - coords2[ii]);
-		vecC[ii] = 0.25 * (coords0[ii] + coords1[ii] - coords3[ii] - coords2[ii]);
+		vecB[ii] = 0.25
+				* (coords0[ii] + coords3[ii] - coords1[ii] - coords2[ii]);
+		vecC[ii] = 0.25
+				* (coords0[ii] + coords1[ii] - coords3[ii] - coords2[ii]);
 	}
 	CROSS(vecB, vecC, normal);
 	NORMALIZE(normal);
@@ -76,7 +92,7 @@ void ExaMesh::setupLengthScales() {
 
 	// Iterate over tets
 	for (emInt tet = 0; tet < numTets(); tet++) {
-		const emInt* const tetVerts = getTetConn(tet);
+		const emInt *const tetVerts = getTetConn(tet);
 		double normABC[3], normADB[3], normBDC[3], normCDA[3];
 		double coordsA[3], coordsB[3], coordsC[3], coordsD[3];
 		getCoords(tetVerts[0], coordsA);
@@ -115,7 +131,7 @@ void ExaMesh::setupLengthScales() {
 
 	// Iterate over pyramids
 	for (emInt pyr = 0; pyr < numPyramids(); pyr++) {
-		const emInt* const pyrVerts = getPyrConn(pyr);
+		const emInt *const pyrVerts = getPyrConn(pyr);
 		double norm0123[3], norm014[3], norm124[3], norm234[3], norm304[3];
 		double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3];
 		getCoords(pyrVerts[0], coords0);
@@ -159,7 +175,7 @@ void ExaMesh::setupLengthScales() {
 
 	// Iterate over prisms
 	for (emInt prism = 0; prism < numPrisms(); prism++) {
-		const emInt* const prismVerts = getPrismConn(prism);
+		const emInt *const prismVerts = getPrismConn(prism);
 		double norm1034[3], norm2145[3], norm0253[3], norm012[3], norm543[3];
 		double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3],
 				coords5[3];
@@ -197,14 +213,10 @@ void ExaMesh::setupLengthScales() {
 		solids[5] = diheds[7] + diheds[8] + diheds[5] - M_PI;
 
 		double middle[] = { (coords0[0] + coords1[0] + coords2[0] + coords3[0]
-													+ coords4[0] + coords5[0])
-												/ 6,
-												(coords0[1] + coords1[1] + coords2[1] + coords3[1]
-													+ coords4[1] + coords5[1])
-												/ 6,
-												(coords0[2] + coords1[2] + coords2[2] + coords3[2]
-													+ coords4[2] + coords5[2])
-												/ 6 };
+				+ coords4[0] + coords5[0]) / 6, (coords0[1] + coords1[1]
+				+ coords2[1] + coords3[1] + coords4[1] + coords5[1]) / 6,
+				(coords0[2] + coords1[2] + coords2[2] + coords3[2] + coords4[2]
+						+ coords5[2]) / 6 };
 		double volume = tetVolume(coords0, coords1, coords2, middle)
 				+ tetVolume(coords5, coords4, coords3, middle)
 				+ pyrVolume(coords1, coords0, coords3, coords4, middle)
@@ -220,7 +232,7 @@ void ExaMesh::setupLengthScales() {
 
 	// Iterate over hexahedra
 	for (emInt hex = 0; hex < numHexes(); hex++) {
-		const emInt* const hexVerts = getHexConn(hex);
+		const emInt *const hexVerts = getHexConn(hex);
 		double norm1045[3], norm2156[3], norm3267[3], norm0374[3], norm0123[3],
 				norm7654[3];
 		double coords0[3], coords1[3], coords2[3], coords3[3], coords4[3],
@@ -255,7 +267,6 @@ void ExaMesh::setupLengthScales() {
 		diheds[10] = safe_acos(-DOT(norm3267, norm7654));
 		diheds[11] = safe_acos(-DOT(norm0374, norm7654));
 
-
 		// Solid angles are in the order: 0, 1, 2, 3, 4, 5, 6, 7
 		double solids[8];
 		solids[0] = diheds[3] + diheds[0] + diheds[4] - M_PI;
@@ -268,14 +279,11 @@ void ExaMesh::setupLengthScales() {
 		solids[7] = diheds[10] + diheds[11] + diheds[7] - M_PI;
 
 		double middle[] = { (coords0[0] + coords1[0] + coords2[0] + coords3[0]
-													+ coords4[0] + coords5[0] + coords6[0] + coords7[0])
-												/ 8,
-												(coords0[1] + coords1[1] + coords2[1] + coords3[1]
-													+ coords4[1] + coords5[1] + coords6[1] + coords7[1])
-												/ 8,
-												(coords0[2] + coords1[2] + coords2[2] + coords3[2]
-													+ coords4[2] + coords5[2] + coords6[2] + coords7[2])
-												/ 8 };
+				+ coords4[0] + coords5[0] + coords6[0] + coords7[0]) / 8,
+				(coords0[1] + coords1[1] + coords2[1] + coords3[1] + coords4[1]
+						+ coords5[1] + coords6[1] + coords7[1]) / 8, (coords0[2]
+						+ coords1[2] + coords2[2] + coords3[2] + coords4[2]
+						+ coords5[2] + coords6[2] + coords7[2]) / 8 };
 		double volume = pyrVolume(coords1, coords0, coords4, coords5, middle)
 				+ pyrVolume(coords2, coords1, coords5, coords6, middle)
 				+ pyrVolume(coords3, coords2, coords6, coords7, middle)
@@ -311,7 +319,8 @@ MeshSize ExaMesh::computeFineMeshSize(const int nDivs) const {
 	MSIn.nPrisms = numPrisms();
 	MSIn.nHexes = numHexes();
 	bool sizesOK = ::computeMeshSize(MSIn, nDivs, MSOut);
-	if (!sizesOK) exit(2);
+	if (!sizesOK)
+		exit(2);
 
 	return MSOut;
 }
@@ -334,22 +343,20 @@ void ExaMesh::printMeshSizeStats() {
 	cout << numHexes() << " hexes" << endl;
 	cout.width(16);
 	cout << numTets() + numPyramids() + numPrisms() + numHexes()
-				<< " total cells " << endl;
+			<< " total cells " << endl;
 }
 
-void ExaMesh::prettyPrintCellCount(size_t cells, const char* prefix) const {
-	if (cells == 0) return;
+void ExaMesh::prettyPrintCellCount(size_t cells, const char *prefix) const {
+	if (cells == 0)
+		return;
 	printf("%s = ", prefix);
 	if (cells >> 30) {
 		printf("%.2f B\n", cells / 1.e9);
-	}
-	else if (cells >> 20) {
+	} else if (cells >> 20) {
 		printf("%.2f M\n", cells / 1.e6);
-	}
-	else if (cells >> 10) {
+	} else if (cells >> 10) {
 		printf("%.2f K\n", cells / 1.e3);
-	}
-	else {
+	} else {
 		printf("%lu \n", cells);
 	}
 }
@@ -363,7 +370,8 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 	// Calc number of parts.  This funky formula makes it so that, if you need
 	// N*maxCells, you'll get N parts.  With N*maxCells + 1, you'll get N+1.
 	size_t nParts = (outputCells - 1) / maxCellsPerPart + 1;
-	if (nParts > numCells) nParts = numCells;
+	if (nParts > numCells)
+		nParts = numCells;
 
 	// Partition the mesh.
 	std::vector<Part> parts;
@@ -388,9 +396,9 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 //		sprintf(filename, "/tmp/submesh%03d.vtk", ii);
 //		writeVTKFile(filename);
 		printf("Part %zu: cells %5d-%5d.\n", ii, parts[ii].getFirst(),
-						parts[ii].getLast());
+				parts[ii].getLast());
 		std::unique_ptr<UMesh> pUM = createFineUMesh(numDivs, parts[ii], vecCPD,
-																									RS);
+				RS);
 		totalRefineTime += RS.refineTime;
 		totalExtractTime += RS.extractTime;
 		totalCells += RS.cells;
@@ -400,35 +408,31 @@ void ExaMesh::refineForParallel(const emInt numDivs,
 		totalHexes += pUM->numHexes();
 		totalFileSize += pUM->getFileImageSize();
 		totalTime += exaTime() - start;
-		printf("\nCPU time for refinement = %5.2F seconds\n",
-						RS.refineTime);
+		printf("\nCPU time for refinement = %5.2F seconds\n", RS.refineTime);
 		printf("                          %5.2F million cells / minute\n",
-						(RS.cells / 1000000.) / (RS.refineTime / 60));
+				(RS.cells / 1000000.) / (RS.refineTime / 60));
 
 		// char filename[100];
 		// sprintf(filename, "TestCases/Testsubmesh%03d.vtk", ii);
 		// pUM->writeVTKFile(filename);
 	}
 	printf("\nDone parallel refinement with %zu parts.\n", nParts);
-	printf("Time for partitioning:           %10.3F seconds\n",
-					partitionTime);
+	printf("Time for partitioning:           %10.3F seconds\n", partitionTime);
 	printf("Time for coarse mesh extraction: %10.3F seconds\n",
-					totalExtractTime);
+			totalExtractTime);
 	printf("Time for refinement:             %10.3F seconds\n",
-					totalRefineTime);
+			totalRefineTime);
 	printf("Rate (refinement only):  %5.2F million cells / minute\n",
-					(totalCells / 1000000.) / (totalRefineTime / 60));
+			(totalCells / 1000000.) / (totalRefineTime / 60));
 	printf("Rate (overall):          %5.2F million cells / minute\n",
-					(totalCells / 1000000.) / (totalTime / 60));
+			(totalCells / 1000000.) / (totalTime / 60));
 
 	if (totalFileSize >> 37) {
 		printf("Total ugrid file size = %lu GB\n", totalFileSize >> 30);
-	}
-	else if (totalFileSize >> 30) {
+	} else if (totalFileSize >> 30) {
 		printf("Total ugrid file size = %.2f GB\n",
-						(totalFileSize >> 20) / 1024.);
-	}
-	else {
+				(totalFileSize >> 20) / 1024.);
+	} else {
 		printf("Total ugrid file size = %lu MB\n", totalFileSize >> 20);
 	}
 
@@ -1135,8 +1139,9 @@ emInt ExaMesh::FastpartFaceMatching(const emInt nParts,
 }
 ;
 
-void ExaMesh::getFaceLists(const emInt ind, const emInt type, const emInt partID,
-		const emInt numDivs, std::vector<TriFaceVerts> &tris,
+void ExaMesh::getFaceLists(const emInt ind, const emInt type,
+		const emInt partID, const emInt numDivs,
+		std::vector<TriFaceVerts> &tris,
 		std::vector<QuadFaceVerts> &quads) const {
 	const emInt *conn;
 	switch (type) {
@@ -1259,9 +1264,10 @@ void ExaMesh::buildCellToCellConnectivity() {
 			const emInt *triConn = getBdryTriConn(ii);
 			faceVerts = { triConn[0], triConn[1], triConn[2] };
 			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TRI_3)));
-			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(TRI_3),
-					ii);
+			face2cell.emplace(sortedTriVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(TRI_3)));
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(
+					CGNS_ENUMV(TRI_3), ii);
 		}
 		offset += numBdryTris();
 
@@ -1269,9 +1275,10 @@ void ExaMesh::buildCellToCellConnectivity() {
 			const emInt *quadConn = getBdryQuadConn(ii);
 			faceVerts = { quadConn[0], quadConn[1], quadConn[2], quadConn[3] };
 			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii+offset, CGNS_ENUMV(QUAD_4)));
-			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(QUAD_4),
-					ii);
+			face2cell.emplace(sortedQuadVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(QUAD_4)));
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(
+					CGNS_ENUMV(QUAD_4), ii);
 		}
 		offset += numBdryQuads();
 
@@ -1279,22 +1286,26 @@ void ExaMesh::buildCellToCellConnectivity() {
 			const emInt *tetConn = getTetConn(ii);
 			faceVerts = { tetConn[0], tetConn[1], tetConn[2] };
 			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TETRA_4)));
+			face2cell.emplace(sortedTriVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(TETRA_4)));
 
 			faceVerts = { tetConn[0], tetConn[1], tetConn[3] };
 			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TETRA_4)));
+			face2cell.emplace(sortedTriVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(TETRA_4)));
 
 			faceVerts = { tetConn[1], tetConn[2], tetConn[3] };
 			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TETRA_4)));
+			face2cell.emplace(sortedTriVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(TETRA_4)));
 
 			faceVerts = { tetConn[2], tetConn[0], tetConn[3] };
 			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii+offset, CGNS_ENUMV(TETRA_4)));
+			face2cell.emplace(sortedTriVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(TETRA_4)));
 
-			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(TETRA_4),
-					ii);
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(
+					CGNS_ENUMV(TETRA_4), ii);
 		}
 		offset += numTets();
 
@@ -1302,26 +1313,31 @@ void ExaMesh::buildCellToCellConnectivity() {
 			const emInt *pyrConn = getPyrConn(ii);
 			faceVerts = { pyrConn[0], pyrConn[1], pyrConn[4] };
 			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+			face2cell.emplace(sortedTriVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
 
 			faceVerts = { pyrConn[1], pyrConn[2], pyrConn[4] };
 			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+			face2cell.emplace(sortedTriVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
 
 			faceVerts = { pyrConn[2], pyrConn[3], pyrConn[4] };
 			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+			face2cell.emplace(sortedTriVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
 
 			faceVerts = { pyrConn[3], pyrConn[0], pyrConn[4] };
 			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+			face2cell.emplace(sortedTriVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
 
 			faceVerts = { pyrConn[0], pyrConn[1], pyrConn[2], pyrConn[3] };
 			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
+			face2cell.emplace(sortedQuadVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(PYRA_5)));
 
-			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(PYRA_5),
-					ii);
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(
+					CGNS_ENUMV(PYRA_5), ii);
 		}
 		offset += numPyramids();
 
@@ -1329,26 +1345,34 @@ void ExaMesh::buildCellToCellConnectivity() {
 			const emInt *prismConn = getPrismConn(ii);
 			faceVerts = { prismConn[0], prismConn[1], prismConn[2] };
 			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+			face2cell.emplace(sortedTriVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
 
 			faceVerts = { prismConn[3], prismConn[4], prismConn[5] };
 			sortVerts3(faceVerts.data(), sortedTriVerts.data());
-			face2cell.emplace(sortedTriVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+			face2cell.emplace(sortedTriVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
 
-			faceVerts = { prismConn[0], prismConn[1], prismConn[4], prismConn[3] };
+			faceVerts =
+					{ prismConn[0], prismConn[1], prismConn[4], prismConn[3] };
 			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+			face2cell.emplace(sortedQuadVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
 
-			faceVerts = { prismConn[1], prismConn[2], prismConn[5], prismConn[4] };
+			faceVerts =
+					{ prismConn[1], prismConn[2], prismConn[5], prismConn[4] };
 			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+			face2cell.emplace(sortedQuadVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
 
-			faceVerts = { prismConn[2], prismConn[0], prismConn[3], prismConn[5] };
+			faceVerts =
+					{ prismConn[2], prismConn[0], prismConn[3], prismConn[5] };
 			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
+			face2cell.emplace(sortedQuadVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(PENTA_6)));
 
-			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(PENTA_6),
-					ii);
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(
+					CGNS_ENUMV(PENTA_6), ii);
 		}
 		offset += numPrisms();
 
@@ -1356,30 +1380,36 @@ void ExaMesh::buildCellToCellConnectivity() {
 			const emInt *hexConn = getHexConn(ii);
 			faceVerts = { hexConn[0], hexConn[1], hexConn[2], hexConn[3] };
 			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+			face2cell.emplace(sortedQuadVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
 
 			faceVerts = { hexConn[4], hexConn[5], hexConn[6], hexConn[7] };
 			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+			face2cell.emplace(sortedQuadVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
 
 			faceVerts = { hexConn[0], hexConn[1], hexConn[5], hexConn[4] };
 			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+			face2cell.emplace(sortedQuadVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
 
 			faceVerts = { hexConn[1], hexConn[2], hexConn[6], hexConn[5] };
 			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+			face2cell.emplace(sortedQuadVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
 
 			faceVerts = { hexConn[2], hexConn[3], hexConn[7], hexConn[6] };
 			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+			face2cell.emplace(sortedQuadVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
 
 			faceVerts = { hexConn[3], hexConn[0], hexConn[4], hexConn[7] };
 			sortVerts4(faceVerts.data(), sortedQuadVerts.data());
-			face2cell.emplace(sortedQuadVerts, std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
+			face2cell.emplace(sortedQuadVerts,
+					std::make_pair(ii + offset, CGNS_ENUMV(HEXA_8)));
 
-			cellID2cellTypeLocalID[ii + offset] = std::make_pair(CGNS_ENUMV(HEXA_8),
-					ii);
+			cellID2cellTypeLocalID[ii + offset] = std::make_pair(
+					CGNS_ENUMV(HEXA_8), ii);
 		}
 
 		// Debugging diagnostics

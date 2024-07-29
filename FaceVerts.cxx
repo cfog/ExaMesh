@@ -22,7 +22,7 @@ int getTriRotation(const TriFaceVerts &localTri,
 	//TriFaceVerts TF(nDivs,Lvert0,Lvert1,Lvert2);
 
 	auto iterTris = remote.find(TF);
-	assert(iterTris!=remote.end());
+	assert(iterTris != remote.end());
 	emInt vert0 = localTri.getGlobalCorner(0);
 	emInt vert1 = localTri.getGlobalCorner(1);
 	emInt vert2 = localTri.getGlobalCorner(2);
@@ -36,11 +36,11 @@ int getTriRotation(const TriFaceVerts &localTri,
 	for (int cc = 0; cc < 3; cc++) {
 		if (vert0 == iterTris->getGlobalCorner(cc)) {
 			if (vert1 == iterTris->getGlobalCorner((cc + 1) % 3)) {
-				assert(vert2 == iterTris->getGlobalCorner((cc+2)%3));
+				assert(vert2 == iterTris->getGlobalCorner((cc + 2) % 3));
 				rotCase = cc + 1;
 			} else {
-				assert(vert1 == iterTris->getGlobalCorner((cc+2)%3));
-				assert(vert2 == iterTris->getGlobalCorner((cc+1)%3));
+				assert(vert1 == iterTris->getGlobalCorner((cc + 2) % 3));
+				assert(vert2 == iterTris->getGlobalCorner((cc + 1) % 3));
 				rotCase = -(cc + 1);
 			}
 		}
@@ -68,7 +68,7 @@ int getQuadRotation(const QuadFaceVerts &localQuad,
 
 	auto iterQuads = remote.find(QF);
 
-	assert(iterQuads!=remote.end());
+	assert(iterQuads != remote.end());
 
 	emInt vert0 = localQuad.getGlobalCorner(0);
 	emInt vert1 = localQuad.getGlobalCorner(1);
@@ -87,13 +87,13 @@ int getQuadRotation(const QuadFaceVerts &localQuad,
 		if (vert0 == iterQuads->getGlobalCorner(cc)) {
 			if (vert1 == iterQuads->getGlobalCorner((cc + 1) % 4)) {
 				// Oriented forward; bdry quad
-				assert(vert2 == iterQuads->getGlobalCorner((cc+2)%4));
-				assert(vert3 == iterQuads->getGlobalCorner((cc+3)%4));
+				assert(vert2 == iterQuads->getGlobalCorner((cc + 2) % 4));
+				assert(vert3 == iterQuads->getGlobalCorner((cc + 3) % 4));
 				rotCase = cc + 1;
 			} else {
-				assert(vert1 == iterQuads->getGlobalCorner((cc+3)%4));
-				assert(vert2 == iterQuads->getGlobalCorner((cc+2)%4));
-				assert(vert3 == iterQuads->getGlobalCorner((cc+1)%4));
+				assert(vert1 == iterQuads->getGlobalCorner((cc + 3) % 4));
+				assert(vert2 == iterQuads->getGlobalCorner((cc + 2) % 4));
+				assert(vert3 == iterQuads->getGlobalCorner((cc + 1) % 4));
 				rotCase = -(cc + 1);
 			}
 		}
@@ -121,9 +121,9 @@ void matchTri(const TriFaceVerts &localTri, const emInt rotation,
 	//TriFaceVerts TF(nDivs,vert0,vert1,vert2);
 
 	auto itRemote = remoteTriSet.find(TF);
-	assert(itRemote!=remoteTriSet.end());
-	assert(localTri.getPartid()==itRemote->getRemoteId());
-	assert(localTri.getRemoteId()==itRemote->getPartid());
+	assert(itRemote != remoteTriSet.end());
+	assert(localTri.getPartid() == itRemote->getRemoteId());
+	assert(localTri.getRemoteId() == itRemote->getPartid());
 	// for(auto i=0; i<3; i++){
 	// 	assert(localTri.getCorner(i)==
 	// 	itRemote->getRemoteIndices(i));
@@ -174,9 +174,9 @@ void matchQuad(const QuadFaceVerts &localQuad, const emInt rotation,
 	//QuadFaceVerts QF(nDivs,vert0,vert1,vert2,vert3);
 
 	auto itRemote = remoteQuadSet.find(QF);
-	assert(itRemote!=remoteQuadSet.end());
-	assert(localQuad.getPartid()==itRemote->getRemoteId());
-	assert(localQuad.getRemoteId()==itRemote->getPartid());
+	assert(itRemote != remoteQuadSet.end());
+	assert(localQuad.getPartid() == itRemote->getRemoteId());
+	assert(localQuad.getRemoteId() == itRemote->getPartid());
 	// for(auto i=0; i<4; i++){
 	// 	assert(localQuad.getCorner(i)==
 	// 	itRemote->getRemoteIndices(i));
@@ -219,9 +219,9 @@ void findRotationAndMatchTris(const TriFaceVerts &localTri, const emInt nDivs,
 	TF.setCompare(true);
 
 	auto iterTris = remoteTriSet.find(TF);
-	assert(iterTris!=remoteTriSet.end());
+	assert(iterTris != remoteTriSet.end());
 	assert(localTri.getPartid() == iterTris->getRemoteId());
-	assert(localTri.getRemoteId()== iterTris->getPartid());
+	assert(localTri.getRemoteId() == iterTris->getPartid());
 
 	emInt vert0 = localTri.getGlobalCorner(0);
 	emInt vert1 = localTri.getGlobalCorner(1);
@@ -231,11 +231,11 @@ void findRotationAndMatchTris(const TriFaceVerts &localTri, const emInt nDivs,
 	for (int cc = 0; cc < 3; cc++) {
 		if (vert0 == iterTris->getGlobalCorner(cc)) {
 			if (vert1 == iterTris->getGlobalCorner((cc + 1) % 3)) {
-				assert(vert2 == iterTris->getGlobalCorner((cc+2)%3));
+				assert(vert2 == iterTris->getGlobalCorner((cc + 2) % 3));
 				rotCase = cc + 1;
 			} else {
-				assert(vert1 == iterTris->getGlobalCorner((cc+2)%3));
-				assert(vert2 == iterTris->getGlobalCorner((cc+1)%3));
+				assert(vert1 == iterTris->getGlobalCorner((cc + 2) % 3));
+				assert(vert2 == iterTris->getGlobalCorner((cc + 1) % 3));
 				rotCase = -(cc + 1);
 			}
 		}
@@ -272,9 +272,9 @@ void findRotationAndMatchQuads(const QuadFaceVerts &localQuad,
 
 	auto iterQuads = remoteQuadSet.find(QF);
 
-	assert(iterQuads!=remoteQuadSet.end());
+	assert(iterQuads != remoteQuadSet.end());
 	assert(localQuad.getPartid() == iterQuads->getRemoteId());
-	assert(localQuad.getRemoteId()== iterQuads->getPartid());
+	assert(localQuad.getRemoteId() == iterQuads->getPartid());
 
 	emInt vert0 = localQuad.getGlobalCorner(0);
 	emInt vert1 = localQuad.getGlobalCorner(1);
@@ -287,13 +287,13 @@ void findRotationAndMatchQuads(const QuadFaceVerts &localQuad,
 		if (vert0 == iterQuads->getGlobalCorner(cc)) {
 			if (vert1 == iterQuads->getGlobalCorner((cc + 1) % 4)) {
 				// Oriented forward; bdry quad
-				assert(vert2 == iterQuads->getGlobalCorner((cc+2)%4));
-				assert(vert3 == iterQuads->getGlobalCorner((cc+3)%4));
+				assert(vert2 == iterQuads->getGlobalCorner((cc + 2) % 4));
+				assert(vert3 == iterQuads->getGlobalCorner((cc + 3) % 4));
 				rotCase = cc + 1;
 			} else {
-				assert(vert1 == iterQuads->getGlobalCorner((cc+3)%4));
-				assert(vert2 == iterQuads->getGlobalCorner((cc+2)%4));
-				assert(vert3 == iterQuads->getGlobalCorner((cc+1)%4));
+				assert(vert1 == iterQuads->getGlobalCorner((cc + 3) % 4));
+				assert(vert2 == iterQuads->getGlobalCorner((cc + 2) % 4));
+				assert(vert3 == iterQuads->getGlobalCorner((cc + 1) % 4));
 				rotCase = -(cc + 1);
 			}
 		}
@@ -451,23 +451,23 @@ void preMatchingPartBdryQuads(const emInt numDivs, const setQuad &partBdryQuads,
 void TestPartFaceMatching(const std::size_t nPart, const vecHashTri &HashTri,
 		const vecHashQuad &HashQuad, const vecVecTri &vecTris,
 		const vecVecQuad &vecquads) {
-	assert(HashTri.size()==nPart);
-	assert(vecTris.size()==nPart);
-	assert(HashQuad.size()==nPart);
-	assert(vecquads.size()==nPart);
+	assert(HashTri.size() == nPart);
+	assert(vecTris.size() == nPart);
+	assert(HashQuad.size() == nPart);
+	assert(vecquads.size() == nPart);
 	for (std::size_t i = 0; i < nPart; i++) {
-		assert(vecTris[i].size()==HashTri[i].size());
-		assert(vecquads[i].size()==HashQuad[i].size());
+		assert(vecTris[i].size() == HashTri[i].size());
+		assert(vecquads[i].size() == HashQuad[i].size());
 		for (auto itri : HashTri[i]) {
 			auto find = std::find(vecTris[i].begin(), vecTris[i].end(), itri);
-			assert(find!=vecTris[i].end());
+			assert(find != vecTris[i].end());
 
 		}
 		for (auto iquad : HashQuad[i]) {
 			auto find = std::find(vecquads[i].begin(), vecquads[i].end(),
 					iquad);
 			if (find == vecquads[i].end()) {
-				assert(find!=vecquads[i].end());
+				assert(find != vecquads[i].end());
 			}
 		}
 

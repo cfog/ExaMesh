@@ -126,18 +126,16 @@ void HexDivider::createNewCells() {
 		// Create new hexes.  Always (nDivs-1)^2 for each level.
 		for (emInt jj = 0; jj <= nDivs - 1; jj++) {
 			for (emInt ii = 0; ii <= nDivs - 1; ii++) {
-				emInt vertsNew[] = { localVerts[ii][jj][level],
-															localVerts[ii + 1][jj][level],
-															localVerts[ii + 1][jj + 1][level],
-															localVerts[ii][jj + 1][level],
-															localVerts[ii][jj][level - 1],
-															localVerts[ii + 1][jj][level - 1], localVerts[ii
-																	+ 1][jj + 1][level - 1],
-															localVerts[ii][jj + 1][level - 1] };
+				emInt vertsNew[] = { localVerts[ii][jj][level], localVerts[ii
+						+ 1][jj][level], localVerts[ii + 1][jj + 1][level],
+						localVerts[ii][jj + 1][level], localVerts[ii][jj][level
+								- 1], localVerts[ii + 1][jj][level - 1],
+						localVerts[ii + 1][jj + 1][level - 1], localVerts[ii][jj
+								+ 1][level - 1] };
 
 				m_pMesh->addHex(vertsNew);
 				assert(m_pMesh->numHexes() <= m_pMesh->maxNHexes());
-      }
-    } // Done with this row (constant j)
-  }   // Done with this level
+			}
+		} // Done with this row (constant j)
+	}   // Done with this level
 }

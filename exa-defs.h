@@ -39,8 +39,6 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/mpi.hpp> 
 
-
-
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -110,9 +108,12 @@ typedef uint32_t emInt;
 #define NORMALIZE(a) {double tmp = 1./sqrt(DOT(a,a)); a[0]*=tmp; a[1]*=tmp; a[2]*=tmp;}
 
 inline double safe_acos(const double arg) {
-	if (arg < -1) return M_PI;
-	else if (arg > 1) return 0;
-	else return acos(arg);
+	if (arg < -1)
+		return M_PI;
+	else if (arg > 1)
+		return 0;
+	else
+		return acos(arg);
 }
 
 inline double exaTime() {
@@ -131,8 +132,7 @@ public:
 		if (vA < vB) {
 			v0 = vA;
 			v1 = vB;
-		}
-		else {
+		} else {
 			v0 = vB;
 			v1 = vA;
 		}
@@ -158,125 +158,113 @@ struct EdgeVerts {
 	double m_totalDihed;
 };
 
-
 struct RefineStats {
 	double refineTime, extractTime;
 	emInt cells;
 	size_t fileSize;
 };
-template <typename T>
-inline void SetToVector(const std::unordered_set<T>& sourceSet, 
-std::vector<T>& destinationVector) {
-    destinationVector.clear();
+template<typename T>
+inline void SetToVector(const std::unordered_set<T> &sourceSet,
+		std::vector<T> &destinationVector) {
+	destinationVector.clear();
 	// Change to the assignment 
-   	for (const auto& element : sourceSet) {
-        destinationVector.push_back(element);
-    }
+	for (const auto &element : sourceSet) {
+		destinationVector.push_back(element);
+	}
 }
 
-template <typename T>
-inline void vectorToSet(const std::vector<T>& sourceVector, 
-std::unordered_set<T>& destinationSet) {
-    destinationSet.clear();
-  
-    for (const auto& element : sourceVector) {
-        destinationSet.insert(element);
-    }
-	assert(destinationSet.size()==sourceVector.size()); 
+template<typename T>
+inline void vectorToSet(const std::vector<T> &sourceVector,
+		std::unordered_set<T> &destinationSet) {
+	destinationSet.clear();
+
+	for (const auto &element : sourceVector) {
+		destinationSet.insert(element);
+	}
+	assert(destinationSet.size() == sourceVector.size());
 }
-struct hashFunctionCell2Cell 
-{
-    std::size_t operator()(const std::pair<emInt, emInt>& p) const 
-	{
-        // Combine the hash values of the pair's components
-        std::size_t hashValue = std::hash<emInt>()(p.first);
-        hashValue ^= std::hash<emInt>()(p.second) + 0x9e3779b9 + (hashValue << 6) + (hashValue >> 2);
-        return hashValue;
-    }
+struct hashFunctionCell2Cell {
+	std::size_t operator()(const std::pair<emInt, emInt> &p) const {
+		// Combine the hash values of the pair's components
+		std::size_t hashValue = std::hash<emInt>()(p.first);
+		hashValue ^= std::hash<emInt>()(p.second) + 0x9e3779b9
+				+ (hashValue << 6) + (hashValue >> 2);
+		return hashValue;
+	}
 };
 
-
-
-struct hashFunctionFace2Cell 
-{
-    std::size_t operator()(const std::vector<emInt>& s) const {
-        // Implement a custom hash function for std::set<int>
-        // You might want to combine the hash values of individual elements in the set
-        // to create a hash value for the entire set.
-        // Example:
-        std::size_t hash_value = 0;
-        for (int element : s) {
-            hash_value ^= std::hash<emInt>()(element) + 0x9e3779b9 + (hash_value << 6) + (hash_value >> 2);
-        }
-        return hash_value;
-    }
+struct hashFunctionFace2Cell {
+	std::size_t operator()(const std::vector<emInt> &s) const {
+		// Implement a custom hash function for std::set<int>
+		// You might want to combine the hash values of individual elements in the set
+		// to create a hash value for the entire set.
+		// Example:
+		std::size_t hash_value = 0;
+		for (int element : s) {
+			hash_value ^= std::hash<emInt>()(element) + 0x9e3779b9
+					+ (hash_value << 6) + (hash_value >> 2);
+		}
+		return hash_value;
+	}
 };
-
 
 struct pairHash {
-    template <class T1, class T2>
-    std::size_t operator () (std::pair<T1,T2> const& pair) const {
-        auto first = std::min(pair.first, pair.second);
-        auto second = std::max(pair.first, pair.second);
+	template<class T1, class T2>
+	std::size_t operator ()(std::pair<T1, T2> const &pair) const {
+		auto first = std::min(pair.first, pair.second);
+		auto second = std::max(pair.first, pair.second);
 
-        std::size_t h1 = std::hash<T1>{}(first);
-        std::size_t h2 = std::hash<T2>{}(second);
+		std::size_t h1 = std::hash<T1> { }(first);
+		std::size_t h2 = std::hash<T2> { }(second);
 
-        // Mainly for demonstration purposes, i.e. works but is overly simple
-        // In the real world, use sth. like boost.hash_combine
-        return h1 ^ h2;  
-    }
+		// Mainly for demonstration purposes, i.e. works but is overly simple
+		// In the real world, use sth. like boost.hash_combine
+		return h1 ^ h2;
+	}
 };
 
-using vecSizes                   = std::vector<std::size_t>;
-using multimpFace2Cell			 = std::unordered_multimap < std::vector<emInt>, std::pair<emInt,emInt>, hashFunctionFace2Cell>;
-using TableCell2Cell			 = std::unordered_map < std::pair<emInt,emInt>, std::set<emInt>, hashFunctionCell2Cell>;
-using VecVecReqs                 = std::vector<std::vector<boost::mpi::request>>; 
-using vecPairInt2Int			 = std::vector<std::pair<int, int>>;
-using Request                    = boost::mpi::request;
-using vecReqs                    = std::vector<Request>;
-using vecVecReqs                 = std::vector<vecReqs>;
-		
-struct timeResults
-{
-	
+using vecSizes = std::vector<std::size_t>;
+using multimpFace2Cell = std::unordered_multimap < std::vector<emInt>, std::pair<emInt,emInt>, hashFunctionFace2Cell>;
+using TableCell2Cell = std::unordered_map < std::pair<emInt,emInt>, std::set<emInt>, hashFunctionCell2Cell>;
+using VecVecReqs = std::vector<std::vector<boost::mpi::request>>;
+using vecPairInt2Int = std::vector<std::pair<int, int>>;
+using Request = boost::mpi::request;
+using vecReqs = std::vector<Request>;
+using vecVecReqs = std::vector<vecReqs>;
+
+struct timeResults {
+
 	double preProcessing;
 	double partition;
-	double InitialFaceMatching; 
-	double broadcasting; 
-	double serial; 
-	double extract; 
+	double InitialFaceMatching;
+	double broadcasting;
+	double serial;
+	double extract;
 	double refine;
-	double faceExchange; 
+	double faceExchange;
 	double matchtris;
-	double matchquads; 
-	double totalMatch; 
-	double waitTri; 
+	double matchquads;
+	double totalMatch;
+	double waitTri;
 	double waitQuad;
-	double totalFacesWait; 
-	double total; 
+	double totalFacesWait;
+	double total;
 
 };
 
-inline 
-FILE*
-openFile (std::string fileName)
-{
+inline FILE*
+openFile(std::string fileName) {
 	FILE *file = fopen(fileName.c_str(), "a");
-    if (file == NULL) 
-	{
-        fprintf(stderr, "Error opening the file!\n");
-    }
-    return file; 
+	if (file == NULL) {
+		fprintf(stderr, "Error opening the file!\n");
+	}
+	return file;
 }
-inline 
-long 
-getSeekFile (FILE *file)
-{
+inline
+long getSeekFile(FILE *file) {
 	fseek(file, 0, SEEK_END);
 	long size = ftell(file);
-	return size; 
+	return size;
 }
-
 
 #endif /* SRC_EXA_DEFS_H_ */

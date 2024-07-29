@@ -34,34 +34,34 @@ void BdryTriDivider::createNewCells() {
 	for (int jj = 0; jj <= int(nDivs) - 1; jj++) {
 		int ii = 0;
 		for (ii = 0; ii <= int(nDivs) - jj - 2; ii++) {
-			emInt vertsNew1[] = { localVerts[ii][jj][0], localVerts[ii + 1][jj][0],
-														localVerts[ii][jj + 1][0] };
+			emInt vertsNew1[] = { localVerts[ii][jj][0],
+					localVerts[ii + 1][jj][0], localVerts[ii][jj + 1][0] };
 			m_pMesh->addBdryTri(vertsNew1);
 			assert(m_pMesh->numBdryTris() <= m_pMesh->maxNBdryTris());
 
 			// And now the other in that pair:
 			emInt vertsNew2[] = { vertsNew1[1], localVerts[ii + 1][jj + 1][0],
-														vertsNew1[2] };
+					vertsNew1[2] };
 			m_pMesh->addBdryTri(vertsNew2);
 			assert(m_pMesh->numBdryTris() < m_pMesh->maxNBdryTris());
 		} // Done with all prism pairs for this row.
-		// Now one more at the end.
+		  // Now one more at the end.
 		ii = int(nDivs) - jj - 1;
-		emInt vertsNewLast[] = { localVerts[ii][jj][0], localVerts[ii + 1][jj][0],
-															localVerts[ii][jj + 1][0] };
+		emInt vertsNewLast[] = { localVerts[ii][jj][0],
+				localVerts[ii + 1][jj][0], localVerts[ii][jj + 1][0] };
 
 		m_pMesh->addBdryTri(vertsNewLast);
 		assert(m_pMesh->numBdryTris() <= m_pMesh->maxNBdryTris());
 	} // Done with this row (constant j)
 }
 
-void BdryTriDivider::setRefinedVerts(TriFaceVerts &TF){
-	for (emInt ii = 0; ii <= nDivs ; ii++) {
-	 	for (emInt jj = 0; jj <= nDivs-ii ; jj++) {
+void BdryTriDivider::setRefinedVerts(TriFaceVerts &TF) {
+	for (emInt ii = 0; ii <= nDivs; ii++) {
+		for (emInt jj = 0; jj <= nDivs - ii; jj++) {
 			//int trueI;
 			//int trueJ;
-			emInt vert= localVerts[ii][jj][0]; 
-			TF.setIntVertInd(ii,jj,vert); 
+			emInt vert = localVerts[ii][jj][0];
+			TF.setIntVertInd(ii, jj, vert);
 		}
-	}	
+	}
 }

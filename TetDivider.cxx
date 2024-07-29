@@ -100,8 +100,8 @@ void TetDivider::createNewCells() {
 //		}
 //	}
 
-	// Level 1 is the tip of the original tet; level nDivs
-	// is at the bottom (level with most entities).
+// Level 1 is the tip of the original tet; level nDivs
+// is at the bottom (level with most entities).
 	for (int level = 1; level <= int(nDivs); level++) {
 //		fprintf(stderr, "Level: %d\n", level);
 		// Create up-pointing tets.  For a given level, there are
@@ -164,8 +164,8 @@ void TetDivider::createNewCells() {
 				emInt vertE = localVerts[ii][jj][kk + 1];
 				emInt vertF = localVerts[ii - 1][jj + 1][kk + 1];
 
-				double coordsA[3], coordsB[3], coordsC[3], coordsD[3], coordsE[3],
-						coordsF[3];
+				double coordsA[3], coordsB[3], coordsC[3], coordsD[3],
+						coordsE[3], coordsF[3];
 				m_pMesh->getCoords(vertA, coordsA);
 				m_pMesh->getCoords(vertB, coordsB);
 				m_pMesh->getCoords(vertC, coordsC);
@@ -179,36 +179,29 @@ void TetDivider::createNewCells() {
 				double distsqCE = dDISTSQ3D(coordsC, coordsE);
 				if (distsqAF <= distsqBD && distsqAF <= distsqCE) {
 					useDiagAF = true;
-				}
-				else if (distsqBD <= distsqCE) {
+				} else if (distsqBD <= distsqCE) {
 					useDiagBD = true;
-				}
-				else {
+				} else {
 					useDiagCE = true;
 				}
 
 				if (useDiagAF) {
 					assert(!useDiagBD && !useDiagCE);
-					emInt vertsNew[][4] = { { vertB, vertC, vertA, vertF },
-							{ vertC, vertD, vertA, vertF },
-							{ vertD, vertE, vertA, vertF },
-							{ vertE, vertB, vertA, vertF } };
+					emInt vertsNew[][4] = { { vertB, vertC, vertA, vertF }, {
+							vertC, vertD, vertA, vertF }, { vertD, vertE, vertA,
+							vertF }, { vertE, vertB, vertA, vertF } };
 					stuffTetsIntoOctahedron(vertsNew);
-				}
-				else if (useDiagBD) {
+				} else if (useDiagBD) {
 					assert(!useDiagAF && !useDiagCE);
-					emInt vertsNew[][4] = { { vertC, vertA, vertB, vertD },
-							{ vertA, vertE, vertB, vertD },
-							{ vertE, vertF, vertB, vertD },
-							{ vertF, vertC, vertB, vertD } };
+					emInt vertsNew[][4] = { { vertC, vertA, vertB, vertD }, {
+							vertA, vertE, vertB, vertD }, { vertE, vertF, vertB,
+							vertD }, { vertF, vertC, vertB, vertD } };
 					stuffTetsIntoOctahedron(vertsNew);
-				}
-				else {
+				} else {
 					assert(!useDiagAF && !useDiagBD);
-					emInt vertsNew[][4] = { { vertA, vertB, vertC, vertE },
-							{ vertB, vertF, vertC, vertE },
-							{ vertF, vertD, vertC, vertE },
-							{ vertD, vertA, vertC, vertE } };
+					emInt vertsNew[][4] = { { vertA, vertB, vertC, vertE }, {
+							vertB, vertF, vertC, vertE }, { vertF, vertD, vertC,
+							vertE }, { vertD, vertA, vertC, vertE } };
 					stuffTetsIntoOctahedron(vertsNew);
 				}
 			}
