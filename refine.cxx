@@ -39,25 +39,17 @@ int main(int argc, char *const argv[]) {
 	emInt nDivs = 1;
 	int nTestParts = 2;
 	emInt maxCellsPerPart = 1000000;
-	char type[10];
-	char infix[10];
-	char inFileBaseName[1024];
-	char cgnsFileName[1024];
-	char outFileName[1024];
+	std::string baseFileName("/need/a/file/name");
+	std::string fileInfix("b8");
+	std::string fileSuffix("unknown");
+	std::string outFileName("/dev/null");
 	bool isInputCGNS = false, isParallel = false, isMPI = false;
-	char InputMeshType;
 	bool meshScanning = false;
 
 	double satrtScanningTime;
 	double scanningTime;
 
 	double wallTime;
-
-	sprintf(type, "vtk");
-	sprintf(infix, "b8");
-	sprintf(outFileName, "/dev/null");
-	sprintf(inFileBaseName, "/need/a/file/name");
-	sprintf(cgnsFileName, "/need/a/file/name");
 
 	while ((opt = getopt(argc, argv, "g:s:c:i:m:n:o:pt:u:q")) != EOF) {
 		switch (opt) {
@@ -68,11 +60,12 @@ int main(int argc, char *const argv[]) {
 			sscanf(optarg, "%d", &nTestParts);
 			break;
 		case 'c':
-			sscanf(optarg, "%1023s", cgnsFileName);
+			baseFileName = optarg;
 			isInputCGNS = true;
+			fileSuffix = "cgns";
 			break;
 		case 'i':
-			sscanf(optarg, "%1023s", inFileBaseName);
+			baseFileName = optarg;
 			break;
 		case 'n':
 			sscanf(optarg, "%d", &nDivs);
@@ -81,16 +74,17 @@ int main(int argc, char *const argv[]) {
 			sscanf(optarg, "%d", &maxCellsPerPart);
 			break;
 		case 'o':
-			sscanf(optarg, "%1023s", outFileName);
+			outFileName = optarg;
 			break;
 		case 'p':
 			isParallel = true;
+			isMPI = false;
 			break;
 		case 't':
-			sscanf(optarg, "%9s", type);
+			fileSuffix = optarg;
 			break;
 		case 'u':
-			sscanf(optarg, "%9s", infix);
+			fileInfix = optarg;
 			break;
 		case 'q':
 			isParallel = true;
@@ -99,20 +93,15 @@ int main(int argc, char *const argv[]) {
 		}
 	}
 
-	size_t lastSlashPos = std::string(inFileBaseName).find_last_of('/');
-	std::string mshName = std::string(inFileBaseName).substr(lastSlashPos + 1);
+	size_t lastSlashPos = baseFileName.find_last_of('/');
+	std::string mshName = baseFileName.substr(lastSlashPos + 1);
 
-	if (isInputCGNS) {
-		InputMeshType = 'C';
-	} else {
-		InputMeshType = 'U';
-	}
 	if (isMPI) {
-		refineForMPI(inFileBaseName, type, infix, nDivs, mshName);
+		refineForMPI(baseFileName, fileSuffix, fileInfix, nDivs, mshName);
 	} else {
 		if (isInputCGNS) {
 #if (HAVE_CGNS == 1)
-			CubicMesh CMorig(cgnsFileName);
+			CubicMesh CMorig(baseFileName);
 			if (isParallel) {
 				CMorig.refineForParallel(nDivs, maxCellsPerPart);
 			} else {
@@ -136,7 +125,7 @@ int main(int argc, char *const argv[]) {
 		exit(1);
 #endif
 		} else {
-			UMesh UMorig(inFileBaseName, type, infix);
+			UMesh UMorig(baseFileName, fileSuffix, fileInfix);
 
 			if (isParallel) {
 				UMorig.refineForParallel(nDivs, maxCellsPerPart);
