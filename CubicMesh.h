@@ -212,8 +212,15 @@ public:
 
 	std::unique_ptr<ExaMesh>
 	extractCoarseMeshMPI(const emInt partID, const std::vector<emInt> &partcells , const int numDivs,
-	const std::unordered_set<TriFaceVerts> tris= std::unordered_set<TriFaceVerts>(),
-	const std::unordered_set<QuadFaceVerts> quads= std::unordered_set<QuadFaceVerts>()) const;
+	const std::unordered_set<TriFaceVerts>& tris,
+	const std::unordered_set<QuadFaceVerts>& quads) const;
+
+	emInt getTriType() const {return CGNS_ENUMV(TRI_10);}
+	emInt getQuadType() const {return CGNS_ENUMV(QUAD_16);}
+	emInt getTetType() const {return CGNS_ENUMV(TETRA_20);}
+	emInt getPyrType() const {return CGNS_ENUMV(PYRA_30);}
+	emInt getPrismType() const {return CGNS_ENUMV(PENTA_40);}
+	emInt getHexType() const {return CGNS_ENUMV(HEXA_64);}
 
 	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
 			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;

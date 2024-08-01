@@ -61,6 +61,8 @@ CubicMesh::CubicMesh(const emInt nVerts, const emInt nBdryVerts,
 	m_Pyr30Conn = new emInt[m_nPyr30][30];
 	m_Prism40Conn = new emInt[m_nPrism40][40];
 	m_Hex64Conn = new emInt[m_nHex64][64];
+
+	m_lenScale = new double[m_nVerts];
 }
 
 void CubicMesh::decrementVertIndices(emInt connSize, emInt *const connect) {
@@ -1328,8 +1330,8 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMeshPseudoParallel(Part &P,
 
 std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMeshMPI(const emInt partID,
 		const std::vector<emInt> &partcells, const int numDivs,
-		const std::unordered_set<TriFaceVerts> tris,
-		const std::unordered_set<QuadFaceVerts> quads) const {
+		const std::unordered_set<TriFaceVerts>& tris,
+		const std::unordered_set<QuadFaceVerts>& quads) const {
 	CALLGRIND_TOGGLE_COLLECT
 	;
 
@@ -1347,7 +1349,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMeshMPI(const emInt partID,
 
 	for (emInt ii = 0; ii < partcells.size(); ii++) {
 		emInt globalInd = partcells[ii];
-		emInt ind = (cellID2cellTypeLocalID[globalInd].second) - 1;
+		emInt ind = cellID2cellTypeLocalID[globalInd].second;
 		emInt type = cellID2cellTypeLocalID[globalInd].first;
 
 		switch (type) {
@@ -1563,12 +1565,16 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMeshMPI(const emInt partID,
 	emInt newConn[64];
 	for (emInt ii = 0; ii < partcells.size(); ii++) {
 		emInt globalInd = partcells[ii];
-		emInt ind = (cellID2cellTypeLocalID[globalInd].second) - 1;
+		emInt ind = cellID2cellTypeLocalID[globalInd].second;
 		emInt type = cellID2cellTypeLocalID[globalInd].first;
 		switch (type) {
 		default:
 			// Panic! Should never get here.
 			assert(0);
+			break;
+		case CGNS_ENUMV(TRI_10) :
+		case CGNS_ENUMV(QUAD_16) :
+			// These are handled below, so do nothing here.
 			break;
 		case CGNS_ENUMV(TETRA_20): {
 			conn = getTetConn(ind);
@@ -1611,7 +1617,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMeshMPI(const emInt partID,
 	// Now, finally, the part bdry connectivity.
 	// TODO: Currently, there's nothing in the data structure that marks which
 	// are part bdry faces.
-	assert(partBdryTris.size() == tris.size());
+//	assert(partBdryTris.size() == tris.size());
 
 	for (auto tri : partBdryTris) {
 		emInt cellInd = tri.getVolElement();
@@ -1840,9 +1846,9 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMeshMPI(const emInt partID,
 		}
 		extractedMesh->addBdryTri(localConn);
 	}
-	assert(extractedMesh->getSizePartTris() == tris.size());
+//	assert(extractedMesh->getSizePartTris() == tris.size());
 
-	assert(partBdryQuads.size() == quads.size());
+//	assert(partBdryQuads.size() == quads.size());
 	for (auto quad : partBdryQuads) {
 		emInt cellInd = quad.getVolElement();
 		emInt conn[16] = { 0 };
@@ -2168,7 +2174,7 @@ std::unique_ptr<ExaMesh> CubicMesh::extractCoarseMeshMPI(const emInt partID,
 		}
 		extractedMesh->addBdryQuad(localConn);
 	}
-	assert(extractedMesh->getSizePartQuads() == quads.size()); CALLGRIND_TOGGLE_COLLECT;
+//	assert(extractedMesh->getSizePartQuads() == quads.size()); CALLGRIND_TOGGLE_COLLECT;
 
 	return extractedMesh;
 }

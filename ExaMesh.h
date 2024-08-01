@@ -186,6 +186,12 @@ public:
 	{
 		cellID2cellTypeLocalID=cellIDs;
 	}
+	virtual emInt getTriType() const = 0;
+	virtual emInt getQuadType() const = 0;
+	virtual emInt getTetType() const = 0;
+	virtual emInt getPyrType() const = 0;
+	virtual emInt getPrismType() const = 0;
+	virtual emInt getHexType() const = 0;
 
 	virtual void refineForParallel(const emInt numDivs,
 			const emInt maxCellsPerPart) const;
@@ -203,8 +209,8 @@ public:
 
 	virtual std::unique_ptr<ExaMesh>
 	extractCoarseMeshMPI(const emInt partID, const std::vector<emInt> &partcells , const int numDivs,
-			const std::unordered_set<TriFaceVerts> tris= std::unordered_set<TriFaceVerts>(),
-			const std::unordered_set<QuadFaceVerts> quads= std::unordered_set<QuadFaceVerts>()) const = 0;
+			const std::unordered_set<TriFaceVerts>& tris,
+			const std::unordered_set<QuadFaceVerts>& quads) const = 0;
 
 	void TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester, 
 	const char MeshType); 

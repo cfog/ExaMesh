@@ -195,127 +195,131 @@ public:
 	}
 
 	const double (* getAllCoords() const )[3]
-			{
-				return m_coords;
-			}
-			const emInt (* getAllTetConn() const )[4]
-					{
-						return m_TetConn;
-					}
-					const emInt (* getAllTriConn() const ) [3]
-							{
-								return m_TriConn;
-							}
-							const emInt (* getAllQuadConn() const ) [4]
-									{
-										return m_QuadConn;
-									}
-									const emInt (* getAllPyrConn() const ) [5]
+										   {
+		return m_coords;
+										   }
+	const emInt (* getAllTetConn() const )[4]
+										   {
+		return m_TetConn;
+										   }
+	const emInt (* getAllTriConn() const ) [3]
 											{
-												return m_PyrConn;
+		return m_TriConn;
 											}
-											const emInt (* getAllPrismConn() const ) [6]
-													{
-														return m_PrismConn;
-													}
-													const emInt (* getAllHexConn() const ) [8]
-															{
-																return m_HexConn;
-															}
-															const emInt* getHeader() const {
-																return m_header;
-															}
-															Mapping::MappingType getDefaultMappingType() const {
-																return Mapping::Uniform;
-															}
+	const emInt (* getAllQuadConn() const ) [4]
+											 {
+		return m_QuadConn;
+											 }
+	const emInt (* getAllPyrConn() const ) [5]
+											{
+		return m_PyrConn;
+											}
+	const emInt (* getAllPrismConn() const ) [6]
+											  {
+		return m_PrismConn;
+											  }
+	const emInt (* getAllHexConn() const ) [8]
+											{
+		return m_HexConn;
+											}
+	const emInt* getHeader() const {
+		return m_header;
+	}
+	Mapping::MappingType getDefaultMappingType() const {
+		return Mapping::Uniform;
+	}
 
-															virtual std::unique_ptr<
-																	UMesh> createFineUMesh(
-																	const emInt numDivs,
-																	Part &P,
-																	std::vector<
-																			CellPartData> &vecCPD,
-																	struct RefineStats &RS) const;
+	virtual std::unique_ptr<
+	UMesh> createFineUMesh(
+			const emInt numDivs,
+			Part &P,
+			std::vector<
+			CellPartData> &vecCPD,
+			struct RefineStats &RS) const;
 
-															virtual std::unique_ptr<
-																	ExaMesh> extractCoarseMeshPseudoParallel(
-																	Part &P,
-																	std::vector<
-																			CellPartData> &vecCPD,
-																	const int numDivs,
-																	const std::unordered_set<
-																			TriFaceVerts> &tris =
-																			std::unordered_set<
-																					TriFaceVerts>(),
-																	const std::unordered_set<
-																			QuadFaceVerts> &quads =
-																			std::unordered_set<
-																					QuadFaceVerts>(),
-																	const emInt partID =
-																			-1) const;
+	virtual std::unique_ptr<
+	ExaMesh> extractCoarseMeshPseudoParallel(
+			Part &P,
+			std::vector<
+			CellPartData> &vecCPD,
+			const int numDivs,
+			const std::unordered_set<
+			TriFaceVerts> &tris =
+					std::unordered_set<
+					TriFaceVerts>(),
+					const std::unordered_set<
+					QuadFaceVerts> &quads =
+							std::unordered_set<
+							QuadFaceVerts>(),
+							const emInt partID =
+									-1) const;
 
-															std::unique_ptr<
-																	ExaMesh>
-															extractCoarseMeshMPI(
-																	const emInt partID,
-																	const std::vector<
-																			emInt> &partcells,
-																	const int numDivs,
-																	const std::unordered_set<
-																			TriFaceVerts> tris =
-																			std::unordered_set<
-																					TriFaceVerts>(),
-																	const std::unordered_set<
-																			QuadFaceVerts> quads =
-																			std::unordered_set<
-																					QuadFaceVerts>()) const;
+	std::unique_ptr<
+	ExaMesh>
+	extractCoarseMeshMPI(
+			const emInt partID,
+			const std::vector<
+			emInt> &partcells,
+			const int numDivs,
+			const std::unordered_set<
+			TriFaceVerts>& tris,
+					const std::unordered_set<
+					QuadFaceVerts>& quads) const;
 
-															void setupCellDataForPartitioning(
-																	std::vector<
-																			CellPartData> &vecCPD,
-																	double &xmin,
-																	double &ymin,
-																	double &zmin,
-																	double &xmax,
-																	double &ymax,
-																	double &zmax) const;
+	emInt getTriType() const {return CGNS_ENUMV(TRI_3);}
+	emInt getQuadType() const {return CGNS_ENUMV(QUAD_4);}
+	emInt getTetType() const {return CGNS_ENUMV(TETRA_4);}
+	emInt getPyrType() const {return CGNS_ENUMV(PYRA_5);}
+	emInt getPrismType() const {return CGNS_ENUMV(PENTA_6);}
+	emInt getHexType() const {return CGNS_ENUMV(HEXA_8);}
 
-															bool writeVTKFile(
-																	const char fileName[]);
-															bool writeUGridFile(
-																	const char fileName[]);
 
-															size_t getFileImageSize() const {
-																return m_fileImageSize;
-															}
+	void setupCellDataForPartitioning(
+			std::vector<
+			CellPartData> &vecCPD,
+			double &xmin,
+			double &ymin,
+			double &zmin,
+			double &xmax,
+			double &ymax,
+			double &zmax) const;
 
-															void incrementVertIndices(
-																	emInt *conn,
-																	emInt size,
-																	int inc);
-															void calcMemoryRequirements(
-																	const UMesh &UMIn,
-																	const int nDivs);
-//
-//	void
-//	partFaceMatching(const std::vector<std::vector<emInt>> &part2cells,
-//		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-//		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize) const;
+	bool writeVTKFile(
+			const char fileName[]);
+	bool writeUGridFile(
+			const char fileName[]);
 
-// Writing with compression reduces file size by a little over a factor of two,
-// at the expense of making file write slower by two orders of magnitude.
-// So don't do it.
-// bool writeCompressedUGridFile(const char fileName[]);
-														private:
-															void init(
-																	const emInt nVerts,
-																	const emInt nBdryVerts,
-																	const emInt nBdryTris,
-																	const emInt nBdryQuads,
-																	const emInt nTets,
-																	const emInt nPyramids,
-																	const emInt nPrisms,
-																	const emInt nHexes);
-														};
+	size_t getFileImageSize() const {
+		return m_fileImageSize;
+	}
+
+	void incrementVertIndices(
+			emInt *conn,
+			emInt size,
+			int inc);
+	void calcMemoryRequirements(
+			const UMesh &UMIn,
+			const int nDivs);
+	//
+	//	void
+	//	partFaceMatching(const std::vector<std::vector<emInt>> &part2cells,
+			//		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
+			//		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize) const;
+
+	// Writing with compression reduces file size by a little over a factor of two,
+	// at the expense of making file write slower by two orders of magnitude.
+	// So don't do it.
+	// bool writeCompressedUGridFile(const char fileName[]);
+private:
+	void init(
+			const emInt nVerts,
+			const emInt nBdryVerts,
+			const emInt nBdryTris,
+			const emInt nBdryQuads,
+			const emInt nTets,
+			const emInt nPyramids,
+			const emInt nPrisms,
+			const emInt nHexes);
+};
 
 #endif /* SRC_UMESH_H_ */

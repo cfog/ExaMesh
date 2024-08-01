@@ -1287,8 +1287,8 @@ void UMesh::calcMemoryRequirements(const UMesh &UMIn, const int nDivs) {
 
 std::unique_ptr<ExaMesh> UMesh::extractCoarseMeshMPI(const emInt partID,
 		const std::vector<emInt> &partcells, const int numDivs,
-		const std::unordered_set<TriFaceVerts> tris,
-		const std::unordered_set<QuadFaceVerts> quads) const {
+		const std::unordered_set<TriFaceVerts>& tris,
+		const std::unordered_set<QuadFaceVerts>& quads) const {
 	// Count the number of tris, quads, tets, pyrs, prisms and hexes.
 	// const emInt first = P.getFirst();
 	// const emInt last = P.getLast();

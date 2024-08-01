@@ -264,6 +264,8 @@ void refineForMPI(const std::string  baseFileName,
 	times.serial = exaTime();
 	times.total = exaTime();
 	emInt nParts = world.size();
+
+
 	emInt sizeCellparts;
 	size_t nCoarseTris;
 	size_t nCoarseQuads;
