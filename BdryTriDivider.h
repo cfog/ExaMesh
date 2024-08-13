@@ -84,26 +84,16 @@ public:
 
 	void setRefinedVerts(TriFaceVerts &TF);
 
-	// TODO: Currently, there's no coord mapping set up for bdry faces
+	// Currently, there's no coord mapping set up for bdry faces, because it's never needed
 	void setupCoordMapping(const emInt verts[]) {
 		for (int ii = 0; ii < 3; ii++) {
 			cellVerts[ii] = verts[ii];
 		}
-
 	}
+	// This declaration is here because the base class function is pure virtual; never called.
 	void getPhysCoordsFromParamCoords(const double /*uvw*/[],
 			double /*xyz*/[]) {
-	}
-
-	// These definition ensure that we'll get no interior points for
-	// bdry tris.  The way things are set up, "interior" is "cell
-	// interior"; the points interior to a bdry tri are face points
-	// in this nomenclature.
-	virtual int minK(const int /*i*/, const int /*j*/) const {
-		return 0;
-	}
-	virtual int maxK(const int /*i*/, const int /*j*/) const {
-		return 0;
+		assert(0);
 	}
 };
 

@@ -91,12 +91,6 @@ public:
 		faceEdgeIndices[0][1] = 1;
 		faceEdgeIndices[0][2] = 2;
 		faceEdgeIndices[0][3] = 3;
-
-		if (type == Mapping::Lagrange) {
-			m_Map = new LagrangeCubicQuadMapping(pInitMesh);
-		} else {
-			m_Map = new Q1QuadMapping(pInitMesh);
-		}
 	}
 	~BdryQuadDivider() {
 	}
@@ -104,28 +98,17 @@ public:
 	void createNewCells();
 	void setRefinedVerts(QuadFaceVerts &QFV);
 
-	// TODO: Currently, there's no coord mapping set up for bdry faces
+	// Currently, there's no coord mapping set up for bdry faces, because it's never needed
 	void setupCoordMapping(const emInt verts[]) {
 		for (int ii = 0; ii < 4; ii++) {
 			cellVerts[ii] = verts[ii];
 		}
-
 	}
+	// This declaration is here because the base class function is pure virtual; never called.
 	void getPhysCoordsFromParamCoords(const double /*uvw*/[],
 			double /*xyz*/[]) {
+		assert(0);
 	}
-
-	// These definition ensure that we'll get no interior points for
-	// bdry quads.  The way things are set up, "interior" is "cell
-	// interior"; the points interior to a bdry quad are face points
-	// in this nomenclature.
-	virtual int minK(const int /*i*/, const int /*j*/) const {
-		return 0;
-	}
-	virtual int maxK(const int /*i*/, const int /*j*/) const {
-		return 0;
-	}
-
 };
 
 #endif /* SRC_BDRYQUADDIVIDER_H_ */

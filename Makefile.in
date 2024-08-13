@@ -30,7 +30,7 @@ BdryTriDivider.o BdryQuadDivider.o refinePart.o ExaMesh.o UMesh.o CubicMesh.o \
 GeomUtils.o FaceVerts.o \
 LagrangeMapping.o UniformMapping.o \
 LagrangeCubicTet.o LagrangeCubicPyr.o LagrangeCubicPrism.o LagrangeCubicHex.o \
-Part.o partition.o ParallelTester.o mpiImpl.o resultGenerator.o PARMETIS.o 
+mpiImpl.o resultGenerator.o PARMETIS.o 
 
 OBJECTS=$(CXXOBJECTS) $(LIBOBJECTS)
 DEBUG=-g

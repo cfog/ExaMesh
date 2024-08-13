@@ -102,47 +102,39 @@ int main(int argc, char *const argv[]) {
 		if (isInputCGNS) {
 #if (HAVE_CGNS == 1)
 			CubicMesh CMorig(baseFileName);
-			if (isParallel) {
-				CMorig.refineForParallel(nDivs, maxCellsPerPart);
-			} else {
-				double start = exaTime();
-				auto refined = CMorig.subdivideMesh(nDivs);
-				double time = exaTime() - start;
-				size_t cells = refined->numCells();
+			double start = exaTime();
+			auto refined = CMorig.subdivideMesh(nDivs);
+			double time = exaTime() - start;
+			size_t cells = refined->numCells();
 
-				fprintf(stderr, "\nDone serial refinement.\n");
-				fprintf(stderr, "CPU time for refinement = %5.2F seconds\n",
-						time);
-				fprintf(stderr,
-						"                          %5.2F million cells / minute\n",
-						(cells / 1000000.) / (time / 60));
+			fprintf(stderr, "\nDone serial refinement.\n");
+			fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
+			fprintf(stderr,
+					"                          %5.2F million cells / minute\n",
+					(cells / 1000000.) / (time / 60));
 
-				//			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
-				//			UMrefined.writeVTKFile("/tmp/junk.vtk");
-			}
+			//			UMrefined.writeUGridFile("/tmp/junk.b8.ugrid");
+			//			UMrefined.writeVTKFile("/tmp/junk.vtk");
+
 #else
 		fprintf(stderr, "Not compiled with CGNS; curved meshes not supported.\n");
 		exit(1);
 #endif
-		} else {
+		}
+		else {
 			UMesh UMorig(baseFileName, fileSuffix, fileInfix);
 
-			if (isParallel) {
-				UMorig.refineForParallel(nDivs, maxCellsPerPart);
-			} else {
-				double start = exaTime();
-				auto refined = UMorig.subdivideMesh(nDivs);
-				double time = exaTime() - start;
-				size_t cells = refined->numCells();
+			double start = exaTime();
+			auto refined = UMorig.subdivideMesh(nDivs);
+			double time = exaTime() - start;
+			size_t cells = refined->numCells();
 
-				fprintf(stderr, "CPU time for refinement = %5.2F seconds\n",
-						time);
-				fprintf(stderr,
-						"                          %5.2F million cells / minute\n",
-						(cells / 1000000.) / (time / 60));
-				//UMrefined.writeUGridFile(outFileName);
-				//UMrefined.writeVTKFile(outFileName);
-			}
+			fprintf(stderr, "CPU time for refinement = %5.2F seconds\n", time);
+			fprintf(stderr,
+					"                          %5.2F million cells / minute\n",
+					(cells / 1000000.) / (time / 60));
+			//UMrefined.writeUGridFile(outFileName);
+			//UMrefined.writeVTKFile(outFileName);
 
 		}
 		printf("Exiting\n");

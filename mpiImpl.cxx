@@ -282,15 +282,10 @@ void refineForMPI(const std::string  baseFileName,
 	std::vector<std::vector<emInt>> partCells;
 
 	// All processors read the mesh 
-	// TODO: Currently UMesh-specific
-
 	times.preProcessing = exaTime();
 	std::unique_ptr<ExaMesh> inimesh = ExaMesh::readMeshFromFile(
 			baseFileName, fileSuffix, ugridInfix);
-//	std::unique_ptr<ExaMesh> inimesh = std::make_unique<UMesh>(baseFileName,
-//			type, ugridInfix);
 	times.preProcessing = exaTime() - times.preProcessing;
-	// inimesh->calcMemoryRequirements(*inimesh, numDivs);
 
 	hashTri hashTris;
 	hashQuad hashQuads;

@@ -61,18 +61,6 @@ public:
 	UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
 			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
 			const emInt nPrisms, const emInt nHexes);
-	UMesh(const emInt nVerts, const emInt nBdryVerts, const emInt nBdryTris,
-			const emInt nBdryQuads, const emInt nTets, const emInt nPyramids,
-			const emInt nPrisms, const emInt nHexes,
-			const std::vector<std::vector<emInt>> &tetConns,
-			const std::vector<emInt> &header,
-			const std::vector<std::pair<emInt, emInt>> &cellID2cellTypeLocal,
-			const std::vector<std::vector<emInt>> &vTriConns,
-			const std::vector<double> &vLengthSclae,
-			const std::vector<std::vector<emInt>> &vQuadConn,
-			const std::vector<std::vector<emInt>> &vPyrConn,
-			const std::vector<std::vector<emInt>> &vPrismConn,
-			const std::vector<std::vector<emInt>> &vHexConn);
 	UMesh(const std::string baseFileName, const std::string fileSuffix,
 			const std::string ugridInfix);
 	~UMesh();
@@ -229,31 +217,6 @@ public:
 		return Mapping::Uniform;
 	}
 
-	virtual std::unique_ptr<
-	UMesh> createFineUMesh(
-			const emInt numDivs,
-			Part &P,
-			std::vector<
-			CellPartData> &vecCPD,
-			struct RefineStats &RS) const;
-
-	virtual std::unique_ptr<
-	ExaMesh> extractCoarseMeshPseudoParallel(
-			Part &P,
-			std::vector<
-			CellPartData> &vecCPD,
-			const int numDivs,
-			const std::unordered_set<
-			TriFaceVerts> &tris =
-					std::unordered_set<
-					TriFaceVerts>(),
-					const std::unordered_set<
-					QuadFaceVerts> &quads =
-							std::unordered_set<
-							QuadFaceVerts>(),
-							const emInt partID =
-									-1) const;
-
 	std::unique_ptr<
 	ExaMesh>
 	extractCoarseMeshMPI(
@@ -273,17 +236,6 @@ public:
 	emInt getPrismType() const {return CGNS_ENUMV(PENTA_6);}
 	emInt getHexType() const {return CGNS_ENUMV(HEXA_8);}
 
-
-	void setupCellDataForPartitioning(
-			std::vector<
-			CellPartData> &vecCPD,
-			double &xmin,
-			double &ymin,
-			double &zmin,
-			double &xmax,
-			double &ymax,
-			double &zmax) const;
-
 	bool writeVTKFile(
 			const char fileName[]);
 	bool writeUGridFile(
@@ -297,19 +249,7 @@ public:
 			emInt *conn,
 			emInt size,
 			int inc);
-	void calcMemoryRequirements(
-			const UMesh &UMIn,
-			const int nDivs);
-	//
-	//	void
-	//	partFaceMatching(const std::vector<std::vector<emInt>> &part2cells,
-			//		 std::vector<std::unordered_set<TriFaceVerts>>  &tris,
-			//		 std::vector<std::unordered_set<QuadFaceVerts>> &quads, size_t &totalTriSize, size_t &totalQuadSize) const;
 
-	// Writing with compression reduces file size by a little over a factor of two,
-	// at the expense of making file write slower by two orders of magnitude.
-	// So don't do it.
-	// bool writeCompressedUGridFile(const char fileName[]);
 private:
 	void init(
 			const emInt nVerts,

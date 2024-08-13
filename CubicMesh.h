@@ -204,11 +204,6 @@ public:
 	// 	return refinedPartTris; 
 	// }
 
-	std::unique_ptr<ExaMesh> extractCoarseMeshPseudoParallel(Part& P,
-			std::vector<CellPartData>& vecCPD, const int numDivs,			
-			const std::unordered_set<TriFaceVerts> &tris= std::unordered_set<TriFaceVerts>(), 
-			const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>(), 
-			const emInt partID=-1) const;
 
 	std::unique_ptr<ExaMesh>
 	extractCoarseMeshMPI(const emInt partID, const std::vector<emInt> &partcells , const int numDivs,
@@ -221,12 +216,6 @@ public:
 	emInt getPyrType() const {return CGNS_ENUMV(PYRA_30);}
 	emInt getPrismType() const {return CGNS_ENUMV(PENTA_40);}
 	emInt getHexType() const {return CGNS_ENUMV(HEXA_64);}
-
-	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
-			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const;
-	void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
-			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
-			double& zmax) const;
 
 	void setNVertNodes(emInt nVertNodes) {
 		m_nVertNodes = nVertNodes;

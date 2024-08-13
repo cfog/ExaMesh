@@ -31,11 +31,8 @@
 #include <memory>
 
 #include "Mapping.h"
-#include "Part.h"
 #include "exa-defs.h"
 #include "FaceVerts.h"
-#include "mpiDefs.h"
-#include "ParallelTester.h"
 #include <set>
 
 class UMesh;
@@ -174,10 +171,6 @@ public:
 	void buildCellToCellConnectivity();
 	void buildFaceCellConnectivity();
 	void buildCell2CellConnFromFace2Cell(multimpFace2Cell& face2cell, const emInt nCells);
-	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2);
-	void buidCell2FacesConn(std::pair<emInt, emInt> cellInfo, emInt v0 , emInt v1, emInt v2, emInt v3);
-	void testCell2CellConn(emInt nCells);
-	void testCell2FaceConn(emInt nCells);
 	std::vector<std::pair<emInt,emInt>> getCellID2CellType () const
 	{
 		return cellID2cellTypeLocalID;
@@ -193,30 +186,12 @@ public:
 	virtual emInt getPrismType() const = 0;
 	virtual emInt getHexType() const = 0;
 
-	virtual void refineForParallel(const emInt numDivs,
-			const emInt maxCellsPerPart) const;
-	virtual std::unique_ptr<UMesh> createFineUMesh(const emInt numDivs, Part& P,
-			std::vector<CellPartData>& vecCPD, struct RefineStats& RS) const = 0;
-
-	void refineForMPI( const int numDivs ,ParallelTester* tester,
-	const char MeshType, std::string mshName,FILE* fileAllTimes) const;		
-
-	virtual std::unique_ptr<ExaMesh> extractCoarseMeshPseudoParallel(Part& P,	std::vector<CellPartData>& vecCPD, 
-	const int numDivs,
-			const std::unordered_set<TriFaceVerts> &tris= std::unordered_set<TriFaceVerts>(), 
-			const std::unordered_set<QuadFaceVerts> &quads= std::unordered_set<QuadFaceVerts>(), 
-			const emInt partID=-1) const=0;		
 
 	virtual std::unique_ptr<ExaMesh>
 	extractCoarseMeshMPI(const emInt partID, const std::vector<emInt> &partcells , const int numDivs,
 			const std::unordered_set<TriFaceVerts>& tris,
 			const std::unordered_set<QuadFaceVerts>& quads) const = 0;
 
-	void TestMPI(const emInt &nDivs, const emInt &nParts, ParallelTester* tester, 
-	const char MeshType); 
-	virtual void setupCellDataForPartitioning(std::vector<CellPartData>& vecCPD,
-			double &xmin, double& ymin, double& zmin, double& xmax, double& ymax,
-			double& zmax) const = 0;
 	void prettyPrintCellCount(size_t cells, const char* prefix) const;
 
 	void addPartTritoSet(const TriFaceVerts &obj){
@@ -288,13 +263,7 @@ public:
 	{
 		return m_refinedPartQuads; 
 	}
-	//void refineMPI();
-	//virtual void buildCell2CellConn(const std::multimap < std::set<emInt>, std::pair<emInt,emInt>> & face2cell, const emInt nCells)=0; 	 
 
-protected:
-	void addCellToPartitionData(const emInt* verts, emInt nPts, emInt ii,
-			int type, std::vector<CellPartData>& vecCPD, double& xmin, double& ymin,
-			double& zmin, double& xmax, double& ymax, double& zmax) const;
 private:
 	void findCentroidOfVerts(const emInt* verts, emInt nPts, double& x, double& y,
 			double& z) const;
@@ -339,9 +308,6 @@ bool computeMeshSize(const struct MeshSize& MSIn, const emInt nDivs,
 emInt subdividePartMesh(const ExaMesh * const pVM_input,
 		UMesh * const pVM_output,
 		const int nDivs, const emInt partID=-1);
-
-bool partitionCells(const ExaMesh* const pEM, const emInt nPartsToMake,
-		std::vector<Part>& parts, std::vector<CellPartData>& vecCPD);
 
 void sortVerts3(const emInt input[3], emInt output[3]);
 void sortVerts4(const emInt input[4], emInt output[4]);
