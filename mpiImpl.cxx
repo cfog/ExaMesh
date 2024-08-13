@@ -514,4 +514,7 @@ void refineForMPI(const std::string  baseFileName,
 	writePartData(world, baseFileName, partCells, numDivs, nCells,
 			refinedTris.size(), refinedQuads.size());
 
+	std::string outFile = "outputfile" + std::to_string(world.rank()) + ".vtk";
+	printf("Writing %s\n", outFile.c_str());
+	refinedMsh->writeVTKFile(outFile.c_str());
 }
