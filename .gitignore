@@ -77,6 +77,10 @@ autoscan.log
 *.ods 
 *.zip
 *.~
+*.xlsx
+*.csv
+*.m4
+libtool
 globe_mats_cubic.cxx
 globe_mats_cubic
 jobGenerator.cxx

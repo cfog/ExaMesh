@@ -457,7 +457,7 @@ std::unique_ptr<UMesh> CubicMesh::subdivideMesh(const emInt nDivs,
 			MSOut.nPrisms, MSOut.nHexes);
 	// Copy length scale data from the other mesh.
 	auto wrappedData = outMesh.get();
-	for (emInt vv = 0; vv < numVerts(); vv++) {
+	for (emInt vv = 0; vv < MSIn.nVerts; vv++) {
 		wrappedData->setLengthScale(vv, m_lenScale[vv]);
 	}
 
